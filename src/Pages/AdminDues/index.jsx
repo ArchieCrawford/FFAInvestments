@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Download, Eye, EyeOff, TrendingUp, Users, DollarSign, AlertTriangle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { readMemberDuesFromExcel } from '../../utils/memberDuesExcel';
 import './AdminDues.css';
 
 const DuesTracker = () => {
@@ -10,109 +10,20 @@ const DuesTracker = () => {
   const [selectedMonths, setSelectedMonths] = useState(12);
   const [expandedMembers, setExpandedMembers] = useState(new Set());
 
-  // Load real member data from database
+  // Load real member data from Excel file
   useEffect(() => {
     const loadDuesData = async () => {
       try {
         setLoading(true);
         
-        // Fetch all profiles/members from Supabase
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('display_name');
-
-        if (profilesError) {
-          throw new Error(`Database error: ${profilesError.message}`);
+        // Load data from Excel file
+        const result = await readMemberDuesFromExcel();
+        
+        if (!result.success) {
+          throw new Error(result.error);
         }
 
-        if (!profiles || profiles.length === 0) {
-          throw new Error('No members found in database');
-        }
-
-        // Generate mock dues data for each member
-        const memberDetails = {};
-        
-        // If we have very few members, create additional mock data for demonstration
-        const allMembers = [...profiles];
-        
-        // Add some demo members if we don't have enough real ones for testing
-        if (profiles.length < 5) {
-          const demoMembers = [
-            { display_name: 'Sarah Johnson', role: 'member', id: 'demo-1' },
-            { display_name: 'Michael Brown', role: 'member', id: 'demo-2' },
-            { display_name: 'Jennifer Davis', role: 'member', id: 'demo-3' },
-            { display_name: 'Robert Wilson', role: 'member', id: 'demo-4' },
-            { display_name: 'Emily Garcia', role: 'member', id: 'demo-5' },
-            { display_name: 'David Martinez', role: 'member', id: 'demo-6' },
-            { display_name: 'Lisa Anderson', role: 'member', id: 'demo-7' },
-            { display_name: 'James Taylor', role: 'member', id: 'demo-8' },
-          ];
-          
-          allMembers.push(...demoMembers.slice(0, 15 - profiles.length));
-        }
-        
-        allMembers.forEach((profile, index) => {
-          const memberName = profile.display_name || `User ${profile.id.substring(0, 8)}`;
-          const isRealMember = !profile.id.toString().startsWith('demo-');
-          
-          // Generate realistic mock data for each member
-          const basePayment = 100; // $100 monthly dues
-          const monthsActive = Math.floor(Math.random() * 12) + 1; // 1-12 months
-          const totalPayments = basePayment * monthsActive + (Math.random() * 500 - 250); // Some variance
-          const owedAmount = Math.random() > 0.7 ? (Math.random() * 300 - 150) : 0; // 30% chance of owing/overpaying
-          
-          // Determine status
-          let status = 'current';
-          if (owedAmount > 50) status = 'owes_money';
-          else if (owedAmount < -50) status = 'overpaid';
-          else if (owedAmount < 0) status = 'credit_balance';
-
-          // Generate monthly data for last 6 months
-          const monthlyData = {};
-          const months = ['Nov 2025', 'Oct 2025', 'Sep 2025', 'Aug 2025', 'Jul 2025', 'Jun 2025'];
-          months.slice(0, selectedMonths > 6 ? 6 : selectedMonths).forEach(month => {
-            const paidAmount = Math.random() > 0.2 ? basePayment + (Math.random() * 50 - 25) : 0;
-            const owedForMonth = basePayment - paidAmount;
-            
-            monthlyData[month] = {
-              dues_paid_formatted: `$${paidAmount.toFixed(2)}`,
-              dues_owed_formatted: owedForMonth > 0 ? `$${owedForMonth.toFixed(2)}` : owedForMonth < 0 ? `($${Math.abs(owedForMonth).toFixed(2)})` : '$0.00',
-              dues_owed_amount: owedForMonth
-            };
-          });
-
-          memberDetails[memberName] = {
-            latest_status: status,
-            latest_owed: owedAmount,
-            total_payments: Math.max(0, totalPayments),
-            latest_contribution: Math.max(0, totalPayments * 10 + Math.random() * 5000), // Rough estimate
-            monthly_data: monthlyData,
-            isRealMember: isRealMember // Track whether this is real or demo data
-          };
-        });
-
-        // Calculate summary statistics
-        const totalMembers = allMembers.length;
-        const realMembers = profiles.length;
-        const totalPayments = Object.values(memberDetails).reduce((sum, member) => sum + member.total_payments, 0);
-        const membersWithOverpayments = Object.values(memberDetails).filter(member => member.latest_owed < -50).length;
-        const membersOwingMoney = Object.values(memberDetails).filter(member => member.latest_owed > 50).length;
-
-        const duesData = {
-          summary: {
-            total_members: totalMembers,
-            real_members: realMembers,
-            total_payments_collected: totalPayments,
-            members_with_overpayments: membersWithOverpayments,
-            members_owing_money: membersOwingMoney,
-            member_details: memberDetails
-          },
-          months_processed: ['Nov 2025', 'Oct 2025', 'Sep 2025', 'Aug 2025', 'Jul 2025', 'Jun 2025'].slice(0, selectedMonths > 6 ? 6 : selectedMonths),
-          processing_date: new Date().toISOString()
-        };
-        
-        setDuesData(duesData);
+        setDuesData(result);
         setError(null);
       } catch (err) {
         setError(err.message);
@@ -363,11 +274,11 @@ const DuesTracker = () => {
 
       {/* Processing Info */}
       <div className="processing-info">
-        <p><strong>Data Source:</strong> Live member data from FFA Investments database ({duesData.summary.real_members} real members) with simulated dues data</p>
-        <p><strong>Demo Data:</strong> {duesData.summary.total_members - duesData.summary.real_members > 0 ? `${duesData.summary.total_members - duesData.summary.real_members} demo members added for demonstration purposes` : 'Showing real members only'}</p>
+        <p><strong>Data Source:</strong> {duesData.data_source || 'Real member dues data from Excel file'}</p>
+        <p><strong>Total Members:</strong> {duesData.summary.total_members} ({duesData.summary.real_members || duesData.summary.total_members} from actual records)</p>
         <p><strong>Processing Date:</strong> {new Date(duesData.processing_date).toLocaleString()}</p>
         <p><strong>Note:</strong> Amounts in parentheses () indicate positive balances (overpayments). 
-           Negative values in "Amount Owed" indicate credit balances. This is simulated dues data - integrate with your actual Excel processing system for real dues tracking.</p>
+           Negative values in "Amount Owed" indicate credit balances. Monthly payment history is simulated for demonstration.</p>
       </div>
     </div>
   );
