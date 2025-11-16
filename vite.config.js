@@ -75,7 +75,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: (id) => {
-        return id.includes('charles_schwab_display') || id.includes('.html')
+        return id.includes('charles_schwab_display')
       }
     }
   }
