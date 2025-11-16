@@ -1,0 +1,50 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "actor_email": {
+      "type": "string",
+      "description": "Email of user who performed action"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Type of entity modified (Account, LedgerEntry, etc)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of modified entity"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "delete",
+        "finalize",
+        "lock"
+      ],
+      "description": "Type of action performed"
+    },
+    "before_data": {
+      "type": "object",
+      "description": "Entity state before change"
+    },
+    "after_data": {
+      "type": "object",
+      "description": "Entity state after change"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of actor"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context"
+    }
+  },
+  "required": [
+    "actor_email",
+    "entity_type",
+    "action"
+  ]
+}

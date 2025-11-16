@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug - FFA Investments</title>
+    <style>
+      body { 
+        margin: 0; 
+        padding: 20px; 
+        font-family: Arial, sans-serif; 
+        background: #f0f0f0; 
+      }
+      .debug { 
+        background: white; 
+        padding: 20px; 
+        border-radius: 8px; 
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+      }
+    </style>
+  </head>
+  <body>
+    <div class="debug">
+      <h1>🔧 Debug Test</h1>
+      <p>If you can see this, the HTML is loading correctly.</p>
+      <p>Time: <span id="time"></span></p>
+      <div id="root">Loading React app...</div>
+    </div>
+    
+    <script>
+      document.getElementById('time').textContent = new Date().toLocaleString();
+      console.log('🎯 Debug HTML loaded successfully');
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

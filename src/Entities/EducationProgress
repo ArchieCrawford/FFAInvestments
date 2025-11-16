@@ -1,0 +1,47 @@
+{
+  "name": "EducationProgress",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email"
+    },
+    "lesson_id": {
+      "type": "string",
+      "description": "Reference to EducationLesson"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "in_progress",
+        "completed"
+      ],
+      "default": "not_started",
+      "description": "Completion status"
+    },
+    "quiz_score": {
+      "type": "number",
+      "description": "Quiz score (0-100)"
+    },
+    "quiz_attempts": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of quiz attempts"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When lesson was completed"
+    },
+    "time_spent_minutes": {
+      "type": "number",
+      "default": 0,
+      "description": "Time spent on lesson"
+    }
+  },
+  "required": [
+    "user_email",
+    "lesson_id"
+  ]
+}

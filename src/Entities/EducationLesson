@@ -1,0 +1,75 @@
+{
+  "name": "EducationLesson",
+  "type": "object",
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly lesson identifier"
+    },
+    "title": {
+      "type": "string",
+      "description": "Lesson title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short lesson description"
+    },
+    "content_markdown": {
+      "type": "string",
+      "description": "Lesson content in markdown"
+    },
+    "video_url": {
+      "type": "string",
+      "description": "Optional video URL"
+    },
+    "track": {
+      "type": "string",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced"
+      ],
+      "default": "beginner",
+      "description": "Education track level"
+    },
+    "order_index": {
+      "type": "number",
+      "default": 0,
+      "description": "Lesson order within track"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Estimated time to complete"
+    },
+    "quiz_questions": {
+      "type": "array",
+      "description": "Quiz questions in JSON format",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct_answer": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether lesson is visible to members"
+    }
+  },
+  "required": [
+    "slug",
+    "title"
+  ]
+}

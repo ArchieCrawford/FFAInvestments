@@ -1,0 +1,64 @@
+{
+  "name": "LedgerEntry",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "description": "Reference to Account"
+    },
+    "entry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Effective date of transaction"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "contribution",
+        "withdrawal",
+        "fee",
+        "distribution",
+        "trade",
+        "unit_allocation",
+        "adjustment"
+      ],
+      "description": "Type of ledger entry"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Dollar amount (positive or negative)"
+    },
+    "units_delta": {
+      "type": "number",
+      "default": 0,
+      "description": "Change in unit balance"
+    },
+    "unit_price_at_entry": {
+      "type": "number",
+      "description": "Unit price at time of entry"
+    },
+    "memo": {
+      "type": "string",
+      "description": "Transaction memo/description"
+    },
+    "attachment_url": {
+      "type": "string",
+      "description": "URL to receipt or supporting document"
+    },
+    "is_finalized": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this entry is locked"
+    },
+    "created_by_email": {
+      "type": "string",
+      "description": "Email of user who created this entry"
+    }
+  },
+  "required": [
+    "account_id",
+    "entry_date",
+    "entry_type",
+    "amount"
+  ]
+}

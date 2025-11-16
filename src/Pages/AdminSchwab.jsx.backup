@@ -1,0 +1,497 @@
+import React, { useState, useEffect } from 'react'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import schwabApi, { SchwabAPIError } from '../services/schwabApi'
+
+const AdminSchwab = () => {
+  const [isLoading, setIsLoading] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [error, setError] = useState('')
+  const [accounts, setAccounts] = useState([])
+  const [connectionStatus, setConnectionStatus] = useState('checking')
+  
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    checkAuthStatus()
+  }, [])
+
+  const checkAuthStatus = async () => {
+    try {
+      setConnectionStatus('checking')
+      const authenticated = schwabApi.isAuthenticated()
+      setIsAuthenticated(authenticated)
+      
+      if (authenticated) {
+        setConnectionStatus('connected')
+        await loadAccounts()
+      } else {
+        setConnectionStatus('disconnected')
+      }
+    } catch (error) {
+      console.error('❌ Auth status check failed:', error)
+      setConnectionStatus('error')
+      setError('Failed to check authentication status')
+    }
+  }
+
+  const loadAccounts = async () => {
+    try {
+      setIsLoading(true)
+      const accountData = await schwabApi.getAccounts()
+      setAccounts(accountData || [])
+      setError('')
+    } catch (error) {
+      console.error('❌ Failed to load accounts:', error)
+      setError(error.message || 'Failed to load accounts')
+      if (error instanceof SchwabAPIError && error.message.includes('login')) {
+        setIsAuthenticated(false)
+        setConnectionStatus('disconnected')
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogin = async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      const authUrl = schwabApi.getAuthorizationUrl()
+      console.log('🔑 Redirecting to Schwab OAuth:', authUrl)
+      window.location.href = authUrl
+    } catch (error) {
+      console.error('❌ Login failed:', error)
+      setError(error.message || 'Failed to initiate login')
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    schwabApi.logout()
+    setIsAuthenticated(false)
+    setAccounts([])
+    setConnectionStatus('disconnected')
+    setError('')
+  }
+
+  const formatCurrency = (amount) => {
+    if (amount === null || amount === undefined) return 'N/A'
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount)
+  }
+
+  const getConnectionStatusDisplay = () => {
+    switch (connectionStatus) {
+      case 'checking':
+        return { text: 'Checking Connection...', color: 'text-yellow-600', icon: '🔄' }
+      case 'connected':
+        return { text: 'Connected to Charles Schwab', color: 'text-green-600', icon: '✅' }
+      case 'disconnected':
+        return { text: 'Not Connected', color: 'text-red-600', icon: '❌' }
+      case 'error':
+        return { text: 'Connection Error', color: 'text-red-600', icon: '⚠️' }
+      default:
+        return { text: 'Unknown Status', color: 'text-gray-600', icon: '❓' }
+    }
+  }
+
+  const status = getConnectionStatusDisplay()
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Charles Schwab Integration</h1>
+              <p className="text-gray-600 mt-2">
+                Connect to your Charles Schwab account to access trading data and portfolio insights
+              </p>
+            </div>
+            <div className="text-6xl">🏦</div>
+          </div>
+        </div>
+
+        {/* Connection Status */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">{status.icon}</span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Connection Status</h3>
+                <p className={`${status.color} font-medium`}>{status.text}</p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={loadAccounts}
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Loading...' : 'Refresh Data'}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  disabled={isLoading}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Connecting...' : 'Connect to Schwab'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-red-500 text-xl">⚠️</span>
+              <div>
+                <h4 className="text-red-800 font-semibold">Error</h4>
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Account Information */}
+        {isAuthenticated && accounts.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              Connected Accounts ({accounts.length})
+            </h3>
+            
+            <div className="space-y-4">
+              {accounts.map((account, index) => (
+                <div key={account.hashValue || index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Account {account.accountNumber || 'Unknown'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Type: {account.type || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-green-600">
+                        {formatCurrency(account.currentBalances?.liquidationValue)}
+                      </p>
+                      <p className="text-sm text-gray-600">Total Value</p>
+                    </div>
+                  </div>
+                  
+                  {account.currentBalances && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Cash</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.cashBalance)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Long Value</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.longMarketValue)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Short Value</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.shortMarketValue)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Buying Power</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.buyingPower)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Navigation to other Schwab pages */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Available Features</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => navigate('/admin/schwab/insights')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">📊</span>
+                    <h5 className="font-semibold text-gray-900">Account Insights</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Detailed portfolio analysis and metrics
+                    </p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/schwab/raw-data')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">🔧</span>
+                    <h5 className="font-semibold text-gray-900">Raw API Data</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      View raw API responses for debugging
+                    </p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/schwab/export')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">📥</span>
+                    <h5 className="font-semibold text-gray-900">Export Data</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Export account data to Excel
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Setup Instructions */}
+        {!isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">Setup Instructions</h3>
+            <div className="space-y-2 text-sm text-blue-800">
+              <p>📋 <strong>To connect your Charles Schwab account:</strong></p>
+              <ol className="list-decimal list-inside space-y-1 ml-4">
+                <li>Ensure you have a Charles Schwab developer account and API credentials</li>
+                <li>Configure your environment variables (VITE_SCHWAB_CLIENT_ID, VITE_SCHWAB_CLIENT_SECRET)</li>
+                <li>Click "Connect to Schwab" to begin the OAuth authentication process</li>
+                <li>You'll be redirected to Schwab's secure login page</li>
+                <li>After authorization, you'll return here with access to your account data</li>
+              </ol>
+              <p className="mt-4 text-blue-700">
+                <strong>Note:</strong> This integration is for admin users only and provides read-only access to account data.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Charles Schwab Integration</h1>
+              <p className="text-gray-600 mt-2">
+                Connect to your Charles Schwab account to access trading data and portfolio insights
+              </p>
+            </div>
+            <div className="text-6xl">🏦</div>
+          </div>
+        </div>
+
+        {/* Connection Status */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-2xl">{status.icon}</span>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Connection Status</h3>
+                <p className={`${status.color} font-medium`}>{status.text}</p>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={loadAccounts}
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Loading...' : 'Refresh Data'}
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Disconnect
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  disabled={isLoading}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Connecting...' : 'Connect to Schwab'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <span className="text-red-500 text-xl">⚠️</span>
+              <div>
+                <h4 className="text-red-800 font-semibold">Error</h4>
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Account Information */}
+        {isAuthenticated && accounts.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">
+              Connected Accounts ({accounts.length})
+            </h3>
+            
+            <div className="space-y-4">
+              {accounts.map((account, index) => (
+                <div key={account.hashValue || index} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        Account {account.accountNumber || 'Unknown'}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Type: {account.type || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-semibold text-green-600">
+                        {formatCurrency(account.currentBalances?.liquidationValue)}
+                      </p>
+                      <p className="text-sm text-gray-600">Total Value</p>
+                    </div>
+                  </div>
+                  
+                  {account.currentBalances && (
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Cash</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.cashBalance)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Long Value</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.longMarketValue)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Short Value</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.shortMarketValue)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Buying Power</p>
+                        <p className="font-semibold">
+                          {formatCurrency(account.currentBalances.buyingPower)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            {/* Navigation to other Schwab pages */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h4 className="text-lg font-semibold text-gray-900 mb-4">Available Features</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => navigate('/admin/schwab/insights')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">📊</span>
+                    <h5 className="font-semibold text-gray-900">Account Insights</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Detailed portfolio analysis and metrics
+                    </p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/schwab/raw-data')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">🔧</span>
+                    <h5 className="font-semibold text-gray-900">Raw API Data</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      View raw API responses for debugging
+                    </p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => navigate('/admin/schwab/export')}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="text-center">
+                    <span className="text-2xl block mb-2">📥</span>
+                    <h5 className="font-semibold text-gray-900">Export Data</h5>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Export account data to Excel
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Setup Instructions */}
+        {!isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">Setup Instructions</h3>
+            <div className="space-y-2 text-sm text-blue-800">
+              <p>📋 <strong>To connect your Charles Schwab account:</strong></p>
+              <ol className="list-decimal list-inside space-y-1 ml-4">
+                <li>Ensure you have a Charles Schwab developer account and API credentials</li>
+                <li>Configure your environment variables (VITE_SCHWAB_CLIENT_ID, VITE_SCHWAB_CLIENT_SECRET)</li>
+                <li>Click "Connect to Schwab" to begin the OAuth authentication process</li>
+                <li>You'll be redirected to Schwab's secure login page</li>
+                <li>After authorization, you'll return here with access to your account data</li>
+              </ol>
+              <p className="mt-4 text-blue-700">
+                <strong>Note:</strong> This integration is for admin users only and provides read-only access to account data.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+export default AdminSchwab

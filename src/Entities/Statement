@@ -1,0 +1,65 @@
+{
+  "name": "Statement",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "description": "Reference to Account"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Statement period start date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Statement period end date"
+    },
+    "beginning_units": {
+      "type": "number",
+      "description": "Unit balance at period start"
+    },
+    "ending_units": {
+      "type": "number",
+      "description": "Unit balance at period end"
+    },
+    "beginning_value": {
+      "type": "number",
+      "description": "Account value at period start"
+    },
+    "ending_value": {
+      "type": "number",
+      "description": "Account value at period end"
+    },
+    "contributions": {
+      "type": "number",
+      "default": 0,
+      "description": "Total contributions in period"
+    },
+    "withdrawals": {
+      "type": "number",
+      "default": 0,
+      "description": "Total withdrawals in period"
+    },
+    "fees": {
+      "type": "number",
+      "default": 0,
+      "description": "Total fees in period"
+    },
+    "pdf_url": {
+      "type": "string",
+      "description": "URL to statement PDF"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When statement was generated"
+    }
+  },
+  "required": [
+    "account_id",
+    "period_start",
+    "period_end"
+  ]
+}

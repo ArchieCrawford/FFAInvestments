@@ -1,0 +1,28 @@
+{
+  "name": "AccountUser",
+  "type": "object",
+  "properties": {
+    "account_id": {
+      "type": "string",
+      "description": "Reference to Account"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User email address"
+    },
+    "role_in_account": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "co-owner",
+        "viewer"
+      ],
+      "default": "owner",
+      "description": "User's role in this account"
+    }
+  },
+  "required": [
+    "account_id",
+    "user_email"
+  ]
+}

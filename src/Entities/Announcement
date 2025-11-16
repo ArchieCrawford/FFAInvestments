@@ -1,0 +1,47 @@
+{
+  "name": "Announcement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Announcement title"
+    },
+    "body_markdown": {
+      "type": "string",
+      "description": "Announcement content in markdown"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high"
+      ],
+      "default": "normal",
+      "description": "Announcement priority"
+    },
+    "published_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When announcement was published"
+    },
+    "published_by_email": {
+      "type": "string",
+      "description": "Email of admin who published"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When announcement should be hidden"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to pin to top"
+    }
+  },
+  "required": [
+    "title",
+    "body_markdown"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "Account",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Account name (e.g., Family Fund, College Fund)"
+    },
+    "account_type": {
+      "type": "string",
+      "enum": [
+        "personal",
+        "joint",
+        "529_college",
+        "ira",
+        "trust",
+        "other"
+      ],
+      "default": "personal",
+      "description": "Type of investment account"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "closed"
+      ],
+      "default": "active",
+      "description": "Account status"
+    },
+    "current_units": {
+      "type": "number",
+      "default": 0,
+      "description": "Current unit balance"
+    },
+    "cash_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Uninvested cash balance"
+    },
+    "invested_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Value of invested holdings"
+    },
+    "opening_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Account opening date"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Account notes"
+    },
+    "beneficiary_name": {
+      "type": "string",
+      "description": "Beneficiary name (for 529 or trust accounts)"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

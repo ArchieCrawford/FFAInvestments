@@ -1,0 +1,53 @@
+{
+  "name": "UnitPrice",
+  "type": "object",
+  "properties": {
+    "price_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of this unit price"
+    },
+    "price": {
+      "type": "number",
+      "description": "NAV per unit"
+    },
+    "total_aum": {
+      "type": "number",
+      "description": "Total assets under management"
+    },
+    "total_units_outstanding": {
+      "type": "number",
+      "description": "Total units across all accounts"
+    },
+    "cash_balance": {
+      "type": "number",
+      "description": "Club-wide cash balance"
+    },
+    "invested_value": {
+      "type": "number",
+      "description": "Club-wide invested value"
+    },
+    "is_finalized": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this price is locked"
+    },
+    "finalized_by_email": {
+      "type": "string",
+      "description": "Email of admin who finalized"
+    },
+    "finalized_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this price was finalized"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes about this unit price calculation"
+    }
+  },
+  "required": [
+    "price_date",
+    "price"
+  ]
+}

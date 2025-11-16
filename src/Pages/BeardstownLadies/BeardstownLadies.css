@@ -1,0 +1,307 @@
+/* Beardstown Ladies Educational Page Styling */
+.beardstown-container {
+  --bg: #0b1220;
+  --panel: #121a2b;
+  --muted: #9fb1d1;
+  --text: #e9f0ff;
+  --accent: #89c2ff;
+  --accent-2: #74f0c0;
+  --border: #21304b;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius: 16px;
+  
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 10% -10%,rgba(116,240,192,.08),transparent 60%),
+              radial-gradient(900px 500px at 110% 10%,rgba(137,194,255,.10),transparent 60%),
+              var(--bg);
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.beardstown-container a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.beardstown-container a:hover {
+  text-decoration: underline;
+}
+
+.beardstown-wrap {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 900px) {
+  .beardstown-wrap {
+    grid-template-columns: 1fr;
+  }
+  .beardstown-toc {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
+.beardstown-toc {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.beardstown-toc h2 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  letter-spacing: .02em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.beardstown-toc a {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+
+.beardstown-toc a:hover {
+  background: rgba(137,194,255,.12);
+}
+
+.beardstown-card {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+
+.beardstown-container h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.2;
+  letter-spacing: .3px;
+}
+
+.beardstown-subtitle {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.beardstown-container h2 {
+  margin: 24px 0 10px;
+  font-size: clamp(20px, 2.2vw, 26px);
+}
+
+.beardstown-container h3 {
+  margin: 16px 0 8px;
+  font-size: clamp(16px, 1.8vw, 20px);
+}
+
+.beardstown-container p {
+  margin: 8px 0;
+}
+
+.beardstown-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 800px) {
+  .beardstown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.beardstown-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.beardstown-container details {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255,255,255,.02);
+}
+
+.beardstown-container summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.0));
+}
+
+.beardstown-container summary::-webkit-details-marker {
+  display: none;
+}
+
+.beardstown-container details[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.beardstown-panel {
+  padding: 18px 20px;
+}
+
+.beardstown-kpi {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: .95rem;
+  color: var(--muted);
+}
+
+.beardstown-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+.beardstown-list {
+  margin: 6px 0 12px 0;
+  padding-left: 18px;
+}
+
+.beardstown-list li {
+  margin: 6px 0;
+}
+
+.beardstown-callout {
+  border-left: 3px solid var(--accent);
+  padding: 10px 14px;
+  background: rgba(137,194,255,.08);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+.beardstown-table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.beardstown-table th,
+.beardstown-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.beardstown-table thead th {
+  background: rgba(255,255,255,.06);
+  font-weight: 700;
+}
+
+.beardstown-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0 18px;
+}
+
+.beardstown-container button {
+  appearance: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform .05s ease, background .2s ease;
+}
+
+.beardstown-container button:hover {
+  transform: translateY(-1px);
+}
+
+.beardstown-muted {
+  color: var(--muted);
+}
+
+.beardstown-small {
+  font-size: .9rem;
+}
+
+/* Checklist Styling */
+.beardstown-checklist {
+  display: grid;
+  gap: 12px;
+}
+
+.beardstown-check-item {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 28px 1fr;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.02);
+}
+
+.beardstown-check-item input {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.beardstown-progress {
+  height: 10px;
+  background: #0e1627;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.beardstown-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.3s ease;
+}
+
+/* Print Styles */
+@media print {
+  .beardstown-toc,
+  .beardstown-toolbar {
+    display: none;
+  }
+  
+  .beardstown-container {
+    background: #fff;
+    color: #000;
+  }
+  
+  .beardstown-card,
+  .beardstown-container details {
+    box-shadow: none;
+    border-color: #ccc;
+  }
+  
+  .beardstown-container a {
+    color: #000;
+  }
+}
