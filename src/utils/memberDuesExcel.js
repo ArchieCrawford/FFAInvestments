@@ -1,4 +1,4 @@
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 
 const EXCEL_FILE_PATH = './member_dues_20251116_150358.xlsx';
 

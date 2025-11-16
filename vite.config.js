@@ -73,6 +73,7 @@ export default defineConfig({
   },
   // Exclude charles_schwab_display folder from build
   build: {
+    target: 'es2022', // Support top-level await
     rollupOptions: {
       external: (id) => {
         return id.includes('charles_schwab_display')
