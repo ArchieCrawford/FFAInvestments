@@ -6,9 +6,9 @@ import { useAuth } from "./contexts/AuthContext";
 
 const adminNav = [
   { title: "Dashboard", url: createPageUrl("AdminDashboard"), icon: "fas fa-table" },
-  { title: "Members", url: createPageUrl("AdminUsers"), icon: "fas fa-users" },
+  { title: "Members", url: "/admin/members", icon: "fas fa-users" },
   { title: "User Management", url: "/admin/user-management", icon: "fas fa-user-shield" },
-  { title: "Manage Accounts", url: "/admin/manage-members", icon: "fas fa-user-cog" },
+  { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "Accounts", url: createPageUrl("AdminAccounts"), icon: "fas fa-user-circle" },
   { title: "Dues Tracker", url: "/admin/dues", icon: "fas fa-money-check-alt" },
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
@@ -36,7 +36,8 @@ const adminNav = [
 ];
 
 const memberNav = [
-  { title: "Dashboard", url: createPageUrl("MemberDashboard"), icon: "fas fa-table" },
+  { title: "Dashboard", url: "/member/dashboard", icon: "fas fa-table" },
+  { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "My Accounts", url: createPageUrl("MemberAccounts"), icon: "fas fa-wallet" },
   { title: "Make Contribution", url: createPageUrl("MemberContribute"), icon: "fas fa-dollar-sign" },
   { 
