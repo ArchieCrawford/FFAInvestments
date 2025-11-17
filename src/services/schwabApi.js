@@ -31,10 +31,10 @@ class SchwabApiService {
     this.lastRequestTime = 0
     this.rateLimit = 500 // 500ms between requests (120 calls/minute)
     
-    // Configuration from environment variables (updated for new env vars)
-    this.clientId = import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
-    this.clientSecret = import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '')
-    this.redirectUri = import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://localhost:3000/admin/schwab/callback'
+    // Configuration from environment variables (updated for Vite)
+    this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
+    this.clientSecret = import.meta.env.VITE_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '')
+    this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://localhost:3001/admin/schwab/callback'
     
     // Token storage keys
     this.tokenStorageKey = 'schwab_tokens'
@@ -46,7 +46,10 @@ class SchwabApiService {
     
     console.log('🔧 SchwabApiService initialized:', {
       clientId: this.clientId ? '✅ Set' : '❌ Missing',
-      redirectUri: this.redirectUri
+      redirectUri: this.redirectUri,
+      rawClientId: this.clientId,
+      envViteClient: import.meta.env.VITE_SCHWAB_CLIENT_ID,
+      envReactClient: import.meta.env.REACT_APP_SCHWAB_CLIENT_ID
     })
   }
 

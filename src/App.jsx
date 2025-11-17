@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import Layout from './Layout.jsx'
 import Login from './components/Login.jsx'
-import SupabaseLogin from './components/SupabaseLogin.jsx'
+
+import ModernLogin from './components/ModernLogin.jsx'
 import AuthTest from './components/AuthTest.jsx'
 import AuthCallback from './components/AuthCallback.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -16,8 +17,12 @@ import AdminUnitPrice from './components/AdminUnitPrice.jsx'
 import AdminEducation from './Pages/AdminEducation.jsx'
 import AdminImport from './components/AdminImport.jsx'
 import AdminMemberManagement from './components/AdminMemberManagement.jsx'
+import AdminSettings from './Pages/AdminSettings.jsx'
+import AdminMembers from './Pages/AdminMembers.jsx'
 import UserManagement from './Pages/UserManagement.jsx'
-import MemberDashboard from './Pages/MemberDashboard.jsx'
+import MemberDashboard from './Pages/MemberDashboardNew.jsx'
+import MemberHome from './Pages/MemberHome.jsx'
+import MemberDirectory from './Pages/MemberDirectory.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
 import MemberAccountDashboard from './components/MemberAccountDashboard.jsx'
 import EducationCatalog from './Pages/EducationCatalog.jsx'
@@ -66,14 +71,17 @@ function App() {
           {/* Debug route to test basic rendering */}
           <Route path="/debug" element={<div style={{padding: '20px', fontSize: '24px', color: 'black'}}>🎯 Debug Route - App is working! Current time: {new Date().toLocaleString()}</div>} />
           
-          <Route path="/login" element={<SupabaseLogin />} />
+          <Route path="/login" element={<ModernLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/invite/:token" element={<InviteAccept />} />
           <Route path="/" element={
             <ProtectedRoute>
-              <Layout currentPageName="Dashboard">
-                <AdminDashboard />
-              </Layout>
+              <Navigate to="/member/home" replace />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Navigate to="/member/home" replace />
             </ProtectedRoute>
           } />
           <Route path="/admin/dashboard" element={
@@ -146,6 +154,20 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminSettings">
+                <AdminSettings />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/members" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminMembers">
+                <AdminMembers />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/admin/schwab" element={
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminSchwab">
@@ -168,6 +190,13 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/schwab/callback" element={<SchwabCallback />} />
+          <Route path="/member/home" element={
+            <ProtectedRoute>
+              <Layout currentPageName="MemberHome">
+                <MemberHome />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/member/dashboard" element={
             <ProtectedRoute>
               <Layout currentPageName="MemberDashboard">
@@ -179,6 +208,13 @@ function App() {
             <ProtectedRoute>
               <Layout currentPageName="MemberContribute">
                 <MemberContribute />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/member/directory" element={
+            <ProtectedRoute>
+              <Layout currentPageName="MemberDirectory">
+                <MemberDirectory />
               </Layout>
             </ProtectedRoute>
           } />

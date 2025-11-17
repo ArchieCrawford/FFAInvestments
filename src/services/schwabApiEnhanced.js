@@ -25,10 +25,10 @@ class SchwabAPIError extends Error {
 
 class EnhancedSchwabApiService {
   constructor() {
-    // Configuration from environment variables
-    this.clientId = import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '');
-    this.clientSecret = import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '');
-    this.redirectUri = import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI;
+    // Configuration from environment variables (Vite-compatible)
+    this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '');
+    this.clientSecret = import.meta.env.VITE_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '');
+    this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI;
     
     // API Endpoints
     this.authUrl = 'https://api.schwab.com/v1/oauth/authorize';
