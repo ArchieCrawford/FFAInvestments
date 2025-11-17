@@ -1,0 +1,20 @@
+# Force Vercel Redeploy - Latest Commit
+
+**Current Issue:** Vercel stuck on old commit `87394b5`  
+**Target Commit:** `388d135` (latest with all fixes)  
+**Trigger Time:** $(date)
+
+## Changes in Latest Commit:
+- ✅ Build configuration fixes (ES2022, XLSX import)  
+- ✅ Complete database infrastructure
+- ✅ Security vulnerability patches
+- ✅ Vercel configuration optimizations
+
+## Domain Info:
+- **Current URL:** https://ffa-investments-nf609745p-ajs-projects-e15d145a.vercel.app/
+- **Expected:** Working app with database features
+
+This commit should trigger a fresh deployment from the latest code.
+
+---
+*Deployment trigger: November 16, 2025 - Build $(date +%s)*
