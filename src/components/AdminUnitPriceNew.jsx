@@ -170,21 +170,21 @@ const AdminUnitPriceNew = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
       <div className="container mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center">
-            <DollarSign className="mr-4 text-green-600" />
+          <h1 className="text-4xl font-bold text-white mb-2 flex items-center">
+            <DollarSign className="mr-4 text-green-400" />
             Unit Price Management
           </h1>
-          <p className="text-gray-600">Manage unit prices and track price history</p>
+          <p className="text-blue-200">Manage unit prices and track price history</p>
         </div>
 
         {/* Message Display */}
         {message.text && (
           <div className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
-          }`}>
+            message.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          } text-white`}>
             <div className="flex items-center">
               <AlertCircle className="w-4 h-4 mr-2" />
               {message.text}
@@ -194,31 +194,31 @@ const AdminUnitPriceNew = () => {
 
         {/* Current Price Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">Current Unit Price</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-blue-200 text-sm">Current Unit Price</p>
+                <p className="text-3xl font-bold text-white">
                   {currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-blue-200 text-sm mt-1">
                   {currentPrice ? `As of ${formatDate(currentPrice.price_date)}` : 'No prices set'}
                 </p>
               </div>
-              <DollarSign className="w-12 h-12 text-green-600" />
+              <DollarSign className="w-12 h-12 text-green-400" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">Price Change</p>
+                <p className="text-blue-200 text-sm">Price Change</p>
                 {priceChange ? (
                   <>
-                    <p className={`text-2xl font-bold ${priceChange.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-2xl font-bold ${priceChange.isPositive ? 'text-green-400' : 'text-red-400'}`}>
                       {priceChange.isPositive ? '+' : ''}{priceChange.percentage.toFixed(2)}%
                     </p>
-                    <p className={`text-sm ${priceChange.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-sm ${priceChange.isPositive ? 'text-green-300' : 'text-red-300'}`}>
                       {priceChange.isPositive ? '+' : ''}{formatCurrency(priceChange.amount)}
                     </p>
                   </>
@@ -227,21 +227,21 @@ const AdminUnitPriceNew = () => {
                 )}
               </div>
               {priceChange && priceChange.isPositive ? (
-                <TrendingUp className="w-12 h-12 text-green-600" />
+                <TrendingUp className="w-12 h-12 text-green-400" />
               ) : (
-                <TrendingDown className="w-12 h-12 text-red-600" />
+                <TrendingDown className="w-12 h-12 text-red-400" />
               )}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">Total Price History</p>
-                <p className="text-2xl font-bold text-gray-900">{unitPrices.length}</p>
-                <p className="text-gray-500 text-sm">Price entries</p>
+                <p className="text-blue-200 text-sm">Total Price History</p>
+                <p className="text-2xl font-bold text-white">{unitPrices.length}</p>
+                <p className="text-blue-200 text-sm">Price entries</p>
               </div>
-              <Calendar className="w-12 h-12 text-blue-600" />
+              <Calendar className="w-12 h-12 text-blue-400" />
             </div>
           </div>
         </div>
@@ -259,39 +259,39 @@ const AdminUnitPriceNew = () => {
 
         {/* Add Price Form */}
         {showAddForm && (
-          <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Unit Price</h3>
+          <div className="mb-6 p-6 bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
+            <h3 className="text-xl font-bold text-white mb-4">Add New Unit Price</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unit Price *</label>
+                <label className="block text-sm font-medium text-blue-200 mb-2">Unit Price *</label>
                 <input
                   type="number"
                   step="0.0001"
                   placeholder="0.0000"
                   value={newPrice.unit_price}
                   onChange={(e) => setNewPrice({...newPrice, unit_price: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+                <label className="block text-sm font-medium text-blue-200 mb-2">Date *</label>
                 <input
                   type="date"
                   value={newPrice.price_date}
                   onChange={(e) => setNewPrice({...newPrice, price_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                <label className="block text-sm font-medium text-blue-200 mb-2">Notes</label>
                 <input
                   type="text"
                   placeholder="Optional notes"
                   value={newPrice.notes}
                   onChange={(e) => setNewPrice({...newPrice, notes: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 />
               </div>
             </div>
@@ -299,7 +299,7 @@ const AdminUnitPriceNew = () => {
               <button
                 onClick={addUnitPrice}
                 disabled={!newPrice.unit_price || !newPrice.price_date}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition-colors"
               >
                 <CheckCircle className="w-4 h-4 mr-2 inline" />
                 Add Price
@@ -315,22 +315,22 @@ const AdminUnitPriceNew = () => {
         )}
 
         {/* Price History Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Price History</h3>
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden border border-white/20">
+          <div className="px-6 py-4 bg-white/5 border-b border-white/10">
+            <h3 className="text-lg font-semibold text-white">Price History</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-white/5">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">Unit Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">Change</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">Notes</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-blue-200 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-white/10">
                 {unitPrices.map((price, index) => {
                   const previousPrice = unitPrices[index + 1];
                   const change = previousPrice ? 
@@ -383,13 +383,13 @@ const UnitPriceRow = ({
 
   if (isEditing) {
     return (
-      <tr className="bg-blue-50">
+      <tr className="bg-white/5">
         <td className="px-6 py-4">
           <input
             type="date"
             value={editData.price_date}
             onChange={(e) => setEditData({...editData, price_date: e.target.value})}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded text-sm text-white"
           />
         </td>
         <td className="px-6 py-4">
@@ -398,18 +398,18 @@ const UnitPriceRow = ({
             step="0.0001"
             value={editData.unit_price}
             onChange={(e) => setEditData({...editData, unit_price: e.target.value})}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded text-sm text-white"
           />
         </td>
         <td className="px-6 py-4">
-          <span className="text-gray-500">Calculated</span>
+          <span className="text-blue-200">Calculated</span>
         </td>
         <td className="px-6 py-4">
           <input
             type="text"
             value={editData.notes}
             onChange={(e) => setEditData({...editData, notes: e.target.value})}
-            className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+            className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded text-sm text-white placeholder-gray-400"
             placeholder="Optional notes"
           />
         </td>
@@ -417,13 +417,13 @@ const UnitPriceRow = ({
           <div className="flex space-x-2">
             <button
               onClick={handleSave}
-              className="text-green-600 hover:text-green-900"
+              className="text-green-400 hover:text-green-300"
             >
               <Save className="w-4 h-4" />
             </button>
             <button
               onClick={onCancel}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-400 hover:text-gray-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -434,36 +434,36 @@ const UnitPriceRow = ({
   }
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+    <tr className="hover:bg-white/5">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
         {formatDate(price.price_date)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-white">
         {formatCurrency(price.unit_price)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm">
         {change ? (
-          <span className={`${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <span className={`${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {change >= 0 ? '+' : ''}{change.toFixed(2)}%
           </span>
         ) : (
           <span className="text-gray-400">-</span>
         )}
       </td>
-      <td className="px-6 py-4 text-sm text-gray-600">
+      <td className="px-6 py-4 text-sm text-blue-200">
         {price.notes || '-'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
         <div className="flex space-x-2">
           <button
             onClick={() => onEdit(price.id)}
-            className="text-blue-600 hover:text-blue-900"
+            className="text-blue-400 hover:text-blue-300"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(price.id)}
-            className="text-red-600 hover:text-red-900"
+            className="text-red-400 hover:text-red-300"
           >
             <X className="w-4 h-4" />
           </button>
