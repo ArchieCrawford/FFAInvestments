@@ -6,6 +6,11 @@ import fs from 'fs'
 // HTTPS configuration for Schwab API development
 // Schwab requires HTTPS for OAuth callbacks
 function getHttpsConfig() {
+  // Only use HTTPS in development, not in production/Vercel
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
+    return false;
+  }
+  
   try {
     // Try to find mkcert certificates first
     const mkcertKey = path.resolve(__dirname, 'localhost+2-key.pem')
@@ -41,6 +46,27 @@ function getHttpsConfig() {
   }
 }
 
+const charlesDisplayPath = path.resolve(__dirname, 'charles_schwab_display')
+const hasCharlesDisplayAssets = fs.existsSync(charlesDisplayPath)
+
+const buildConfig = {
+  target: 'es2022', // Support top-level await
+  sourcemap: false, // Disable sourcemaps in production for performance
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        vendor: ['react', 'react-dom'],
+        supabase: ['@supabase/supabase-js'],
+        utils: ['axios', 'date-fns']
+      }
+    }
+  }
+}
+
+if (hasCharlesDisplayAssets) {
+  buildConfig.rollupOptions.external = (id = '') => id.includes('charles_schwab_display')
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -61,7 +87,7 @@ export default defineConfig({
       }
     },
     // Exclude the charles_schwab_display folder from optimization
-    exclude: ['charles_schwab_display']
+    exclude: hasCharlesDisplayAssets ? ['charles_schwab_display'] : []
   },
   server: {
     port: 3000,
@@ -71,13 +97,6 @@ export default defineConfig({
     // Open browser automatically (useful for HTTPS certificate acceptance)
     open: true
   },
-  // Exclude charles_schwab_display folder from build
-  build: {
-    target: 'es2022', // Support top-level await
-    rollupOptions: {
-      external: (id) => {
-        return id.includes('charles_schwab_display')
-      }
-    }
-  }
+  // Exclude charles_schwab_display folder from build when it exists locally
+  build: buildConfig
 })

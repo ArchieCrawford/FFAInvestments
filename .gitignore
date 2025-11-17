@@ -96,3 +96,4 @@ reset-*.js
 
 # Directory structure exports
 directory-structure.txt
+.vercel
