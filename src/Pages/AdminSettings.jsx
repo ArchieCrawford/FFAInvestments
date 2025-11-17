@@ -398,7 +398,7 @@ const AdminSettings = () => {
             <button type="submit" className="submit-btn" disabled={saving}>
               {saving ? (
                 <>
-                  <div className="btn-spinner"></div>
+                  <div className="spinner-inline"></div>
                   <span>Saving Changes...</span>
                 </>
               ) : (

@@ -4,6 +4,15 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, User, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
 import './ModernLogin.css'
 
+const BackgroundAnimation = () => (
+  <div className="app-bg-animation">
+    <div className="app-bg-shape app-bg-shape-1"></div>
+    <div className="app-bg-shape app-bg-shape-2"></div>
+    <div className="app-bg-shape app-bg-shape-3"></div>
+    <div className="app-bg-shape app-bg-shape-4"></div>
+  </div>
+)
+
 const ModernLogin = () => {
   const { user, signIn, signUp, loading, error, clearError } = useAuth()
   const [mode, setMode] = useState('signin')
@@ -141,24 +150,21 @@ const ModernLogin = () => {
 
   if (loading) {
     return (
-      <div className="modern-login-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading...</p>
+      <div className="app-shell modern-login">
+        <BackgroundAnimation />
+        <div className="fullscreen-center">
+          <div className="loading-spinner">
+            <div className="spinner-page"></div>
+            <p>Loading...</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="modern-login-container">
-      {/* Background Animation */}
-      <div className="bg-animation">
-        <div className="bg-shape bg-shape-1"></div>
-        <div className="bg-shape bg-shape-2"></div>
-        <div className="bg-shape bg-shape-3"></div>
-        <div className="bg-shape bg-shape-4"></div>
-      </div>
+    <div className="app-shell modern-login">
+      <BackgroundAnimation />
 
       {/* Left Side - Branding */}
       <div className="login-branding">
@@ -208,7 +214,7 @@ const ModernLogin = () => {
                 <button
                   key={index}
                   type="button"
-                  className={`demo-btn bg-gradient-to-r ${user.color}`}
+                  className={`btn btn-pill demo-btn bg-gradient-to-r ${user.color}`}
                   onClick={() => fillDemoLogin(user.email)}
                 >
                   <User size={16} />
@@ -301,12 +307,12 @@ const ModernLogin = () => {
 
             <button
               type="submit"
-              className={`submit-btn ${isSubmitting ? 'loading' : ''}`}
+              className={`btn btn-primary btn-pill submit-btn ${isSubmitting ? 'loading' : ''}`}
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <div className="btn-spinner"></div>
+                  <div className="spinner-inline"></div>
                   <span>{mode === 'signup' ? 'Creating Account...' : 'Signing In...'}</span>
                 </>
               ) : (

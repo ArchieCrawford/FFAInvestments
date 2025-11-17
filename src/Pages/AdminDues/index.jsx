@@ -69,7 +69,7 @@ const DuesTracker = () => {
     return (
       <div className="dues-tracker">
         <div className="loading-state">
-          <div className="loading-spinner"></div>
+          <div className="spinner-page"></div>
           <p>Loading dues data...</p>
         </div>
       </div>
@@ -83,7 +83,9 @@ const DuesTracker = () => {
           <AlertCircle size={48} />
           <h3>Error Loading Dues Data</h3>
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
+          <button className="btn btn-primary btn-pill" onClick={() => window.location.reload()}>
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -126,17 +128,17 @@ const DuesTracker = () => {
         </div>
         <div className="export-controls">
           <button 
-            className="btn-secondary"
+            className="btn btn-outline btn-pill"
             onClick={() => window.location.reload()}
             title="Refresh Data"
           >
             🔄 Refresh
           </button>
-          <button className="btn-secondary">
+          <button className="btn btn-outline btn-pill">
             <Download size={16} />
             Export JSON
           </button>
-          <button className="btn-secondary">
+          <button className="btn btn-outline btn-pill">
             <Download size={16} />
             Export Excel
           </button>

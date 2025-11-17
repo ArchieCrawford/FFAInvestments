@@ -52,6 +52,15 @@ const memberNav = [
   },
 ];
 
+const BackgroundAnimation = () => (
+  <div className="app-bg-animation">
+    <div className="app-bg-shape app-bg-shape-1"></div>
+    <div className="app-bg-shape app-bg-shape-2"></div>
+    <div className="app-bg-shape app-bg-shape-3"></div>
+    <div className="app-bg-shape app-bg-shape-4"></div>
+  </div>
+);
+
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -98,94 +107,98 @@ export default function Layout({ children, currentPageName }) {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh", backgroundColor: "#f7f9fc" }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <div className="app-shell">
+        <BackgroundAnimation />
+        <div className="fullscreen-center">
+          <div className="spinner-page" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="d-flex">
-      {/* Sidebar */}
-      <div className="sidebar p-3">
-        <h5 className="mb-4">
-          <i className="fas fa-dollar-sign me-2 text-primary"></i>
-          FFA Investments
-          <small className="d-block text-muted">Investment Club Portal</small>
-        </h5>
-
-        <nav className="nav flex-column">
-          {navigationItems.map((item) => (
-            <div key={item.title}>
-              {item.submenu ? (
-                // Dropdown menu item
-                <>
-                  <button
-                    className={`nav-link btn btn-link text-start w-100 d-flex justify-content-between align-items-center ${
-                      isSubmenuActive(item.submenu) ? 'active' : ''
-                    }`}
-                    onClick={() => toggleSubmenu(item.title)}
-                    style={{ border: 'none', textDecoration: 'none' }}
-                  >
-                    <span>
-                      <i className={`${item.icon} me-2`}></i>
-                      {item.title}
-                    </span>
-                    <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'} ms-auto`}></i>
-                  </button>
-                  {expandedMenus[item.title] && (
-                    <div className="submenu ms-3">
-                      {item.submenu.map((subItem) => (
-                        <Link
-                          key={subItem.title}
-                          to={subItem.url}
-                          className={`nav-link py-2 ${location.pathname === subItem.url ? 'active' : ''}`}
-                        >
-                          <i className={`${subItem.icon} me-2`}></i>
-                          {subItem.title}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                // Regular menu item
-                <Link
-                  to={item.url}
-                  className={`nav-link ${location.pathname === item.url ? 'active' : ''}`}
-                >
-                  <i className={`${item.icon} me-2`}></i>
-                  {item.title}
-                </Link>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <div className="mt-auto pt-5">
-          <div className="d-flex align-items-center mb-2">
-            <div className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style={{ width: "40px", height: "40px" }}>
-              {profile?.display_name?.split(' ').map(n => n[0]).join('') || user?.email?.split('@')[0]?.substring(0, 2).toUpperCase() || 'AC'}
+    <div className="app-shell">
+      <BackgroundAnimation />
+      <div className="app-main">
+        <aside className="app-sidebar">
+          <div className="app-brand">
+            <div className="app-brand-icon">
+              <i className="fas fa-dollar-sign"></i>
             </div>
             <div>
-              <div>{profile?.display_name || user?.email?.split('@')[0] || 'User'}</div>
-              <small className="text-muted">
-                {user?.email || 'user@example.com'} 
-                {profile?.role && <span className="badge bg-primary ms-1">{profile.role}</span>}
-              </small>
+              <p className="app-brand-title">FFA Investments</p>
+              <p className="app-brand-subtitle">Investment Club Portal</p>
             </div>
           </div>
-          <button className="btn btn-outline-danger w-100" onClick={handleLogout}>
-            Sign Out
-          </button>
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="main-content p-4 flex-grow-1">
-        {children}
+          <nav className="app-nav">
+            {navigationItems.map((item) => (
+              <div key={item.title} className="app-nav-item">
+                {item.submenu ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`app-nav-link has-children ${isSubmenuActive(item.submenu) ? 'active' : ''}`}
+                      onClick={() => toggleSubmenu(item.title)}
+                    >
+                      <span>
+                        <i className={`${item.icon} me-2`}></i>
+                        {item.title}
+                      </span>
+                      <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'}`}></i>
+                    </button>
+                    {expandedMenus[item.title] && (
+                      <div className="app-submenu">
+                        {item.submenu.map((subItem) => (
+                          <Link
+                            key={subItem.title}
+                            to={subItem.url}
+                            className={`app-nav-link sub ${location.pathname === subItem.url ? 'active' : ''}`}
+                          >
+                            <i className={`${subItem.icon} me-2`}></i>
+                            {subItem.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    to={item.url}
+                    className={`app-nav-link ${location.pathname === item.url ? 'active' : ''}`}
+                  >
+                    <i className={`${item.icon} me-2`}></i>
+                    {item.title}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </nav>
+
+          <div className="app-user-panel">
+            <div className="app-user-card">
+              <div className="app-user-avatar">
+                {profile?.display_name?.split(' ').map(n => n[0]).join('') ||
+                  user?.email?.split('@')[0]?.substring(0, 2).toUpperCase() ||
+                  'AC'}
+              </div>
+              <div>
+                <p className="app-user-name">{profile?.display_name || user?.email?.split('@')[0] || 'User'}</p>
+                <p className="app-user-email">
+                  {user?.email || 'user@example.com'}
+                  {profile?.role && <span className="app-role-badge">{profile.role}</span>}
+                </p>
+              </div>
+            </div>
+            <button className="btn btn-danger btn-pill app-signout" onClick={handleLogout}>
+              Sign Out
+            </button>
+          </div>
+        </aside>
+
+        <main className="app-content">
+          {children}
+        </main>
       </div>
     </div>
   );
