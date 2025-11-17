@@ -60,7 +60,7 @@ node import-data.js
 ```
 
 This will:
-- Parse your `ffa_timeline.csv` file
+- Parse your `data/ffa_timeline.csv` file
 - Import all member timeline data
 - Create member accounts
 - Set up initial unit prices

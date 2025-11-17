@@ -21,7 +21,7 @@ A comprehensive React-based investment club management application with Charles 
 - Secure token storage and management
 
 ### 📊 **Member Dues Tracking**
-- **Real Excel Integration**: Loads actual member data from `member_dues_20251116_150358.xlsx`
+- **Real Excel Integration**: Loads actual member data from `data/member_dues_20251116_150358.xlsx`
 - **21 Active Members**: Displays real payment status, amounts owed, and contributions
 - **Status Tracking**: Credit Balance, Owes Money, Current status indicators
 - **Monthly History**: Detailed payment tracking with collapsible views
@@ -104,7 +104,7 @@ VITE_APP_URL=https://localhost:3003
 
 ## 📊 Member Data Integration
 
-The application integrates with your Excel file (`member_dues_20251116_150358.xlsx`) containing:
+The application integrates with your Excel file (`data/member_dues_20251116_150358.xlsx`) containing:
 
 - **21 Active Members** with real names and financial data
 - **Payment Status**: Credit Balance, Owes Money, Current

@@ -168,7 +168,7 @@ export default function CSVImporter({ onImportComplete }) {
       
       <div className="alert alert-info">
         <i className="fas fa-info-circle me-2"></i>
-        <strong>Ready to Import:</strong> Select your <code>ffa_timeline.csv</code> file to automatically create member accounts with their portfolio history.
+        <strong>Ready to Import:</strong> Select your <code>data/ffa_timeline.csv</code> file to automatically create member accounts with their portfolio history.
       </div>
       
       <div className="mb-3">

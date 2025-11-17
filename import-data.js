@@ -8,7 +8,7 @@ async function importTimelineData() {
     console.log('Starting FFA timeline data import...')
     
     // Read the CSV file
-    const csvContent = readFileSync('./ffa_timeline.csv', 'utf-8')
+    const csvContent = readFileSync('./data/ffa_timeline.csv', 'utf-8')
     
     // Parse CSV
     const parseResult = Papa.parse(csvContent, {

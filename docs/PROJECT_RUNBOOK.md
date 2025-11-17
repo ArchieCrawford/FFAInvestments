@@ -92,7 +92,10 @@ FFAinvestments/
 ├── import-data.js               # Data import utility
 ├── 
 ├── # Data Files
-├── ffa_timeline.csv             # Sample timeline data
+├── data/                        # Spreadsheets and data files
+│   ├── ffa_timeline.csv         # Sample timeline data
+│   ├── example.xlsx             # Example spreadsheet
+│   └── member_dues_20251116_150358.xlsx  # Member dues data
 ├── directory-structure.txt       # Complete file listing
 ├── 
 ├── src/

@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 
-const EXCEL_FILE_PATH = './member_dues_20251116_150358.xlsx';
+const EXCEL_FILE_PATH = './data/member_dues_20251116_150358.xlsx';
 
 export async function readMemberDuesFromExcel() {
   try {
@@ -100,7 +100,7 @@ export async function readMemberDuesFromExcel() {
       },
       months_processed: ['Nov 2025', 'Oct 2025', 'Sep 2025', 'Aug 2025', 'Jul 2025', 'Jun 2025'],
       processing_date: new Date().toISOString(),
-      data_source: 'Excel file: member_dues_20251116_150358.xlsx'
+      data_source: 'Excel file: data/member_dues_20251116_150358.xlsx'
     };
     
   } catch (error) {

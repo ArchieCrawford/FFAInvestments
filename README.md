@@ -1,264 +1,524 @@
-# 💰 FFA Investments Platform# FFA Investments - Complete Investment Club Management System
+# 💰 FFA Investments Platform# 💰 FFA Investments Platform# FFA Investments - Complete Investment Club Management System
 
 
 
-A modern investment club management platform with beautiful dark theme UI, real-time data synchronization, and comprehensive member portfolio tracking.![FFA Investments](https://img.shields.io/badge/Status-Production%20Ready-green)
+A modern investment club management platform with beautiful dark theme UI, real-time data synchronization, and comprehensive member portfolio tracking.
 
-![React](https://img.shields.io/badge/React-18.2.0-blue)
+
+
+![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)A modern investment club management platform with beautiful dark theme UI, real-time data synchronization, and comprehensive member portfolio tracking.![FFA Investments](https://img.shields.io/badge/Status-Production%20Ready-green)
+
+![Status](https://img.shields.io/badge/status-production-green.svg)
+
+![React](https://img.shields.io/badge/react-18.2.0-blue.svg)![React](https://img.shields.io/badge/React-18.2.0-blue)
+
+![Supabase](https://img.shields.io/badge/supabase-enabled-green.svg)
 
 ![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)![Vite](https://img.shields.io/badge/Vite-4.4.5-purple)
 
+## 🚀 Live Application
+
 ![Status](https://img.shields.io/badge/status-production-green.svg)![Supabase](https://img.shields.io/badge/Database-Supabase-green)
+
+**Production URL**: [https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app](https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app)
 
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
 
+## ✨ Features
+
 ![Supabase](https://img.shields.io/badge/supabase-enabled-green.svg)A comprehensive React-based investment club management application with Charles Schwab integration, educational resources, and member dues tracking.
-
-
-
-## 🚀 Live Application## 🚀 Live Features
-
-
-
-**Production URL**: [https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app](https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app)### 🔐 **Authentication & Role Management**
-
-- Secure Supabase authentication
-
-## ✨ Features- Admin and member role-based access
-
-- Profile management with display names
 
 ### 🎨 **Beautiful UI/UX**
 
-- Modern dark gradient theme with glass morphism effects### 💰 **Charles Schwab Integration**
+- Modern dark gradient theme with glass morphism effects
 
-- Mobile-responsive design across all devices- Full OAuth 2.0 implementation with automatic token refresh
+- Mobile-responsive design across all devices
 
-- Professional styling with smooth animations- Account insights and portfolio analytics  
+- Professional styling with smooth animations## 🚀 Live Application## 🚀 Live Features
 
-- Hipster-inspired login with bright accent colors- Raw data viewer for transactions and positions
+- Hipster-inspired login with bright accent colors
 
-- Secure token storage and management
+
 
 ### 👥 **Member Management**
 
-- Complete member profiles with investment portfolio data### 📊 **Member Dues Tracking**
+- Complete member profiles with investment portfolio data**Production URL**: [https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app](https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app)### 🔐 **Authentication & Role Management**
 
-- Real-time synchronization between admin and member views- **Real Excel Integration**: Loads actual member data from `member_dues_20251116_150358.xlsx`
+- Real-time synchronization between admin and member views
 
-- Email invitation system for new members- **21 Active Members**: Displays real payment status, amounts owed, and contributions
+- Email invitation system for new members- Secure Supabase authentication
 
-- Role-based access control (admin/member)- **Status Tracking**: Credit Balance, Owes Money, Current status indicators
+- Role-based access control (admin/member)
 
-- **Monthly History**: Detailed payment tracking with collapsible views
+## ✨ Features- Admin and member role-based access
 
-### 📊 **Investment Tracking**- **Export Capabilities**: JSON and Excel export functionality
+### 📊 **Investment Tracking**
 
-- Individual portfolio dashboards with current values
+- Individual portfolio dashboards with current values- Profile management with display names
 
-- Unit price management with historical tracking### 🎓 **Educational Resources**
+- Unit price management with historical tracking
 
-- Performance calculations and trend analysis- **Beardstown Ladies Guide**: Interactive educational content from the famous investment book
+- Performance calculations and trend analysis### 🎨 **Beautiful UI/UX**
 
-- Charles Schwab API integration ready- **Progress-Saving Checklist**: 17-point stock-buying checklist with local storage
+- Charles Schwab API integration ready
 
-- **Modern Applications**: Real-world investment strategies for today's markets
+- Modern dark gradient theme with glass morphism effects### 💰 **Charles Schwab Integration**
 
 ### 🛠 **Admin Dashboard**
 
-- User management with role assignments### 🏢 **Admin Dashboard**
+- User management with role assignments- Mobile-responsive design across all devices- Full OAuth 2.0 implementation with automatic token refresh
 
-- Member account oversight and management- Complete user management system
+- Member account oversight and management
 
-- Unit price updates with change calculations- Financial data import/export tools
+- Unit price updates with change calculations- Professional styling with smooth animations- Account insights and portfolio analytics  
 
-- Dues tracking and payment management- Unit price tracking and management
+- Dues tracking and payment management
 
-- Data import tools for Excel/CSV files- Portfolio builder and analytics
+- Data import tools for Excel/CSV files- Hipster-inspired login with bright accent colors- Raw data viewer for transactions and positions
 
 
 
-### 🔐 **Security & Authentication**## 📁 Project Structure
+### 📁 **Data Management**- Secure token storage and management
+
+- Excel integration with files in `/data` folder
+
+- CSV processing for timeline and transaction data### 👥 **Member Management**
+
+- Real Excel Integration: Loads actual member data from `data/member_dues_20251116_150358.xlsx`
+
+- Automated data import and validation- Complete member profiles with investment portfolio data### 📊 **Member Dues Tracking**
+
+
+
+### 🔐 **Security & Authentication**- Real-time synchronization between admin and member views- **Real Excel Integration**: Loads actual member data from `data/member_dues_20251116_150358.xlsx`
 
 - Supabase authentication with JWT tokens
 
-- Row Level Security (RLS) policies```
+- Row Level Security (RLS) policies- Email invitation system for new members- **21 Active Members**: Displays real payment status, amounts owed, and contributions
 
-- Protected routes and secure API callssrc/
+- Protected routes and secure API calls
 
-- Environment variable protection├── Pages/
+- Environment variable protection- Role-based access control (admin/member)- **Status Tracking**: Credit Balance, Owes Money, Current status indicators
 
-│   ├── AdminDues/           # Member dues management
 
-## 🏗 **Technology Stack**│   ├── BeardstownLadies/    # Educational content
 
-│   ├── AdminSchwab.jsx      # Schwab integration
+## 🏗 **Technology Stack**- **Monthly History**: Detailed payment tracking with collapsible views
 
-### **Frontend**│   └── [Other Pages]/
 
-- **React 18.2.0** - Modern React with hooks and context├── components/              # Reusable UI components
 
-- **Vite** - Fast build tool with ES2022 support├── contexts/               # React context providers
+### **Frontend**### 📊 **Investment Tracking**- **Export Capabilities**: JSON and Excel export functionality
 
-- **React Router** - Client-side routing├── services/               # API services (Schwab, etc.)
+- **React 18.2.0** - Modern React with hooks and context
 
-- **Tailwind CSS** - Utility-first styling framework├── utils/                  # Utility functions
+- **Vite** - Fast build tool with ES2022 support- Individual portfolio dashboards with current values
 
-- **Lucide React** - Beautiful icon library│   ├── memberDuesExcel.js  # Excel data integration
+- **React Router** - Client-side routing
 
-│   └── excelReader.js      # Excel file parser
+- **Tailwind CSS** - Utility-first styling framework- Unit price management with historical tracking### 🎓 **Educational Resources**
 
-### **Backend**└── lib/                    # External library configs
+- **Lucide React** - Beautiful icon library
 
-- **Supabase** - PostgreSQL database with real-time subscriptions```
+- Performance calculations and trend analysis- **Beardstown Ladies Guide**: Interactive educational content from the famous investment book
+
+### **Backend**
+
+- **Supabase** - PostgreSQL database with real-time subscriptions- Charles Schwab API integration ready- **Progress-Saving Checklist**: 17-point stock-buying checklist with local storage
 
 - **Supabase Auth** - Authentication and user management
 
-- **Row Level Security** - Database-level security policies## 🛠 Quick Start
+- **Row Level Security** - Database-level security policies- **Modern Applications**: Real-world investment strategies for today's markets
 
 
 
-### **Deployment**### Prerequisites
+### **Data Sources**### 🛠 **Admin Dashboard**
 
-- **Vercel** - Production hosting with automatic deployments- Node.js 18+
+- **Excel Integration** - Member dues and portfolio data from `/data` folder
 
-- **GitHub** - Source code management and CI/CD- Supabase account
+- **CSV Processing** - Timeline and transaction data- User management with role assignments### 🏢 **Admin Dashboard**
 
-- **Environment Variables** - Secure configuration management- Charles Schwab Developer Account (optional)
+- **Real-time Sync** - Live data updates across admin/member views
 
-- Excel file with member data
+- Member account oversight and management- Complete user management system
 
-## 🚀 **Quick Start**
+### **Deployment**
 
-### Installation
+- **Vercel** - Production hosting with automatic deployments- Unit price updates with change calculations- Financial data import/export tools
 
-### **Prerequisites**
+- **GitHub** - Source code management and CI/CD
 
-- Node.js 18+ installed```bash
+- **Environment Variables** - Secure configuration management- Dues tracking and payment management- Unit price tracking and management
 
-- Supabase account# Clone the repository
 
-- Vercel account (for deployment)git clone https://github.com/ArchieCrawford/FFAInvestments.git
 
-cd FFAInvestments
+## 📁 **Project Structure**- Data import tools for Excel/CSV files- Portfolio builder and analytics
 
-### **Local Development**
 
-```bash# Install dependencies
-
-# Clone the repositorynpm install
-
-git clone https://github.com/ArchieCrawford/FFAInvestments.git
-
-cd FFAinvestments# Generate HTTPS certificates (required for Schwab OAuth)
-
-openssl req -x509 -newkey rsa:4096 -keyout localhost-key.pem -out localhost.pem -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
-
-# Install dependencies
-
-npm install# Setup environment variables
-
-cp .env.example .env
-
-# Set up environment variables# Edit .env with your Supabase and Schwab credentials
-
-cp .env.example .env
-
-# Edit .env with your Supabase credentials# Start development server
-
-npm run dev
-
-# Start development server```
-
-npm run dev
-
-```### Environment Variables
-
-
-
-### **Environment Variables**```env
-
-```bash# Supabase Configuration
-
-VITE_SUPABASE_URL=your_supabase_project_urlVITE_SUPABASE_URL=your-supabase-url
-
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_keyVITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-
-VITE_SCHWAB_CLIENT_ID=your_schwab_client_idSUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-VITE_SCHWAB_REDIRECT_URI=your_redirect_uri
-
-```# Charles Schwab API Configuration
-
-VITE_SCHWAB_CLIENT_ID=your-schwab-client-id
-
-## 📚 **Documentation**VITE_SCHWAB_CLIENT_SECRET=your-schwab-client-secret
-
-VITE_SCHWAB_REDIRECT_URI=https://localhost:3003/admin/schwab
-
-All comprehensive documentation is located in the **`/docs`** folder:
-
-# Application Configuration
-
-### **🔑 Key Documents**VITE_APP_URL=https://localhost:3003
-
-- **[📋 Complete Setup Guide](./docs/PROJECT_RECREATION_GUIDE_2025-11-17.md)** - Step-by-step system recreation```
-
-- **[⚙️ Operations Manual](./docs/OPERATIONS_RUNBOOK_2025-11-17.md)** - Daily operations and maintenance
-
-- **[📖 Development History](./docs/change-log.md)** - Complete feature evolution timeline## 📊 Member Data Integration
-
-- **[🗂 Documentation Index](./docs/README-DOCS.md)** - Full documentation overview
-
-The application integrates with your Excel file (`member_dues_20251116_150358.xlsx`) containing:
-
-### **📁 Documentation Categories**
-
-- **Getting Started**: Setup instructions and project overview- **21 Active Members** with real names and financial data
-
-- **Development**: Technical implementation and history- **Payment Status**: Credit Balance, Owes Money, Current
-
-- **Deployment**: Production deployment guides- **Amount Tracking**: Latest amounts owed, total payments, contributions
-
-- **Operations**: Daily maintenance and troubleshooting- **Historical Data**: Monthly payment tracking and trends
-
-- **User Management**: Member and admin procedures
-
-### Sample Member Data Structure
-
-## 🎯 **Key Capabilities**```javascript
-
-{
-
-### **For Investment Club Admins**  "Member Name": "Crawford, Archie",
-
-- ✅ Manage member accounts and portfolios  "Payment Status": "Current", 
-
-- ✅ Track unit prices and historical performance  "Latest Amount Owed": 0,
-
-- ✅ Handle member invitations and role assignments  "Total Payments": 12000,
-
-- ✅ Import data from Excel files and external sources  "Total Contribution": 35000
-
-- ✅ Monitor club performance with comprehensive dashboards}
 
 ```
 
+FFAinvestments/
+
+├── README.md                    # Project overview### 🔐 **Security & Authentication**## 📁 Project Structure
+
+├── data/                        # 📊 Spreadsheets and data files
+
+│   ├── member_dues_20251116_150358.xlsx  # Member investment data- Supabase authentication with JWT tokens
+
+│   ├── ffa_timeline.csv         # Transaction timeline
+
+│   ├── example.xlsx             # Example data format- Row Level Security (RLS) policies```
+
+│   └── README.md                # Data folder documentation
+
+├── docs/                        # 📚 All documentation- Protected routes and secure API callssrc/
+
+│   ├── README-DOCS.md           # Documentation index
+
+│   ├── PROJECT_RECREATION_GUIDE_2025-11-17.md- Environment variable protection├── Pages/
+
+│   ├── OPERATIONS_RUNBOOK_2025-11-17.md
+
+│   └── [20+ other documentation files]│   ├── AdminDues/           # Member dues management
+
+├── src/                         # Application source code
+
+│   ├── components/              # React components## 🏗 **Technology Stack**│   ├── BeardstownLadies/    # Educational content
+
+│   ├── Pages/                   # Page components
+
+│   ├── contexts/                # React contexts│   ├── AdminSchwab.jsx      # Schwab integration
+
+│   ├── utils/                   # Utility functions
+
+│   └── lib/                     # External library configs### **Frontend**│   └── [Other Pages]/
+
+├── database/                    # Database scripts and schema
+
+└── [configuration files]- **React 18.2.0** - Modern React with hooks and context├── components/              # Reusable UI components
+
+```
+
+- **Vite** - Fast build tool with ES2022 support├── contexts/               # React context providers
+
+## 🚀 **Quick Start**
+
+- **React Router** - Client-side routing├── services/               # API services (Schwab, etc.)
+
+### **Prerequisites**
+
+- Node.js 18+ installed- **Tailwind CSS** - Utility-first styling framework├── utils/                  # Utility functions
+
+- Supabase account
+
+- Vercel account (for deployment)- **Lucide React** - Beautiful icon library│   ├── memberDuesExcel.js  # Excel data integration
+
+
+
+### **Local Development**│   └── excelReader.js      # Excel file parser
+
+```bash
+
+# Clone the repository### **Backend**└── lib/                    # External library configs
+
+git clone https://github.com/ArchieCrawford/FFAInvestments.git
+
+cd FFAinvestments- **Supabase** - PostgreSQL database with real-time subscriptions```
+
+
+
+# Install dependencies- **Supabase Auth** - Authentication and user management
+
+npm install
+
+- **Row Level Security** - Database-level security policies## 🛠 Quick Start
+
+# Set up environment variables
+
+cp .env.example .env
+
+# Edit .env with your Supabase credentials
+
+### **Deployment**### Prerequisites
+
+# Start development server
+
+npm run dev- **Vercel** - Production hosting with automatic deployments- Node.js 18+
+
+```
+
+- **GitHub** - Source code management and CI/CD- Supabase account
+
+### **Environment Variables**
+
+```bash- **Environment Variables** - Secure configuration management- Charles Schwab Developer Account (optional)
+
+VITE_SUPABASE_URL=your_supabase_project_url
+
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key- Excel file with member data
+
+VITE_SCHWAB_CLIENT_ID=your_schwab_client_id
+
+VITE_SCHWAB_REDIRECT_URI=your_redirect_uri## 🚀 **Quick Start**
+
+```
+
+### Installation
+
+## 📚 **Documentation**
+
+### **Prerequisites**
+
+All comprehensive documentation is located in the **`/docs`** folder:
+
+- Node.js 18+ installed```bash
+
+### **🔑 Key Documents**
+
+- **[📋 Complete Setup Guide](./docs/PROJECT_RECREATION_GUIDE_2025-11-17.md)** - Step-by-step system recreation- Supabase account# Clone the repository
+
+- **[⚙️ Operations Manual](./docs/OPERATIONS_RUNBOOK_2025-11-17.md)** - Daily operations and maintenance
+
+- **[📖 Development History](./docs/change-log.md)** - Complete feature evolution timeline- Vercel account (for deployment)git clone https://github.com/ArchieCrawford/FFAInvestments.git
+
+- **[🗂 Documentation Index](./docs/README-DOCS.md)** - Full documentation overview
+
+cd FFAInvestments
+
+### **📁 Documentation Categories**
+
+- **Getting Started**: Setup instructions and project overview### **Local Development**
+
+- **Development**: Technical implementation and history
+
+- **Deployment**: Production deployment guides```bash# Install dependencies
+
+- **Operations**: Daily maintenance and troubleshooting
+
+- **User Management**: Member and admin procedures# Clone the repositorynpm install
+
+
+
+## 📊 **Data Integration**git clone https://github.com/ArchieCrawford/FFAInvestments.git
+
+
+
+The application integrates with your Excel file (`data/member_dues_20251116_150358.xlsx`) containing:cd FFAinvestments# Generate HTTPS certificates (required for Schwab OAuth)
+
+- **Member Information**: Names, emails, contact details
+
+- **Portfolio Data**: Current values, unit holdingsopenssl req -x509 -newkey rsa:4096 -keyout localhost-key.pem -out localhost.pem -days 365 -nodes -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+
+- **Investment History**: Transaction timeline and changes
+
+- **Performance Metrics**: Calculated returns and analytics# Install dependencies
+
+
+
+### **Data Processing**npm install# Setup environment variables
+
+- Automated Excel file parsing
+
+- CSV timeline processingcp .env.example .env
+
+- Real-time data synchronization
+
+- Portfolio calculations and updates# Set up environment variables# Edit .env with your Supabase and Schwab credentials
+
+
+
+## 🎯 **Key Capabilities**cp .env.example .env
+
+
+
+### **For Investment Club Admins**# Edit .env with your Supabase credentials# Start development server
+
+- ✅ Manage member accounts and portfolios
+
+- ✅ Track unit prices and historical performancenpm run dev
+
+- ✅ Handle member invitations and role assignments
+
+- ✅ Import data from Excel files and external sources# Start development server```
+
+- ✅ Monitor club performance with comprehensive dashboards
+
+npm run dev
+
 ### **For Club Members**
 
-- ✅ View personal investment portfolio in real-time## 🔗 Navigation Structure
+- ✅ View personal investment portfolio in real-time```### Environment Variables
 
 - ✅ Track performance and unit value changes
 
-- ✅ Access educational content and resources### Admin Users
+- ✅ Access educational content and resources
+
+- ✅ Update personal information and preferences
+
+- ✅ View contribution history and account details### **Environment Variables**```env
+
+
+
+### **For Developers**```bash# Supabase Configuration
+
+- ✅ Complete codebase with modern React patterns
+
+- ✅ Comprehensive documentation for setup and maintenanceVITE_SUPABASE_URL=your_supabase_project_urlVITE_SUPABASE_URL=your-supabase-url
+
+- ✅ Modular component architecture for easy extension
+
+- ✅ Secure authentication and database integrationVITE_SUPABASE_ANON_KEY=your_supabase_anon_keyVITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+- ✅ Production-ready deployment pipeline
+
+VITE_SCHWAB_CLIENT_ID=your_schwab_client_idSUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+## 🔧 **Development Commands**
+
+VITE_SCHWAB_REDIRECT_URI=your_redirect_uri
+
+```bash
+
+# Development```# Charles Schwab API Configuration
+
+npm run dev          # Start development server
+
+npm run build        # Build for productionVITE_SCHWAB_CLIENT_ID=your-schwab-client-id
+
+npm run preview      # Preview production build
+
+## 📚 **Documentation**VITE_SCHWAB_CLIENT_SECRET=your-schwab-client-secret
+
+# Deployment
+
+npm run deploy       # Build and deploy to VercelVITE_SCHWAB_REDIRECT_URI=https://localhost:3003/admin/schwab
+
+vercel --prod        # Deploy to production
+
+All comprehensive documentation is located in the **`/docs`** folder:
+
+# Database
+
+npm run db:setup     # Set up database schema# Application Configuration
+
+npm run db:seed      # Seed with sample data
+
+```### **🔑 Key Documents**VITE_APP_URL=https://localhost:3003
+
+
+
+## 🏛 **Database Schema**- **[📋 Complete Setup Guide](./docs/PROJECT_RECREATION_GUIDE_2025-11-17.md)** - Step-by-step system recreation```
+
+
+
+### **Core Tables**- **[⚙️ Operations Manual](./docs/OPERATIONS_RUNBOOK_2025-11-17.md)** - Daily operations and maintenance
+
+- **`members`** - Member profiles and contact information
+
+- **`member_accounts`** - Investment account data and portfolio values- **[📖 Development History](./docs/change-log.md)** - Complete feature evolution timeline## 📊 Member Data Integration
+
+- **`unit_prices`** - Historical unit price tracking
+
+- **`ffa_timeline`** - Transaction history and timeline- **[🗂 Documentation Index](./docs/README-DOCS.md)** - Full documentation overview
+
+- **`education_lessons`** - Educational content management
+
+- **`education_progress`** - Member learning progress trackingThe application integrates with your Excel file (`data/member_dues_20251116_150358.xlsx`) containing:
+
+
+
+### **Key Views**### **📁 Documentation Categories**
+
+- **`complete_member_profiles`** - Unified member data with calculations
+
+- **Portfolio calculations** with real-time value updates- **Getting Started**: Setup instructions and project overview- **21 Active Members** with real names and financial data
+
+- **Performance metrics** with historical comparisons
+
+- **Development**: Technical implementation and history- **Payment Status**: Credit Balance, Owes Money, Current
+
+## 🔐 **Security Features**
+
+- **Deployment**: Production deployment guides- **Amount Tracking**: Latest amounts owed, total payments, contributions
+
+- **Row Level Security (RLS)** - Database-level access control
+
+- **JWT Authentication** - Secure token-based auth- **Operations**: Daily maintenance and troubleshooting- **Historical Data**: Monthly payment tracking and trends
+
+- **Role-based Permissions** - Admin vs member access levels
+
+- **Environment Protection** - Secure configuration management- **User Management**: Member and admin procedures
+
+- **Input Validation** - Frontend and backend validation
+
+- **SQL Injection Prevention** - Parameterized queries### Sample Member Data Structure
+
+
+
+## 📈 **Performance**## 🎯 **Key Capabilities**```javascript
+
+
+
+- **Page Load Times**: < 3 seconds{
+
+- **Database Queries**: < 1 second average
+
+- **Bundle Size**: Optimized with code splitting### **For Investment Club Admins**  "Member Name": "Crawford, Archie",
+
+- **Uptime Target**: 99.9%
+
+- **Mobile Performance**: Fully responsive design- ✅ Manage member accounts and portfolios  "Payment Status": "Current", 
+
+
+
+## 🤝 **Contributing**- ✅ Track unit prices and historical performance  "Latest Amount Owed": 0,
+
+
+
+This is a private investment club management platform. For feature requests or issues:- ✅ Handle member invitations and role assignments  "Total Payments": 12000,
+
+
+
+1. Review existing documentation in `/docs`- ✅ Import data from Excel files and external sources  "Total Contribution": 35000
+
+2. Check the operations runbook for procedures
+
+3. Follow established development patterns- ✅ Monitor club performance with comprehensive dashboards}
+
+4. Test thoroughly before deploying
+
+```
+
+## 📄 **License**
+
+### **For Club Members**
+
+Private investment club management platform. All rights reserved.
+
+- ✅ View personal investment portfolio in real-time## 🔗 Navigation Structure
+
+## 📞 **Support**
+
+- ✅ Track performance and unit value changes
+
+- **📚 Documentation**: Check the comprehensive `/docs` folder
+
+- **🔧 Operations**: Reference the operations runbook- ✅ Access educational content and resources### Admin Users
+
+- **🚨 Emergency**: Follow escalation procedures in ops manual
 
 - ✅ Update personal information and preferences- Dashboard & Analytics
 
+---
+
 - ✅ View contribution history and account details- Member & User Management  
 
-- **Dues Tracker** (Real Excel data)
+**Built with ❤️ for investment club management**  
 
-### **For Developers**- Financial Ledger & Unit Pricing
+**Last Updated**: November 17, 2025  - **Dues Tracker** (Real Excel data)
+
+**Version**: 2.1.0  
+
+**Status**: Production Ready 🚀### **For Developers**- Financial Ledger & Unit Pricing
 
 - ✅ Complete codebase with modern React patterns- **Education Management**
 

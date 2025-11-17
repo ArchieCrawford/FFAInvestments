@@ -1,7 +1,7 @@
 const XLSX = require('xlsx');
 const fs = require('fs');
 
-const EXCEL_FILE_PATH = 'C:\\Users\\AceGr\\FFAinvestments\\member_dues_20251116_150358.xlsx';
+const EXCEL_FILE_PATH = 'C:\\Users\\AceGr\\FFAinvestments\\data\\member_dues_20251116_150358.xlsx';
 
 async function readMemberDuesExcel() {
   try {

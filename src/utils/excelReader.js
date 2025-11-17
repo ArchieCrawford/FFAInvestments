@@ -2,7 +2,7 @@ import XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 
-const EXCEL_FILE_PATH = 'C:\\Users\\AceGr\\FFAinvestments\\member_dues_20251116_150358.xlsx';
+const EXCEL_FILE_PATH = 'C:\\Users\\AceGr\\FFAinvestments\\data\\member_dues_20251116_150358.xlsx';
 
 export async function readMemberDuesExcel() {
   try {
