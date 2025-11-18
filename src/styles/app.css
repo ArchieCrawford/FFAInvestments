@@ -252,7 +252,8 @@ body {
 .heading-md { font-size: 1.4rem; font-weight: 600; }
 .text-muted { color: var(--text-secondary); }
 
-.card {
+.card,
+.app-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-card);
@@ -261,12 +262,30 @@ body {
   backdrop-filter: blur(14px);
 }
 
-.card-header {
+.card-header,
+.app-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.card-title,
+.app-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.card-subtitle,
+.app-card-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.card-content,
+.app-card-content {
+  margin-top: 1rem;
 }
 
 .grid-2 {
@@ -281,7 +300,33 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.pill {
+.app-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.app-grid.cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.app-grid.cols-3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-card);
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-sm);
+}
+
+.pill,
+.app-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -322,8 +367,10 @@ body {
 .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #ffe4e6; }
 .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: var(--text-secondary); }
 .btn-pill { border-radius: 999px; }
+.btn-sm { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
 
-.input {
+.input,
+.app-form-control {
   width: 100%;
   padding: 1rem 1.25rem;
   border-radius: var(--radius-element);
@@ -334,7 +381,8 @@ body {
   transition: 0.2s ease;
 }
 
-.input:focus {
+.input:focus,
+.app-form-control:focus {
   border-color: rgba(168, 85, 247, 0.7);
   background: rgba(168, 85, 247, 0.08);
   box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
@@ -363,6 +411,11 @@ body {
 
 .table tr:hover td {
   background: rgba(255, 255, 255, 0.02);
+}
+
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .spinner-page {

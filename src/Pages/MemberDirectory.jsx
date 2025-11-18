@@ -3,9 +3,10 @@ import { supabase } from '../lib/supabase';
 import { Users, Mail, Phone, Search, UserCheck } from 'lucide-react';
 
 const MemberDirectory = () => {
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [members, setMembers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [copiedEmail, setCopiedEmail] = useState(null)
 
   useEffect(() => {
     fetchMembers();
@@ -29,14 +30,24 @@ const MemberDirectory = () => {
   };
 
   const filteredMembers = members.filter(member => {
-    const searchLower = searchTerm.toLowerCase();
+    const searchLower = searchTerm.toLowerCase()
     return (
       member.full_name?.toLowerCase().includes(searchLower) ||
       member.first_name?.toLowerCase().includes(searchLower) ||
       member.last_name?.toLowerCase().includes(searchLower) ||
       member.email?.toLowerCase().includes(searchLower)
-    );
-  });
+    )
+  })
+
+  const handleCopyEmail = async (email) => {
+    try {
+      await navigator.clipboard.writeText(email)
+      setCopiedEmail(email)
+      setTimeout(() => setCopiedEmail(null), 2000)
+    } catch (err) {
+      console.error('Clipboard copy failed', err)
+    }
+  }
 
   if (loading) {
     return (
@@ -123,10 +134,18 @@ const MemberDirectory = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
                 <Mail size={16} />
-                <a href={`mailto:${member.email}`} style={{ color: 'var(--text-primary)' }}>
-                  {member.email}
-                </a>
+                <span style={{ color: 'var(--text-primary)' }}>{member.email}</span>
+                <button
+                  className="btn btn-outline btn-sm btn-pill"
+                  type="button"
+                  onClick={() => handleCopyEmail(member.email)}
+                >
+                  Copy
+                </button>
               </div>
+              {copiedEmail === member.email && (
+                <p style={{ fontSize: '0.75rem', color: '#c084fc' }}>Email copied to clipboard</p>
+              )}
               {member.phone && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
                   <Phone size={16} />
