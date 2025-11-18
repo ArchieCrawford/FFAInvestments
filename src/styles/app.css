@@ -108,6 +108,11 @@ body {
   top: 1.5rem;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  transition: width 0.2s ease;
+}
+
+.app-sidebar:hover {
+  width: 250px;
 }
 
 .app-sidebar::-webkit-scrollbar {
@@ -128,6 +133,38 @@ body {
     padding: 1rem;
     gap: 1rem;
   }
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 40;
+}
+
+.modal-panel {
+  width: min(520px, 90vw);
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius-card);
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
 }
 
 .app-brand {

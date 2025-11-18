@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Users, Mail, Phone, Search, UserCheck } from 'lucide-react';
+import EmailModal from '../components/EmailModal.jsx';
 
 const MemberDirectory = () => {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedEmail, setCopiedEmail] = useState(null)
+  const [emailRecipient, setEmailRecipient] = useState(null)
 
   useEffect(() => {
     fetchMembers();
@@ -49,12 +51,19 @@ const MemberDirectory = () => {
     }
   }
 
+  const handleOpenEmail = (member) => {
+    setEmailRecipient({
+      name: member.full_name || `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim() || 'Member',
+      email: member.email
+    })
+  }
+
   if (loading) {
     return (
       <div className="fullscreen-center">
         <div className="spinner-page" />
       </div>
-    );
+    )
   }
 
   return (
@@ -132,15 +141,24 @@ const MemberDirectory = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
-                <Mail size={16} />
-                <span style={{ color: 'var(--text-primary)' }}>{member.email}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Mail size={16} />
+                  <span style={{ color: 'var(--text-primary)' }}>{member.email}</span>
+                </span>
                 <button
                   className="btn btn-outline btn-sm btn-pill"
                   type="button"
                   onClick={() => handleCopyEmail(member.email)}
                 >
                   Copy
+                </button>
+                <button
+                  className="btn btn-primary btn-sm btn-pill"
+                  type="button"
+                  onClick={() => handleOpenEmail(member)}
+                >
+                  Email
                 </button>
               </div>
               {copiedEmail === member.email && (
@@ -177,6 +195,10 @@ const MemberDirectory = () => {
         <p>Club Email: Contact the administrators for member connection assistance.</p>
         <p style={{ marginTop: '0.5rem' }}>Privacy: Only active club members can view this directory. Contact information is provided voluntarily by members.</p>
       </div>
+
+      {emailRecipient && (
+        <EmailModal recipient={emailRecipient} onClose={() => setEmailRecipient(null)} />
+      )}
     </div>
   );
 };
