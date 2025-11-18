@@ -3,7 +3,7 @@
 // 1. OPTION A: Using EmailJS (Client-side, easy setup)
 import emailjs from '@emailjs/browser';
 
-const sendInviteEmail = async (memberEmail, inviteLink, memberName) => {
+export const sendInviteEmailWithEmailJS = async (memberEmail, inviteLink, memberName) => {
   const templateParams = {
     to_email: memberEmail,
     to_name: memberName,
@@ -27,33 +27,32 @@ const sendInviteEmail = async (memberEmail, inviteLink, memberName) => {
 };
 
 // 2. OPTION B: Using Nodemailer (Server-side, more control)
-// You'd need a backend server for this
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransporter({
-  service: 'gmail', // or 'outlook', 'yahoo', etc.
-  auth: {
-    user: 'your-ffa-email@gmail.com',
-    pass: 'your-app-password' // Use App Password, not regular password
-  }
-});
-
-const sendInviteEmail = async (memberEmail, inviteLink, memberName) => {
-  const mailOptions = {
-    from: '"FFA Investment Club" <your-ffa-email@gmail.com>',
-    to: memberEmail,
-    subject: 'Welcome to FFA Investment Club - Set Up Your Account',
-    html: `
-      <h2>Welcome to FFA Investment Club!</h2>
-      <p>Hi ${memberName},</p>
-      <p>You've been invited to join our investment club. Click the link below to set up your account:</p>
-      <p><a href="${inviteLink}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Up My Account</a></p>
-      <p>This link will expire in 7 days.</p>
-      <p>Best regards,<br>FFA Investment Club Team</p>
-    `
-  };
-
+// Note: This is a SERVER-SIDE example only. Do not run in the browser bundle.
+export const sendInviteEmailWithNodemailer = async (memberEmail, inviteLink, memberName) => {
   try {
+    const nodemailer = await import('nodemailer');
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.FFA_EMAIL_USER || 'your-ffa-email@gmail.com',
+        pass: process.env.FFA_EMAIL_PASS || 'your-app-password'
+      }
+    });
+
+    const mailOptions = {
+      from: '"FFA Investment Club" <' + (process.env.FFA_EMAIL_USER || 'your-ffa-email@gmail.com') + '>',
+      to: memberEmail,
+      subject: 'Welcome to FFA Investment Club - Set Up Your Account',
+      html: `
+        <h2>Welcome to FFA Investment Club!</h2>
+        <p>Hi ${memberName},</p>
+        <p>You've been invited to join our investment club. Click the link below to set up your account:</p>
+        <p><a href="${inviteLink}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Up My Account</a></p>
+        <p>This link will expire in 7 days.</p>
+        <p>Best regards,<br>FFA Investment Club Team</p>
+      `
+    };
+
     await transporter.sendMail(mailOptions);
     return { success: true };
   } catch (error) {
@@ -62,23 +61,21 @@ const sendInviteEmail = async (memberEmail, inviteLink, memberName) => {
 };
 
 // 3. OPTION C: Using SendGrid (Professional service)
-const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey('your-sendgrid-api-key');
-
-const sendInviteEmail = async (memberEmail, inviteLink, memberName) => {
-  const msg = {
-    to: memberEmail,
-    from: 'noreply@ffainvestments.com', // Your verified sender
-    subject: 'FFA Investment Club - Account Setup',
-    templateId: 'your-sendgrid-template-id', // Create template in SendGrid
-    dynamicTemplateData: {
-      member_name: memberName,
-      invite_link: inviteLink,
-      club_name: 'FFA Investment Club'
-    }
-  };
-
+// 3. OPTION C: Using SendGrid (Professional service)
+// SERVER-SIDE example. Uses dynamic import to avoid bundling in the browser.
+export const sendInviteEmailWithSendGrid = async (memberEmail, inviteLink, memberName) => {
   try {
+    const { default: sgMail } = await import('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY || 'your-sendgrid-api-key');
+
+    const msg = {
+      to: memberEmail,
+      from: process.env.SENDGRID_FROM || 'noreply@ffainvestments.com',
+      subject: 'FFA Investment Club - Account Setup',
+      // You can use templates or plain html
+      html: `Hello ${memberName}, please set up your account: <a href="${inviteLink}">Set up account</a>`
+    };
+
     await sgMail.send(msg);
     return { success: true };
   } catch (error) {

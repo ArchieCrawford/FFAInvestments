@@ -89,23 +89,45 @@ body {
   z-index: 1;
   display: flex;
   gap: 1.5rem;
-  padding: 2rem;
+  padding: 1.5rem;
 }
 
 .app-sidebar {
-  width: 240px;
+  width: 210px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-card);
-  padding: 1.5rem;
+  padding: 1.2rem 1rem;
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  height: calc(100vh - 4rem);
+  gap: 1rem;
+  max-height: calc(100vh - 3rem);
   position: sticky;
-  top: 2rem;
+  top: 1.5rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+@media (max-width: 1024px) {
+  .app-sidebar {
+    width: 190px;
+    padding: 1rem 0.75rem;
+  }
+  .app-main {
+    padding: 1rem;
+    gap: 1rem;
+  }
 }
 
 .app-brand {
