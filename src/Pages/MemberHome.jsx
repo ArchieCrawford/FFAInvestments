@@ -2,12 +2,26 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Home, Mail, Calendar, DollarSign, Bell, TrendingUp, User } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const MemberHome = () => {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [settings, setSettings] = useState(null)
+  const navigate = useNavigate()
+
+  const DEFAULTS = {
+    meeting_schedule: 'Last Saturday of the month on Zoom at 9:00 AM EST',
+    contact_email: 'Familyfa1995@gmail.com',
+    dues_info: 'Membership dues are $50 per month. Payment options available through the portal.'
+  }
+
+  const LEGACY = {
+    meeting_schedule: 'Weekly meetings every Tuesday at 7:00 PM in Room 205',
+    contact_email: 'admin@ffainvestments.com',
+    dues_info: 'Membership dues are $50 per semester. Payment options available through the portal.'
+  }
 
   useEffect(() => {
     if (user) {
@@ -29,14 +43,29 @@ const MemberHome = () => {
       if (error) {
         setError(error.message)
       } else {
+        const normalizedMeeting =
+          (!data?.meeting_schedule || data?.meeting_schedule === LEGACY.meeting_schedule)
+            ? DEFAULTS.meeting_schedule
+            : data.meeting_schedule
+
+        const normalizedEmail =
+          (!data?.contact_email || data?.contact_email.toLowerCase() === LEGACY.contact_email.toLowerCase())
+            ? DEFAULTS.contact_email
+            : data.contact_email
+
+        const normalizedDues =
+          (!data?.dues_info || data?.dues_info === LEGACY.dues_info)
+            ? DEFAULTS.dues_info
+            : data.dues_info
+
         setSettings({
           club_name: data?.club_name || 'FFA Investments',
           tagline: data?.tagline || 'Where futures begin and wealth grows',
           homepage_message: data?.homepage_message || 'Welcome to the FFA Investments member portal.',
           welcome_message: data?.welcome_message || 'Welcome back!',
-          dues_info: data?.dues_info || '',
-          contact_email: data?.contact_email || '',
-          meeting_schedule: data?.meeting_schedule || '',
+          dues_info: normalizedDues,
+          contact_email: normalizedEmail,
+          meeting_schedule: normalizedMeeting,
           announcements: data?.announcements || ''
         })
       }
@@ -185,6 +214,7 @@ const MemberHome = () => {
                   type="button"
                   className="demo-btn bg-gradient-to-r from-blue-400 to-cyan-400"
                   style={{ justifyContent: 'flex-start', width: '100%' }}
+                  onClick={() => navigate('/member/dashboard')}
                 >
                   <TrendingUp size={16} />
                   <span>View Portfolio</span>
@@ -193,6 +223,7 @@ const MemberHome = () => {
                   type="button"
                   className="demo-btn bg-gradient-to-r from-green-400 to-emerald-400"
                   style={{ justifyContent: 'flex-start', width: '100%' }}
+                  onClick={() => navigate('/member/contribute')}
                 >
                   <DollarSign size={16} />
                   <span>Investment Tracker</span>
@@ -201,6 +232,7 @@ const MemberHome = () => {
                   type="button"
                   className="demo-btn bg-gradient-to-r from-purple-400 to-pink-400"
                   style={{ justifyContent: 'flex-start', width: '100%' }}
+                  onClick={() => navigate('/member/directory')}
                 >
                   <User size={16} />
                   <span>Profile Settings</span>

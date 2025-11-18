@@ -3,6 +3,18 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Settings, Save, AlertCircle, CheckCircle } from 'lucide-react'
 
+const DEFAULT_SETTINGS = {
+  dues_info: 'Membership dues are $50 per month. Payment options available through the portal.',
+  contact_email: 'Familyfa1995@gmail.com',
+  meeting_schedule: 'Last Saturday of the month on Zoom at 9:00 AM EST'
+}
+
+const LEGACY_SETTINGS = {
+  dues_info: 'Membership dues are $50 per semester. Payment options available through the portal.',
+  contact_email: 'admin@ffainvestments.com',
+  meeting_schedule: 'Weekly meetings every Tuesday at 7:00 PM in Room 205'
+}
+
 const AdminSettings = () => {
   const { user, profile, isAdmin } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -42,14 +54,29 @@ const AdminSettings = () => {
         setError(error.message)
       } else if (data) {
         setSettingsId(data.id)
+        const normalizedDues =
+          (!data.dues_info || data.dues_info === LEGACY_SETTINGS.dues_info)
+            ? DEFAULT_SETTINGS.dues_info
+            : data.dues_info
+
+        const normalizedEmail =
+          (!data.contact_email || data.contact_email.toLowerCase() === LEGACY_SETTINGS.contact_email.toLowerCase())
+            ? DEFAULT_SETTINGS.contact_email
+            : data.contact_email
+
+        const normalizedMeeting =
+          (!data.meeting_schedule || data.meeting_schedule === LEGACY_SETTINGS.meeting_schedule)
+            ? DEFAULT_SETTINGS.meeting_schedule
+            : data.meeting_schedule
+
         setForm({
           club_name: data.club_name || '',
           tagline: data.tagline || '',
           homepage_message: data.homepage_message || '',
           welcome_message: data.welcome_message || '',
-          dues_info: data.dues_info || '',
-          contact_email: data.contact_email || '',
-          meeting_schedule: data.meeting_schedule || '',
+          dues_info: normalizedDues,
+          contact_email: normalizedEmail,
+          meeting_schedule: normalizedMeeting,
           announcements: data.announcements || ''
         })
       }
@@ -77,9 +104,9 @@ const AdminSettings = () => {
       tagline: form.tagline,
       homepage_message: form.homepage_message,
       welcome_message: form.welcome_message,
-      dues_info: form.dues_info,
-      contact_email: form.contact_email,
-      meeting_schedule: form.meeting_schedule,
+      dues_info: form.dues_info || DEFAULT_SETTINGS.dues_info,
+      contact_email: form.contact_email || DEFAULT_SETTINGS.contact_email,
+      meeting_schedule: form.meeting_schedule || DEFAULT_SETTINGS.meeting_schedule,
       announcements: form.announcements,
       updated_at: new Date().toISOString()
     }
