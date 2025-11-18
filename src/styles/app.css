@@ -137,17 +137,46 @@ body {
   z-index: 1;
   flex: 1;
   display: flex;
-  padding: 2rem;
+  /* reduce padding so sidebar doesn't push out too far */
+  padding: 1.5rem;
 }
 
 .app-sidebar {
-  width: 260px;
-  padding: 2rem 1.5rem;
+  width: 220px; /* slightly narrower */
+  padding: 1.25rem 1rem;
   background: var(--bg-secondary);
   border-right: 1px solid var(--bg-tertiary);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+  /* Make sidebar sticky and scrollable so items remain accessible on small viewports */
+  position: sticky;
+  top: 1rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Thin custom scrollbar for the sidebar */
+.app-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+}
+
+/* Responsive adjustments: collapse spacing on small screens */
+@media (max-width: 900px) {
+  .app-sidebar {
+    width: 200px;
+    padding: 1rem 0.75rem;
+    max-height: calc(100vh - 1.5rem);
+  }
+  .app-main {
+    padding: 1rem;
+  }
 }
 
 .app-brand {
