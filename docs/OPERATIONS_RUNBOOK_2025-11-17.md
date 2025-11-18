@@ -1,17 +1,24 @@
 # FFA Investments - Complete Operations Runbook
 **Date**: November 17, 2025  
-**Version**: 2.1.0  
+**Version**: 2.2.0  
 **Environment**: Production  
-**Status**: Active  
+**Status**: Active - **Latest Update: Enhanced Settings & File Organization**  
 
 ## 🎯 System Overview
 
 ### Application Architecture
 - **Frontend**: React 18.2.0 + Vite (deployed on Vercel)
 - **Backend**: Supabase (PostgreSQL + Auth + Real-time)
-- **Domain**: https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app
+- **Latest Domain**: https://ffa-investments-bgcgyc4z7-ajs-projects-e15d145a.vercel.app
+- **Backup Domain**: https://ffa-investments-f7daq0qcm-ajs-projects-e15d145a.vercel.app
 - **Repository**: GitHub (private)
 - **Theme**: Dark gradient with glass morphism effects
+
+### Recent Updates (November 17, 2025)
+- **Enhanced Settings**: Improved member home and admin settings with better defaults
+- **File Organization**: Organized all data files in `/data` folder with updated references
+- **Documentation**: Complete reorganization of docs in `/docs` folder
+- **Performance**: Optimized loading and error handling
 
 ### Key System Components
 1. **Authentication System**: Supabase Auth with role-based access
@@ -19,6 +26,7 @@
 3. **Admin Dashboard**: User management, unit prices, dues tracking
 4. **Member Portal**: Personal dashboard with portfolio view
 5. **Real-time Data**: Synchronized updates across admin/member views
+6. **Data Management**: Organized `/data` folder with Excel/CSV processing
 
 ## 🏃‍♂️ Daily Operations
 
