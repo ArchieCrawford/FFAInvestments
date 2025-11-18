@@ -197,7 +197,9 @@ export default function Layout({ children, currentPageName }) {
         </aside>
 
         <main className="app-content">
-          {children}
+          <div className="app-page">
+            {children}
+          </div>
         </main>
       </div>
     </div>

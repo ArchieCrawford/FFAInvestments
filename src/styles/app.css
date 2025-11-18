@@ -298,6 +298,131 @@ body {
   gap: 1.5rem;
 }
 
+.app-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.app-page h1,
+.app-page h2,
+.app-page h3,
+.app-page h4,
+.app-page h5,
+.app-page h6 {
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.app-page p,
+.app-page span,
+.app-page label,
+.app-page small {
+  color: var(--text-secondary);
+}
+
+.card-stat,
+.task-box,
+.app-panel,
+.app-page .bg-white,
+.app-page .bg-slate-50,
+.app-page .bg-white\/10 {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--bg-tertiary);
+  padding: 1rem;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.card-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-stat.blue {
+  background: var(--gradient-primary);
+  color: #fff;
+}
+
+.task-box strong {
+  color: var(--text-primary);
+}
+
+.app-page .text-muted {
+  color: var(--text-secondary) !important;
+}
+
+.app-page table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-primary);
+}
+
+.app-page table thead {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-page table th,
+.app-page table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-page .badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  border-radius: 999px;
+  padding: 0.15rem 0.75rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.app-page .badge.bg-success {
+  background: rgba(22, 163, 74, 0.2);
+  color: #86efac;
+}
+
+.app-page .badge.bg-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+}
+
+.btn-outline-primary {
+  background: transparent;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #bfdbfe;
+}
+
+.btn-outline-primary:hover {
+  border-color: rgba(59, 130, 246, 0.8);
+  color: #fff;
+}
+
+.btn-outline-secondary {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  color: #cbd5f5;
+}
+
+.btn-outline-secondary:hover {
+  border-color: rgba(148, 163, 184, 0.8);
+}
+
+.btn-outline-danger {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fecaca;
+}
+
+.btn-outline-danger:hover {
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
 .app-card {
   background: var(--bg-secondary);
   border-radius: 18px;
