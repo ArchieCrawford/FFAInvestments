@@ -23,112 +23,82 @@ export default function AdminDashboard() {
       
       setStats({
         totalMembers: members.length,
-        totalAUM: totalAUM,
-        activeAccounts: activeAccounts,
-        unitPrice: timeline.length > 0 ? (totalAUM / members.reduce((sum, m) => sum + (m.totalUnits || 0), 0)) : 0
+        totalAUM,
+        activeAccounts,
+        unitPrice: timeline.length > 0
+          ? (totalAUM / members.reduce((sum, m) => sum + (m.totalUnits || 0), 0))
+          : 0
       });
     } catch (error) {
       console.error('Error loading stats:', error);
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
-    <>
-      {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Admin Dashboard</h2>
-        <div>
-          <button className="btn btn-primary me-2">+ Add Member</button>
-          <button className="btn btn-outline-primary">+ Record Transaction</button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <div className="card-stat blue">
-            <div>
-              <div className="fw-bold">Assets Under Management</div>
-              <div className="fs-4">{formatCurrency(stats.totalAUM)}</div>
-            </div>
-            <i className="fas fa-dollar-sign fa-2x"></i>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card-stat">
-            <div>
-              <div className="fw-bold">Total Members</div>
-              <div className="fs-4">{stats.totalMembers}</div>
-            </div>
-            <i className="fas fa-user fa-2x text-muted"></i>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card-stat">
-            <div>
-              <div className="fw-bold">Active Accounts</div>
-              <div className="fs-4">{stats.activeAccounts}</div>
-            </div>
-            <i className="fas fa-wallet fa-2x text-muted"></i>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="card-stat">
-            <div>
-              <div className="fw-bold">Unit Price</div>
-              <div className="fs-4">
-                {formatCurrency(stats.unitPrice)} 
-                <span className="badge bg-success text-white ms-2">Current</span>
-              </div>
-            </div>
-            <i className="fas fa-chart-line fa-2x text-muted"></i>
-          </div>
-        </div>
-      </div>
-
-      {/* Tasks */}
-      <div className="task-box mb-4">
-        <div className="d-flex justify-content-between align-items-center">
+    <div className="app-page">
+      <div className="app-card">
+        <div className="app-card-header">
           <div>
-            <i className="fas fa-clock text-warning me-2"></i>
-            <strong>Today's Tasks</strong>
-            <div className="text-muted mt-1">
-              <i className="fas fa-info-circle text-primary me-1"></i> Unit price not finalized for current period
-            </div>
+            <p className="app-card-title">Admin Dashboard</p>
+            <p className="app-card-subtitle">Club overview and quick actions</p>
           </div>
-          <button className="btn btn-outline-secondary">Finalize Now <i className="fas fa-arrow-right ms-2"></i></button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-primary btn-pill">+ Add Member</button>
+            <button className="btn btn-outline btn-pill">+ Record Transaction</button>
+          </div>
         </div>
       </div>
 
-      {/* Transactions and Quick Actions */}
-      <div className="row g-3">
-        <div className="col-md-6">
-          <div className="task-box">
-            <h5>Recent Transactions</h5>
-            <p className="text-muted">No recent transactions</p>
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="task-box">
-            <h5>Quick Actions</h5>
-            <div className="d-flex gap-2">
-              <button className="btn btn-outline-primary flex-fill">
-                <i className="fas fa-users me-2"></i> Manage Members
-              </button>
-              <button className="btn btn-outline-primary flex-fill">
-                <i className="fas fa-wallet me-2"></i> Manage Accounts
-              </button>
+      <div className="app-grid cols-2">
+        {[
+          { label: 'Assets Under Management', value: formatCurrency(stats.totalAUM), icon: '💰', highlight: true },
+          { label: 'Total Members', value: stats.totalMembers, icon: '👥' },
+          { label: 'Active Accounts', value: stats.activeAccounts, icon: '📊' },
+          { label: 'Unit Price', value: formatCurrency(stats.unitPrice), icon: '📈', badge: 'Current' }
+        ].map((item) => (
+          <div key={item.label} className={`card-stat ${item.highlight ? 'blue' : ''}`}>
+            <div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.label}</p>
+              <p style={{ fontSize: '1.6rem', fontWeight: 700 }}>
+                {item.value}
+                {item.badge && <span className="badge bg-success" style={{ marginLeft: '0.6rem' }}>{item.badge}</span>}
+              </p>
             </div>
+            <div className="app-pill">{item.icon}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="app-card">
+        <div className="app-card-header">
+          <div>
+            <p className="app-card-title">Today's Tasks</p>
+            <p className="app-card-subtitle">Unit price not finalized for current period</p>
+          </div>
+          <button className="btn btn-outline-secondary btn-pill">Finalize Now</button>
+        </div>
+      </div>
+
+      <div className="app-grid cols-2">
+        <div className="app-card">
+          <div className="app-card-header">
+            <p className="app-card-title">Recent Transactions</p>
+          </div>
+          <p>No recent transactions.</p>
+        </div>
+        <div className="app-card">
+          <div className="app-card-header">
+            <p className="app-card-title">Quick Actions</p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button className="btn btn-outline-primary" style={{ flex: 1 }}>Manage Members</button>
+            <button className="btn btn-outline-primary" style={{ flex: 1 }}>Manage Accounts</button>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

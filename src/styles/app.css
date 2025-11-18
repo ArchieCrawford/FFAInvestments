@@ -582,3 +582,83 @@ body {
 .app-table tbody tr:hover {
   background: rgba(255, 255, 255, 0.02);
 }
+
+.app-page [class*="bg-white"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+.app-page [class*="bg-slate"],
+.app-page [class*="bg-blue-"],
+.app-page [class*="bg-gray"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.app-page [class*="text-slate"],
+.app-page [class*="text-gray"],
+.app-page [class*="text-blue-"] {
+  color: var(--text-secondary) !important;
+}
+
+.app-page [class*="text-white"] {
+  color: var(--text-primary) !important;
+}
+
+.app-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.app-grid.cols-2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.app-grid.cols-3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.app-form-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.app-form-control:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.app-card-header + .app-card-content {
+  margin-top: 1rem;
+}
+
+.app-empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.app-empty-state h3 {
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}

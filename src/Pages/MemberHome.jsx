@@ -210,33 +210,37 @@ const MemberHome = () => {
             <div className="demo-users">
               <p className="demo-label">Quick Actions:</p>
               <div className="demo-buttons" style={{ flexDirection: 'column', gap: '1rem' }}>
-                <button
-                  type="button"
-                  className="demo-btn bg-gradient-to-r from-blue-400 to-cyan-400"
-                  style={{ justifyContent: 'flex-start', width: '100%' }}
-                  onClick={() => navigate('/member/dashboard')}
-                >
-                  <TrendingUp size={16} />
-                  <span>View Portfolio</span>
-                </button>
-                <button
-                  type="button"
-                  className="demo-btn bg-gradient-to-r from-green-400 to-emerald-400"
-                  style={{ justifyContent: 'flex-start', width: '100%' }}
-                  onClick={() => navigate('/member/contribute')}
-                >
-                  <DollarSign size={16} />
-                  <span>Investment Tracker</span>
-                </button>
-                <button
-                  type="button"
-                  className="demo-btn bg-gradient-to-r from-purple-400 to-pink-400"
-                  style={{ justifyContent: 'flex-start', width: '100%' }}
-                  onClick={() => navigate('/member/directory')}
-                >
-                  <User size={16} />
-                  <span>Profile Settings</span>
-                </button>
+                {[
+                  {
+                    label: 'View Portfolio',
+                    icon: <TrendingUp size={16} />,
+                    path: '/member/dashboard',
+                    gradient: 'from-blue-400 to-cyan-400'
+                  },
+                  {
+                    label: 'Investment Tracker',
+                    icon: <DollarSign size={16} />,
+                    path: '/member/contribute',
+                    gradient: 'from-green-400 to-emerald-400'
+                  },
+                  {
+                    label: 'Profile Directory',
+                    icon: <User size={16} />,
+                    path: '/member/directory',
+                    gradient: 'from-purple-400 to-pink-400'
+                  }
+                ].map((action) => (
+                  <button
+                    key={action.path}
+                    type="button"
+                    className={`demo-btn bg-gradient-to-r ${action.gradient}`}
+                    style={{ justifyContent: 'flex-start', width: '100%' }}
+                    onClick={() => navigate(action.path)}
+                  >
+                    {action.icon}
+                    <span>{action.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>

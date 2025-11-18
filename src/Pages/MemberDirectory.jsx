@@ -40,158 +40,123 @@ const MemberDirectory = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading member directory...</div>
+      <div className="fullscreen-center">
+        <div className="spinner-page" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      <div className="container mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2 flex items-center">
-            <Users className="mr-4" />
-            Member Directory
-          </h1>
-          <p className="text-blue-200">Connect with fellow FFA Investment club members</p>
+    <div className="app-page">
+      <div className="app-card">
+        <div className="app-card-header">
+          <div>
+            <p className="app-card-title">Member Directory</p>
+            <p className="app-card-subtitle">Connect with fellow FFA Investment Club members</p>
+          </div>
+          <div className="app-pill">
+            <Users size={16} />
+            {members.length} Active
+          </div>
         </div>
-
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="app-card-content">
+          <label style={{ display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+            Search Members
+          </label>
+          <div style={{ position: 'relative', maxWidth: '380px' }}>
+            <Search size={16} style={{ position: 'absolute', top: '50%', left: '0.9rem', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
             <input
               type="text"
-              placeholder="Search members..."
+              className="app-form-control"
+              style={{ paddingLeft: '2.4rem' }}
+              placeholder="Search name or email…"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
           </div>
         </div>
+      </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-200 text-sm">Active Members</p>
-                <p className="text-2xl font-bold text-white">{members.length}</p>
-              </div>
-              <Users className="w-8 h-8 text-blue-400" />
+      <div className="app-grid cols-3">
+        {[
+          {
+            label: 'Active Members',
+            value: members.length,
+            icon: <Users size={20} />,
+          },
+          {
+            label: 'Registered Users',
+            value: members.filter(m => m.account_status === 'registered').length,
+            icon: <UserCheck size={20} />,
+          },
+          {
+            label: 'Total Contacts',
+            value: members.filter(m => m.phone || m.email).length,
+            icon: <Mail size={20} />,
+          },
+        ].map((stat) => (
+          <div className="card-stat" key={stat.label}>
+            <div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{stat.label}</p>
+              <p style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stat.value}</p>
             </div>
+            <div className="app-pill">{stat.icon}</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="flex items-center justify-between">
+        ))}
+      </div>
+
+      <div className="app-grid cols-2">
+        {filteredMembers.map((member) => (
+          <div className="app-card" key={member.id}>
+            <div className="app-card-header">
               <div>
-                <p className="text-green-200 text-sm">Registered Users</p>
-                <p className="text-2xl font-bold text-white">
-                  {members.filter(m => m.account_status === 'registered').length}
-                </p>
-              </div>
-              <UserCheck className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-200 text-sm">Total Contacts</p>
-                <p className="text-2xl font-bold text-white">
-                  {members.filter(m => m.phone || m.email).length}
-                </p>
-              </div>
-              <Mail className="w-8 h-8 text-purple-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Members Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMembers.map((member) => (
-            <div
-              key={member.id}
-              className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-200"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white mb-1">
-                    {member.full_name || 'Member'}
-                  </h3>
-                  {member.first_name && member.last_name && member.full_name !== `${member.first_name} ${member.last_name}` && (
-                    <p className="text-blue-200 text-sm mb-2">
-                      {member.first_name} {member.last_name}
-                    </p>
-                  )}
-                </div>
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  member.account_status === 'registered' 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-gray-600 text-gray-200'
-                }`}>
-                  {member.account_status === 'registered' ? 'Active User' : 'Member'}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center text-blue-300">
-                  <Mail className="w-4 h-4 mr-3 flex-shrink-0" />
-                  <a 
-                    href={`mailto:${member.email}`}
-                    className="text-sm hover:text-blue-200 transition-colors break-all"
-                  >
-                    {member.email}
-                  </a>
-                </div>
-
-                {member.phone && (
-                  <div className="flex items-center text-green-300">
-                    <Phone className="w-4 h-4 mr-3 flex-shrink-0" />
-                    <a 
-                      href={`tel:${member.phone}`}
-                      className="text-sm hover:text-green-200 transition-colors"
-                    >
-                      {member.phone}
-                    </a>
-                  </div>
+                <p className="app-card-title">{member.full_name || 'Member'}</p>
+                {member.first_name && member.last_name && member.full_name !== `${member.first_name} ${member.last_name}` && (
+                  <p className="app-card-subtitle">{member.first_name} {member.last_name}</p>
                 )}
               </div>
+              <div className="app-pill" style={{ background: member.account_status === 'registered' ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.2)', color: '#fff' }}>
+                {member.account_status === 'registered' ? 'Active User' : 'Member'}
+              </div>
+            </div>
 
-              {!member.phone && (
-                <div className="mt-4 text-gray-400 text-xs">
-                  Contact via email
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
+                <Mail size={16} />
+                <a href={`mailto:${member.email}`} style={{ color: 'var(--text-primary)' }}>
+                  {member.email}
+                </a>
+              </div>
+              {member.phone && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)' }}>
+                  <Phone size={16} />
+                  <a href={`tel:${member.phone}`} style={{ color: 'var(--text-primary)' }}>
+                    {member.phone}
+                  </a>
                 </div>
               )}
             </div>
-          ))}
-        </div>
-
-        {filteredMembers.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Members Found</h3>
-            <p className="text-gray-400">
-              {searchTerm ? 'Try adjusting your search terms.' : 'No active members in the directory yet.'}
-            </p>
-          </div>
-        )}
-
-        {/* Contact Info Footer */}
-        <div className="mt-12 bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-          <h3 className="text-lg font-semibold text-white mb-4">Need Help Connecting?</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-200">
-            <div>
-              <p className="text-sm">
-                <strong>Club Email:</strong> Contact the administrators for member connection assistance.
+            {!member.phone && (
+              <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Contact via email
               </p>
-            </div>
-            <div>
-              <p className="text-sm">
-                <strong>Privacy:</strong> Only active club members can view this directory. Contact information is provided voluntarily by members.
-              </p>
-            </div>
+            )}
           </div>
+        ))}
+      </div>
+
+      {filteredMembers.length === 0 && (
+        <div className="app-card app-empty-state">
+          <Users size={32} style={{ marginBottom: '0.8rem' }} />
+          <h3>No Members Found</h3>
+          <p>{searchTerm ? 'Try adjusting your search terms.' : 'No active members in the directory yet.'}</p>
         </div>
+      )}
+
+      <div className="app-card">
+        <h3 style={{ marginBottom: '0.5rem' }}>Need Help Connecting?</h3>
+        <p>Club Email: Contact the administrators for member connection assistance.</p>
+        <p style={{ marginTop: '0.5rem' }}>Privacy: Only active club members can view this directory. Contact information is provided voluntarily by members.</p>
       </div>
     </div>
   );
