@@ -9,8 +9,21 @@ import { config } from 'dotenv'
 // Load environment variables
 config()
 
-const supabaseUrl = 'https://wynbgrgmrygkodcdumii.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5bmJncmdtcnlna29kY2R1bWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyOTQ1MTgsImV4cCI6MjA3Nzg3MDUxOH0.ufstFd_BUpM-fVvv-PC8cuXX5x0gHB01CRVaQ98qnq4'
+const { config } = await import('dotenv')
+config()
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+
+if (!supabaseUrl) {
+  console.error('❌ Missing VITE_SUPABASE_URL in environment.');
+  process.exit(1)
+}
+
+if (!supabaseKey) {
+  console.error('❌ Missing Supabase key in environment (SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY).')
+  process.exit(1)
+}
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 

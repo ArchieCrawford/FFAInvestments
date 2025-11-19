@@ -42,6 +42,7 @@ import BeardstownLadies from './Pages/BeardstownLadies/index.jsx'
 
 // Admin Components  
 import AdminDues from './Pages/AdminDues/index.jsx'
+import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
 
 import { base44 } from './api/base44Client.js'
 
@@ -244,6 +245,14 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminDues">
                 <AdminDues />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/debug-auth" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminDebugAuth">
+                <AdminDebugAuth />
               </Layout>
             </ProtectedRoute>
           } />
