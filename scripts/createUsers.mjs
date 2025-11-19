@@ -9,19 +9,11 @@ import { config } from 'dotenv'
 // Load environment variables
 config()
 
-const { config } = await import('dotenv')
-config()
-
 const supabaseUrl = process.env.VITE_SUPABASE_URL
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-if (!supabaseUrl) {
-  console.error('❌ Missing VITE_SUPABASE_URL in environment.');
-  process.exit(1)
-}
-
-if (!supabaseKey) {
-  console.error('❌ Missing Supabase key in environment (SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY).')
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required to run this script.')
   process.exit(1)
 }
 
