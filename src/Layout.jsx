@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import ThemeToggle from "./components/ThemeToggle";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "./contexts/AuthContext";
@@ -190,9 +191,12 @@ export default function Layout({ children, currentPageName }) {
                 </p>
               </div>
             </div>
-            <button className="btn btn-danger btn-pill app-signout" onClick={handleLogout}>
-              Sign Out
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
+              <ThemeToggle />
+              <button className="btn btn-danger btn-pill app-signout" onClick={handleLogout}>
+                Sign Out
+              </button>
+            </div>
           </div>
         </aside>
 

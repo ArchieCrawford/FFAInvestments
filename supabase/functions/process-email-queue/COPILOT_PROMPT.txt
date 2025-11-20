@@ -1,0 +1,54 @@
+I have a Supabase project for an investment club app and I am adding a Supabase Edge Function to send queued emails with SendGrid.
+
+I just created this file:
+
+/supabase/functions/process-email-queue/index.ts
+
+The file should contain exactly this code (TypeScript, Deno Edge Function):
+
+--PASTE THE index.ts CONTENT HERE--
+
+Tasks:
+
+1. Verify that this function is valid for Supabase Edge Functions:
+   - It should import `serve` from Deno std and `createClient` from `@supabase/supabase-js@2`.
+   - It should read env vars via `Deno.env.get` for:
+     SUPABASE_URL
+     SUPABASE_SERVICE_ROLE_KEY
+     SENDGRID_API_KEY
+     SENDGRID_FROM
+     CRON_SECRET
+   - It should reject any request that does not provide the correct `x-cron-secret` header.
+
+2. Confirm that the function:
+   - Selects up to 50 rows from `email_queue` where `status='queued'`, ordered by `created_at` ascending.
+   - For each row:
+     - Updates status to `sending`, increments `attempts`, and sets `last_attempt_at`.
+     - Calls SendGrid API at `https://api.sendgrid.com/v3/mail/send` using `SENDGRID_API_KEY` and `SENDGRID_FROM`.
+     - Uses `html_body` if present, otherwise `text_body`.
+     - On success: updates `status='sent'`, sets `sent_at`, clears `last_error`.
+     - On error: updates `status='failed'`, sets `last_error` and `last_attempt_at`.
+
+3. Check that no secrets are logged or exposed:
+   - Do not log the service role key or SendGrid API key.
+   - All keys must come only from env vars, no literals.
+
+4. Tell me exactly which environment variables I must set and where:
+   - In Supabase Edge Functions environment (for this function).
+   - In `.env.local` for local testing (if I run it with `supabase functions serve`).
+   - In Vercel, only if any server-side code there needs to enqueue emails or call this function.
+
+5. Confirm that this file is not imported anywhere in my client-side code:
+   - Search the repo for imports from `/supabase/functions` or `process-email-queue`.
+   - If any client imports exist, suggest how to remove them so this function remains server-only.
+
+Return:
+- A short validation summary (valid/invalid and why).
+- A checklist of env vars and where they belong.
+- Any suggested small improvements to this function that keep the same behavior.
+
+You can now:
+
+* Drop the TS file into `/supabase/functions/process-email-queue/index.ts`.
+* Paste the prompt into Copilot Chat in VS Code to sanity-check wiring and envs.
+* In Supabase, set the env vars and add a cron schedule that hits this function with `x-cron-secret`.
