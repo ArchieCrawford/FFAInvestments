@@ -92,7 +92,7 @@ export default function AdminImport() {
             }
           }
         };
-      } else if (type === 'unit_prices') {
+  } else if (type === 'legacy-unit-prices') {
         schema = {
           type: "array",
           items: {
@@ -197,7 +197,7 @@ export default function AdminImport() {
           }
         }
         queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });
-      } else if (importType === 'unit_prices') {
+  } else if (importType === 'legacy-unit-prices') {
         // Import unit prices
         for (const price of previewData) {
           await base44.entities.UnitPrice.create({
@@ -231,7 +231,7 @@ export default function AdminImport() {
       csv = 'name,account_type,owner_email,current_units,cash_balance,opening_date\nFamily Fund,personal,john@example.com,100,10000,2024-01-01';
     } else if (type === 'ledger') {
       csv = 'account_name,entry_date,entry_type,amount,units_delta,memo\nFamily Fund,2024-01-15,contribution,5000,50,Monthly contribution';
-    } else if (type === 'unit_prices') {
+  } else if (type === 'legacy-unit-prices') {
       csv = 'price_date,price,total_aum,total_units_outstanding\n2024-01-31,100.00,250000,2500';
     }
 
@@ -394,7 +394,7 @@ export default function AdminImport() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => downloadTemplate('unit_prices')}
+                  onClick={() => downloadTemplate('legacy-unit-prices')}
                   className="flex-1"
                 >
                   <Download className="w-3 h-3 mr-1" />
@@ -406,7 +406,7 @@ export default function AdminImport() {
                     accept=".csv,.xlsx,.xls"
                     onChange={(e) => {
                       handleFileChange(e);
-                      setTimeout(() => handlePreview('unit_prices'), 100);
+                      setTimeout(() => handlePreview('legacy-unit-prices'), 100);
                     }}
                     className="hidden"
                   />

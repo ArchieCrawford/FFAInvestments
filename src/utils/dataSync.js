@@ -15,24 +15,18 @@ export const dataSyncUtils = {
       // Get all users from base44
       const base44Users = await base44.entities.User.list()
       
-      // Transform to Supabase member_accounts format
-      const memberAccounts = base44Users.map(user => ({
+      // Transform to normalized members table
+      const members = base44Users.map(user => ({
         member_name: user.name,
         email: user.email,
-        current_units: parseFloat(user.currentUnits || 0),
-        total_contributions: parseFloat(user.totalContributions || 0),
-        current_value: parseFloat(user.currentValue || 0),
-        ownership_percentage: parseFloat(user.ownershipPercentage || 0),
-        is_active: user.status === 'active'
+        status: user.status === 'active' ? 'Active' : 'Inactive',
+        external_short_id: user.shortId || null
       }))
-      
-      // Clear existing member accounts
-      await supabase.from('member_accounts').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-      
-      // Insert new data
+
+      // Upsert into members
       const { data, error } = await supabase
-        .from('member_accounts')
-        .insert(memberAccounts)
+        .from('members')
+        .upsert(members, { onConflict: 'email' })
         .select()
       
       if (error) {
@@ -53,23 +47,8 @@ export const dataSyncUtils = {
   syncTimelineData: async (csvData) => {
     try {
       console.log('Syncing timeline data to Supabase...')
-      
-      // Clear existing timeline data
-      await supabase.from('ffa_timeline').delete().neq('id', 0)
-      
-      // Insert new data
-      const { data, error } = await supabase
-        .from('ffa_timeline')
-        .insert(csvData)
-        .select()
-      
-      if (error) {
-        console.error('Error syncing timeline data:', error)
-        return { success: false, error }
-      }
-      
-      console.log(`Successfully synced ${data.length} timeline records to Supabase`)
-      return { success: true, data }
+      // Timeline ingestion is now handled by backend import tools or admin scripts.
+      throw new Error('syncTimelineData is deprecated. Use the backend import process to load historical timeline data into the normalized schema.')
       
     } catch (error) {
       console.error('Error in syncTimelineData:', error)
@@ -81,7 +60,7 @@ export const dataSyncUtils = {
   getMemberData: async (memberId = null) => {
     try {
       // Try Supabase first
-      let query = supabase.from('member_accounts').select('*')
+      let query = supabase.from('members').select('*')
       if (memberId) {
         query = query.eq('id', memberId)
       }
@@ -106,23 +85,9 @@ export const dataSyncUtils = {
   // Get timeline data from Supabase
   getTimelineData: async (memberName = null) => {
     try {
-      let query = supabase
-        .from('ffa_timeline')
-        .select('*')
-        .order('report_date', { ascending: true })
-      
-      if (memberName) {
-        query = query.eq('member_name', memberName)
-      }
-      
-      const { data, error } = await query
-      
-      if (error) {
-        console.error('Error getting timeline data:', error)
-        return { data: [], error }
-      }
-      
-      return { data, error: null }
+      // Use RPC api_get_member_timeline instead. This helper is deprecated.
+      console.warn('dataSyncUtils.getTimelineData is deprecated; use the server RPC api_get_member_timeline or src/lib/ffaApi.getMemberTimeline')
+      return { data: [], error: new Error('Deprecated — use ffaApi.getMemberTimeline') }
       
     } catch (error) {
       console.error('Error in getTimelineData:', error)
@@ -133,8 +98,9 @@ export const dataSyncUtils = {
   // Create or update member account in Supabase
   upsertMemberAccount: async (memberData) => {
     try {
+  // Write into the normalized members table (replacing the older accounts table design)
       const { data, error } = await supabase
-        .from('member_accounts')
+        .from('members')
         .upsert(memberData, { onConflict: 'email' })
         .select()
         .single()
@@ -199,26 +165,8 @@ export const dataSyncUtils = {
   // Get or create unit price entry
   upsertUnitPrice: async (date, price, totalValue, totalUnits) => {
     try {
-      const { data, error } = await supabase
-        .from('unit_prices')
-        .upsert({
-          price_date: date,
-          unit_price: price,
-          total_portfolio_value: totalValue,
-          total_units: totalUnits
-        }, { onConflict: 'price_date' })
-        .select()
-        .single()
-      
-      if (error) {
-        console.error('Error upserting unit price:', error)
-        return { success: false, error }
-      }
-      
-      // Recalculate member values with new unit price
-      await dataSyncUtils.recalculateMemberValues()
-      
-      return { success: true, data }
+      // Unit price is now derived from member_monthly_balances. This helper is deprecated.
+      throw new Error('upsertUnitPrice is deprecated. Unit prices are calculated from member_monthly_balances and should not be upserted from the frontend.')
       
     } catch (error) {
       console.error('Error in upsertUnitPrice:', error)
@@ -267,9 +215,9 @@ export const ensureSupabaseInitialized = async () => {
   initializationAttempted = true
   
   try {
-    // Check if we have any member accounts
+    // Check if we have any members
     const { data, error } = await supabase
-      .from('member_accounts')
+      .from('members')
       .select('id')
       .limit(1)
     
