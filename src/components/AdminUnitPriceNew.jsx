@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Plus, Edit2, Trash2, X } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { getUnitPriceHistory } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext'
 
 const formatCurrency = (value) =>
@@ -37,15 +37,31 @@ const AdminUnitPriceNew = () => {
 
   const fetchUnitPrices = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('unit_prices')
-      .select('*')
-      .order('price_date', { ascending: false })
+    try {
+      const rows = await getUnitPriceHistory()
 
-    if (error) {
+      // Aggregate by report_date to compute unit price = sum(portfolio_value)/sum(total_units)
+      const map = new Map()
+      ;(rows || []).forEach(r => {
+        const d = r.report_date
+        const pv = parseFloat(r.portfolio_value) || 0
+        const tu = parseFloat(r.total_units) || 0
+        if (!map.has(d)) map.set(d, { report_date: d, portfolio_value: 0, total_units: 0 })
+        const cur = map.get(d)
+        cur.portfolio_value += pv
+        cur.total_units += tu
+      })
+
+      const aggregated = Array.from(map.values()).map(item => ({
+        id: item.report_date,
+        price_date: item.report_date,
+        unit_price: item.total_units ? item.portfolio_value / item.total_units : 0,
+        notes: null
+      })).sort((a, b) => new Date(b.price_date) - new Date(a.price_date))
+
+      setUnitPrices(aggregated)
+    } catch (err) {
       setMessage({ type: 'error', text: 'Unable to load unit prices.' })
-    } else {
-      setUnitPrices(data || [])
     }
     setLoading(false)
   }
@@ -80,53 +96,15 @@ const AdminUnitPriceNew = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.unit_price || !form.price_date) {
-      setMessage({ type: 'error', text: 'Unit price and date are required.' })
-      return
-    }
-    const payload = {
-      unit_price: parseFloat(form.unit_price),
-      price_date: form.price_date,
-      notes: form.notes
-    }
-    let response
-    if (editingId) {
-      response = await supabase.from('unit_prices').update(payload).eq('id', editingId)
-    } else {
-      response = await supabase.from('unit_prices').insert(payload)
-    }
-    if (response.error) {
-      setMessage({ type: 'error', text: response.error.message })
-    } else {
-      setMessage({ type: 'success', text: `Unit price ${editingId ? 'updated' : 'added'} successfully.` })
-      setForm({
-        unit_price: '',
-        price_date: new Date().toISOString().split('T')[0],
-        notes: ''
-      })
-      setEditingId(null)
-      fetchUnitPrices()
-    }
+    setMessage({ type: 'error', text: 'Unit prices are now derived from member balances and are not editable via the UI.' })
   }
 
   const handleEdit = (price) => {
-    setEditingId(price.id)
-    setForm({
-      unit_price: price.unit_price.toString(),
-      price_date: price.price_date,
-      notes: price.notes || ''
-    })
+    setMessage({ type: 'error', text: 'Unit price editing is disabled in the migrated schema.' })
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this unit price entry?')) return
-    const { error } = await supabase.from('unit_prices').delete().eq('id', id)
-    if (error) {
-      setMessage({ type: 'error', text: 'Unable to delete this entry.' })
-    } else {
-      setMessage({ type: 'success', text: 'Unit price removed.' })
-      fetchUnitPrices()
-    }
+    setMessage({ type: 'error', text: 'Unit price deletion is disabled in the migrated schema.' })
   }
 
   if (loading) {
@@ -247,55 +225,14 @@ const AdminUnitPriceNew = () => {
       </div>
 
       {isAdmin && (
-        <form className="card" onSubmit={handleSubmit}>
+        <div className="card">
           <div className="card-header">
-            <p className="heading-md">{editingId ? 'Edit Unit Price' : 'Add Unit Price'}</p>
-            {editingId && (
-              <button type="button" className="btn btn-outline btn-pill" onClick={() => setEditingId(null)}>
-                <X size={16} className="mr-2" />
-                Cancel Edit
-              </button>
-            )}
+            <p className="heading-md">Unit prices are derived</p>
           </div>
-          <div className="grid-3">
-            <div>
-              <label className="text-muted text-sm">Unit Price</label>
-              <input
-                type="number"
-                step="0.0001"
-                className="input"
-                value={form.unit_price}
-                onChange={(e) => setForm({ ...form, unit_price: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="text-muted text-sm">Price Date</label>
-              <input
-                type="date"
-                className="input"
-                value={form.price_date}
-                onChange={(e) => setForm({ ...form, price_date: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="text-muted text-sm">Notes</label>
-              <input
-                type="text"
-                className="input"
-                placeholder="Optional"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
-            </div>
+          <div className="card-content">
+            <p className="text-muted">Unit prices are now calculated from member monthly balances and cannot be edited via this UI. Manage source balances or run the back-end process to adjust historical values.</p>
           </div>
-          <div style={{ marginTop: '1rem' }}>
-            <button type="submit" className="btn btn-success btn-pill">
-              {editingId ? 'Update Unit Price' : 'Add Unit Price'}
-            </button>
-          </div>
-        </form>
+        </div>
       )}
     </div>
   )

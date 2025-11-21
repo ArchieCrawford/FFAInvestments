@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getMembers } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Users, Mail, UserPlus, Edit2, Trash2, Shield, 
@@ -22,13 +23,15 @@ const AdminUsersNew = () => {
 
   const fetchMembers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('complete_member_profiles')
-        .select('*')
-        .order('full_name', { ascending: true });
-
-      if (error) throw error;
-      setMembers(data || []);
+      const data = await getMembers()
+      const mapped = (data || []).map(m => ({
+        id: m.id,
+        email: m.email,
+        full_name: m.member_name,
+        user_role: m.role || 'member',
+        account_status: 'member'
+      }))
+      setMembers(mapped)
     } catch (error) {
       console.error('Error fetching members:', error);
       setMessage({ type: 'error', text: 'Failed to load members' });

@@ -244,45 +244,20 @@ export const auth = {
 
 // Database helper functions
 export const db = {
-  // FFA Timeline data operations
-  insertTimelineData: async (timelineData) => {
-    const { data, error } = await supabase
-      .from('ffa_timeline')
-      .insert(timelineData)
-      .select()
-    return { data, error }
+  // Timeline helpers (migrated) - use backend RPCs / new views
+  insertTimelineData: async () => {
+    throw new Error('Inserting timeline data from the frontend is disabled. Use backend import tools or admin scripts.')
   },
 
   getTimelineData: async (memberId = null) => {
-    let query = supabase
-      .from('ffa_timeline')
-      .select('*')
-      .order('report_date', { ascending: true })
-    
-    if (memberId) {
-      query = query.eq('member_id', memberId)
-    }
-    
-    const { data, error } = await query
-    return { data, error }
+    // Prefer RPC api_get_member_timeline for member timelines; clients should use src/lib/ffaApi.getMemberTimeline
+    console.warn('db.getTimelineData is deprecated; use src/lib/ffaApi.getMemberTimeline instead.')
+    return { data: [], error: new Error('Deprecated — use ffaApi.getMemberTimeline') }
   },
 
   getMembersList: async () => {
-    const { data, error } = await supabase
-      .from('ffa_timeline')
-      .select('member_name, member_id')
-      .order('member_name')
-    
-    // Remove duplicates
-    const uniqueMembers = data?.reduce((acc, current) => {
-      const exists = acc.find(item => item.member_name === current.member_name)
-      if (!exists) {
-        acc.push(current)
-      }
-      return acc
-    }, []) || []
-    
-    return { data: uniqueMembers, error }
+    console.warn('db.getMembersList is deprecated; use src/lib/ffaApi.getMembers instead.')
+    return { data: [], error: new Error('Deprecated — use ffaApi.getMembers') }
   },
 
   // Organization operations

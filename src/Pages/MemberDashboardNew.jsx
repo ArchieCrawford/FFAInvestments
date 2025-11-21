@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getMemberTimeline, getMemberDues } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, 
@@ -21,23 +22,43 @@ const MemberDashboard = () => {
 
   const fetchMemberData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('complete_member_profiles')
+      // Fetch profile from new members table
+      const { data: member, error: memberError } = await supabase
+        .from('members')
         .select('*')
         .eq('email', user.email)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No member record found
+      if (memberError) {
+        if (memberError.code === 'PGRST116') {
           setError('Member profile not found. Please contact an administrator.');
         } else {
-          throw error;
+          throw memberError;
         }
         return;
       }
 
-      setMemberData(data);
+      // Fetch timeline via RPC
+      let timeline = []
+      try {
+        timeline = await getMemberTimeline(member.id)
+      } catch (err) {
+        console.warn('Could not load member timeline:', err)
+      }
+
+      // Use latest timeline entry for derived metrics
+      const latest = (timeline && timeline.length > 0) ? timeline[timeline.length - 1] : null
+
+      setMemberData({
+        ...member,
+        timeline,
+        calculated_current_value: latest?.portfolio_value || member.current_value || 0,
+        current_units: latest?.total_units || member.current_units || 0,
+        total_gain_loss: latest?.portfolio_growth_amount || 0,
+        return_percentage: latest?.portfolio_growth || 0,
+        current_unit_price: latest && latest.total_units ? (latest.portfolio_value / latest.total_units) : member.current_unit_price || 0,
+        unit_price_date: latest?.report_date || null
+      })
     } catch (error) {
       console.error('Error fetching member data:', error);
       setError('Failed to load member data');

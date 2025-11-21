@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js';
+import { getMemberTimeline } from '../lib/ffaApi';
 
 /**
  * Member Data Service
@@ -160,17 +161,17 @@ export async function updateMemberDues(memberId, duesUpdate) {
 
 export async function saveMemberUnitValues(unitValuesData) {
   try {
+    // Migrate to use member_monthly_balances (normalized)
     const { data, error } = await supabase
-      .from('member_unit_values')
+      .from('member_monthly_balances')
       .upsert(unitValuesData.map(unit => ({
         member_id: unit.member_id,
-        unit_value: unit.unit_value,
+        report_date: unit.valuation_date || unit.report_date,
+        portfolio_value: unit.total_value || unit.portfolio_value,
         total_units: unit.total_units,
-        total_value: unit.total_value,
-        valuation_date: unit.valuation_date,
         updated_at: new Date().toISOString()
       })), { 
-        onConflict: 'member_id,valuation_date',
+        onConflict: 'member_id,report_date',
         ignoreDuplicates: false 
       })
       .select();
@@ -186,7 +187,7 @@ export async function saveMemberUnitValues(unitValuesData) {
 export async function getMemberUnitValues(valuationDate = null) {
   try {
     let query = supabase
-      .from('member_unit_values')
+      .from('member_monthly_balances')
       .select(`
         *,
         members (
@@ -196,10 +197,10 @@ export async function getMemberUnitValues(valuationDate = null) {
       `);
 
     if (valuationDate) {
-      query = query.eq('valuation_date', valuationDate);
+      query = query.eq('report_date', valuationDate);
     }
 
-    const { data, error } = await query.order('valuation_date', { ascending: false });
+    const { data, error } = await query.order('report_date', { ascending: false });
 
     if (error) throw error;
     return { success: true, data };
@@ -258,28 +259,9 @@ export async function getMemberPersonalData(memberId) {
 
 export async function saveMemberPortfolioData(portfolioData) {
   try {
-    const { data, error } = await supabase
-      .from('member_portfolio_data')
-      .upsert(portfolioData.map(portfolio => ({
-        member_id: portfolio.member_id,
-        symbol: portfolio.symbol,
-        company_name: portfolio.company_name,
-        shares: portfolio.shares,
-        purchase_price: portfolio.purchase_price,
-        current_price: portfolio.current_price,
-        market_value: portfolio.market_value,
-        gain_loss: portfolio.gain_loss,
-        gain_loss_percent: portfolio.gain_loss_percent,
-        purchase_date: portfolio.purchase_date,
-        last_updated: new Date().toISOString()
-      })), { 
-        onConflict: 'member_id,symbol',
-        ignoreDuplicates: false 
-      })
-      .select();
-
-    if (error) throw error;
-    return { success: true, data };
+    // Member portfolio data is now surfaced via RPC/view (api_get_member_timeline / v_member_positions_as_of).
+    // For compatibility, we do not support direct upserts to portfolio positions via the frontend service.
+    return { success: false, error: 'Direct portfolio upserts are not supported in the migrated schema. Use backend jobs or admin tools.' };
   } catch (error) {
     console.error('Error saving member portfolio data:', error);
     return { success: false, error: error.message };
@@ -288,13 +270,8 @@ export async function saveMemberPortfolioData(portfolioData) {
 
 export async function getMemberPortfolioData(memberId) {
   try {
-    const { data, error } = await supabase
-      .from('member_portfolio_data')
-      .select('*')
-      .eq('member_id', memberId)
-      .order('symbol');
-
-    if (error) throw error;
+    // Use RPC to retrieve member timeline and positions
+    const data = await getMemberTimeline(memberId)
     return { success: true, data };
   } catch (error) {
     console.error('Error fetching member portfolio data:', error);
@@ -304,18 +281,9 @@ export async function getMemberPortfolioData(memberId) {
 
 export async function getAllPortfolioData() {
   try {
-    const { data, error } = await supabase
-      .from('member_portfolio_data')
-      .select(`
-        *,
-        members (
-          member_name
-        )
-      `)
-      .order('symbol');
-
-    if (error) throw error;
-    return { success: true, data };
+    // Portfolio positions are now provided by the RPC/view v_member_positions_as_of or api_get_member_timeline.
+    console.warn('getAllPortfolioData is deprecated; use the server RPC api_get_member_timeline or v_member_positions_as_of instead.')
+    return { success: false, error: 'Deprecated — use api_get_member_timeline or v_member_positions_as_of' };
   } catch (error) {
     console.error('Error fetching all portfolio data:', error);
     return { success: false, error: error.message };
