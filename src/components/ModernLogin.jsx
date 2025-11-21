@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff, Mail, Lock, User, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
 import './ModernLogin.css'
 
 const BackgroundAnimation = () => (
@@ -90,12 +90,12 @@ const ModernLogin = () => {
         console.log('🔑 Attempting sign up for:', formData.email)
         const result = await signUp(formData.email, formData.password, formData.displayName)
         
-        if (result?.error) {
+          if (result?.error) {
           console.error('❌ Sign up error:', result.error)
           
           // Provide specific error messages for common issues
           if (result.error.message?.includes('Database error')) {
-            setFormError('⚠️ Account creation is temporarily unavailable. Please try the demo users below or contact support.')
+            setFormError('⚠️ Account creation is temporarily unavailable. Please contact support.')
           } else if (result.error.message?.includes('already registered')) {
             setFormError('📧 This email is already registered. Please try signing in instead.')
           } else if (result.error.message?.includes('Invalid email')) {
@@ -138,15 +138,7 @@ const ModernLogin = () => {
     if (formError) setFormError('') // Clear errors on typing
   }
 
-  const demoUsers = [
-    { email: 'admin@ffainvestments.com', role: 'Admin', color: 'from-purple-400 to-pink-400' },
-    { email: 'member@ffainvestments.com', role: 'Member', color: 'from-blue-400 to-cyan-400' },
-    { email: 'demo@ffainvestments.com', role: 'Demo', color: 'from-green-400 to-emerald-400' }
-  ]
-
-  const fillDemoLogin = (email) => {
-    setFormData({ ...formData, email, password: 'demo123456' })
-  }
+  // Demo quick-login removed for production security; use standard sign in instead.
 
   if (loading) {
     return (
@@ -206,23 +198,7 @@ const ModernLogin = () => {
             <p>Enter your credentials to access your account</p>
           </div>
 
-          {/* Demo Users */}
-          <div className="demo-users">
-            <p className="demo-label">Quick Demo Access:</p>
-            <div className="demo-buttons">
-              {demoUsers.map((user, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  className={`btn btn-pill demo-btn bg-gradient-to-r ${user.color}`}
-                  onClick={() => fillDemoLogin(user.email)}
-                >
-                  <User size={16} />
-                  <span>{user.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Demo quick-login removed */}
 
           <form onSubmit={handleSubmit} className="login-form">
             {formError && (
@@ -334,11 +310,7 @@ const ModernLogin = () => {
             </button>
           </div>
 
-          {/* Password hint for demo users */}
-          <div className="demo-hint">
-            <p>💡 Demo password: <code>demo123456</code></p>
-            <p className="test-info">🧪 Sign-up requires email confirmation. Demo users are pre-configured for immediate access.</p>
-          </div>
+          {/* No demo password or quick-login hints are shown on the public login page. */}
         </div>
       </div>
     </div>
