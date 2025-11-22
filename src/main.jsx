@@ -62,6 +62,15 @@ class ErrorBoundary extends React.Component {
 
 console.log('🚀 Starting FFA Investments application...')
 
+// Ensure a default light theme is set on first load
+try {
+  if (typeof document !== 'undefined' && !document.documentElement.getAttribute('data-theme')) {
+    document.documentElement.setAttribute('data-theme', 'light')
+  }
+} catch (e) {
+  // ignore in non-browser environments
+}
+
 // Mount the application
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(

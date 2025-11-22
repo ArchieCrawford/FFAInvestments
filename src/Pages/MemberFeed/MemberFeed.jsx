@@ -84,10 +84,10 @@ const PostComposer = ({ onCreate, currentUserId }) => {
   }
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+    <div className="app-card">
       <form onSubmit={handleSubmit}>
         <textarea
-          className="w-full bg-transparent text-slate-100 placeholder:text-slate-500 p-2 rounded-md border border-slate-800"
+          className="app-input w-full bg-transparent placeholder:text-slate-500 p-2 rounded-md border"
           rows={4}
           placeholder="Share an update, link, or photo with the club..."
           value={content}
@@ -95,7 +95,7 @@ const PostComposer = ({ onCreate, currentUserId }) => {
         />
         <div className="flex gap-2 mt-2 items-center">
           <input type="file" accept="image/*" onChange={handleFileChange} />
-          <input className="input" placeholder="Link URL (optional)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
+          <input className="app-input" placeholder="Link URL (optional)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
         </div>
         {previewUrl && (
           <div className="mt-2">
@@ -109,7 +109,7 @@ const PostComposer = ({ onCreate, currentUserId }) => {
             <div className="flex items-center gap-1"><Image size={16} /> Image</div>
             <div className="flex items-center gap-1"><LinkIcon size={16} /> Link</div>
           </div>
-          <button className="btn btn-primary btn-sm" type="submit" disabled={submitting || uploading || (!content.trim() && !imageFile && !linkUrl)}>
+          <button className="app-btn app-btn-primary app-btn-sm" type="submit" disabled={submitting || uploading || (!content.trim() && !imageFile && !linkUrl)}>
             {uploading ? 'Uploading…' : submitting ? 'Posting…' : 'Post'}
           </button>
         </div>
@@ -173,13 +173,13 @@ const CommentList = ({ postId, currentUserId, canDeleteComment, onCommentCreated
               <div className="text-xs text-slate-400">{c.author_id} • {new Date(c.created_at).toLocaleString()}</div>
               <div className="text-slate-100">{c.content}</div>
             </div>
-            {canDeleteComment && <button className="btn btn-ghost btn-sm" onClick={() => handleDelete(c.id)}><Trash size={14} /></button>}
+            {canDeleteComment && <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleDelete(c.id)}><Trash size={14} /></button>}
           </div>
         ))}
       </div>
       <div className="mt-2 flex gap-2">
-        <input className="input flex-1" placeholder="Write a comment..." value={text} onChange={(e) => setText(e.target.value)} />
-        <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={!text.trim()}>Reply</button>
+        <input className="app-input flex-1" placeholder="Write a comment..." value={text} onChange={(e) => setText(e.target.value)} />
+        <button className="app-btn app-btn-primary app-btn-sm" onClick={handleCreate} disabled={!text.trim()}>Reply</button>
       </div>
     </div>
   )
@@ -230,14 +230,14 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   const canDelete = profile?.role === 'admin' || currentUserId === post.author_id
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-4">
+    <div className="app-card">
       <div className="flex justify-between items-start">
         <div>
           <div className="text-slate-200 font-medium">{post.author_name || post.author_id}</div>
           <div className="text-xs text-slate-500">{new Date(post.created_at).toLocaleString()}</div>
         </div>
         <div className="flex items-center gap-2">
-          {canDelete && <button className="btn btn-ghost btn-sm text-red-400" onClick={handleDelete}><Trash size={14} /></button>}
+          {canDelete && <button className="app-btn app-btn-outline app-btn-sm text-red-400" onClick={handleDelete}><Trash size={14} /></button>}
         </div>
       </div>
       <div className="mt-3 text-slate-100 whitespace-pre-wrap">{post.content}</div>
@@ -251,8 +251,8 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <button className="btn btn-ghost btn-sm" onClick={toggleLike}><Heart size={14} /> <span className="ml-1">{likes}</span></button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setCommentsOpen(v => !v)}><MessageSquare size={14} /> <span className="ml-1">Comments</span></button>
+        <button className="app-btn app-btn-outline app-btn-sm" onClick={toggleLike}><Heart size={14} /> <span className="ml-1">{likes}</span></button>
+        <button className="app-btn app-btn-outline app-btn-sm" onClick={() => setCommentsOpen(v => !v)}><MessageSquare size={14} /> <span className="ml-1">Comments</span></button>
       </div>
 
       {commentsOpen && (
@@ -323,16 +323,16 @@ const MemberFeed = () => {
   if (!profile) return null
 
   return (
-    <div className="app-page">
-      <div className="card">
-        <div className="card-header">
+    <div className="app-content">
+      <div className="app-card">
+        <div className="app-card-header">
           <div>
-            <p className="heading-lg">Member Feed</p>
-            <p className="text-muted">Share updates, links, and photos with the club.</p>
+            <p className="app-heading-lg">Member Feed</p>
+            <p className="app-text-muted">Share updates, links, and photos with the club.</p>
           </div>
         </div>
-        <div className="card-content space-y-4">
-          {error && <div className="error-alert">{error}</div>}
+        <div className="app-card-content space-y-4">
+          {error && <div className="app-alert">{error}</div>}
           <PostComposer onCreate={handleCreate} currentUserId={profile?.id} />
           {loading ? (
             <div className="py-8 text-center text-slate-400">Loading feed…</div>
@@ -344,7 +344,7 @@ const MemberFeed = () => {
               ))}
               {nextCursor && (
                 <div className="text-center">
-                  <button className="btn btn-outline" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>
+                  <button className="app-btn app-btn-outline" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>
                 </div>
               )}
             </div>

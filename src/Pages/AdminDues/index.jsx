@@ -135,14 +135,14 @@ const DuesTracker = () => {
   const totalPaymentsCollected = rows.reduce((s, r) => s + (Number(r.total_contribution) || 0), 0)
 
   return (
-    <div className="app-page">
-      <div className="card">
-        <div className="card-header">
+    <div className="app-content">
+      <div className="app-card">
+        <div className="app-card-header">
           <div>
-            <p className="heading-lg">Member Dues / Contributions</p>
-            <p className="text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
+            <p className="app-heading-lg">Member Dues / Contributions</p>
+            <p className="app-text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
           </div>
-          <div className="pill">
+          <div className="app-pill">
             <Download size={16} />
             Export
           </div>
@@ -150,13 +150,13 @@ const DuesTracker = () => {
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: 8 }}>
           <input
-            className="input"
+            className="app-input"
             placeholder="Filter by member name"
             value={filterName}
             onChange={(e) => setFilterName(e.target.value)}
             style={{ minWidth: 220 }}
           />
-          <select value={filterRange} onChange={(e) => setFilterRange(e.target.value)} className="input">
+          <select value={filterRange} onChange={(e) => setFilterRange(e.target.value)} className="app-input">
             <option value="12">Last 12 months</option>
             <option value="6">Last 6 months</option>
             <option value="3">Last 3 months</option>
@@ -167,13 +167,13 @@ const DuesTracker = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <p className="heading-md">Dues / Contributions by Member & Month</p>
+      <div className="app-card">
+        <div className="app-card-header">
+          <p className="app-heading-md">Dues / Contributions by Member & Month</p>
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-900/80">
           <div className="max-h-[70vh] overflow-y-auto border-t border-slate-800">
-            <table className="min-w-full border-collapse text-sm" style={{ width: '100%' }}>
+            <table className="app-table min-w-full" style={{ width: '100%' }}>
               <thead className="sticky top-0 z-10 bg-slate-900">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Member</th>
