@@ -25,6 +25,9 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
+      const { error, errorInfo } = this.state || {}
+      const stack = errorInfo && errorInfo.componentStack ? errorInfo.componentStack : null
+
       return (
         <div style={{ 
           padding: '20px', 
@@ -36,9 +39,15 @@ class ErrorBoundary extends React.Component {
           <h2>🚨 Application Error</h2>
           <details style={{ whiteSpace: 'pre-wrap' }}>
             <summary>Error Details</summary>
-            <p><strong>Error:</strong> {this.state.error && this.state.error.toString()}</p>
-            <p><strong>Stack:</strong></p>
-            <code>{this.state.errorInfo.componentStack}</code>
+            <p><strong>Error:</strong> {error ? String(error) : 'Unknown error'}</p>
+            {stack ? (
+              <>
+                <p><strong>Stack:</strong></p>
+                <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{stack}</pre>
+              </>
+            ) : (
+              <p style={{ color: '#6b7280' }}>No stack trace available.</p>
+            )}
           </details>
           <button onClick={() => window.location.reload()}>
             🔄 Reload Page

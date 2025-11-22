@@ -184,15 +184,36 @@ const DuesTracker = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800 bg-slate-950/40">
-                {visibleRows.map((row) => (
-                  <tr key={`${row.member_id}-${row.report_date}`} className="hover:bg-slate-900/80">
-                    <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name}</td>
-                    <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{row.report_month || (row.report_date ? new Date(row.report_date).toLocaleDateString() : '')}</td>
-                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.total_contribution != null ? `$${Number(row.total_contribution).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
-                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.portfolio_value != null ? `$${Number(row.portfolio_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
-                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.ownership_pct != null ? `${(Number(row.ownership_pct) * 100).toFixed(3)}%` : '—'}</td>
-                  </tr>
-                ))}
+                {visibleRows.map((row) => {
+                  const safeKey = row.id || `${row.member_name || 'unknown'}-${row.report_month || row.report_date || 'unknown'}`
+
+                  const totalContribution = Number(row.total_contribution)
+                  const contributionDisplay = !Number.isNaN(totalContribution)
+                    ? `$${totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : '—'
+
+                  const portfolioValueNum = Number(row.portfolio_value)
+                  const portfolioDisplay = !Number.isNaN(portfolioValueNum)
+                    ? `$${portfolioValueNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : '—'
+
+                  const ownershipPct = Number(row.ownership_pct)
+                  const ownershipDisplay = !Number.isNaN(ownershipPct)
+                    ? `${(ownershipPct * 100).toFixed(3)}%`
+                    : '—'
+
+                  const period = row.report_month || (row.report_date ? new Date(row.report_date).toLocaleDateString() : '')
+
+                  return (
+                    <tr key={safeKey} className="hover:bg-slate-900/80">
+                      <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name || 'Unknown'}</td>
+                      <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{period}</td>
+                      <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{contributionDisplay}</td>
+                      <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{portfolioDisplay}</td>
+                      <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{ownershipDisplay}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
