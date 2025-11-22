@@ -103,18 +103,18 @@ export default function AdminMemberManagement() {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'active': return <span className="badge bg-success">Active</span>;
-      case 'invited': return <span className="badge bg-warning">Invited</span>;
-      case 'pending_invite': return <span className="badge bg-secondary">Pending Invite</span>;
-      default: return <span className="badge bg-light">Unknown</span>;
+      case 'active': return <span className="app-pill">Active</span>;
+      case 'invited': return <span className="app-pill">Invited</span>;
+      case 'pending_invite': return <span className="app-pill">Pending Invite</span>;
+      default: return <span className="app-pill">Unknown</span>;
     }
   };
 
   const getRoleBadge = (role) => {
     switch (role) {
-      case 'admin': return <span className="badge bg-primary">Admin</span>;
-      case 'member': return <span className="badge bg-info">Member</span>;
-      default: return <span className="badge bg-secondary">Unknown</span>;
+      case 'admin': return <span className="app-pill">Admin</span>;
+      case 'member': return <span className="app-pill">Member</span>;
+      default: return <span className="app-pill">Unknown</span>;
     }
   };
 
@@ -125,8 +125,8 @@ export default function AdminMemberManagement() {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-        <div className="spinner-border text-primary" role="status">
+      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="spinner-page" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -135,47 +135,46 @@ export default function AdminMemberManagement() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Member Account Management</h2>
-        <div>
-          <button className="btn btn-outline-primary me-2" onClick={() => window.location.href = '/admin/users'}>
-            <i className="fas fa-list me-1"></i>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="app-btn app-btn-outline" onClick={() => window.location.href = '/admin/users'}>
+            <i className="fas fa-list" style={{ marginRight: '0.5rem' }}></i>
             Member Directory
           </button>
-          <button className="btn btn-primary" onClick={() => window.location.reload()}>
-            <i className="fas fa-sync me-1"></i>
+          <button className="app-btn app-btn-primary" onClick={() => window.location.reload()}>
+            <i className="fas fa-sync" style={{ marginRight: '0.5rem' }}></i>
             Refresh Data
           </button>
         </div>
       </div>
 
-      <div className="row g-4">
+      <div className="app-grid cols-2" style={{ gap: '1rem' }}>
         {/* Member List */}
-        <div className="col-md-4">
-          <div className="task-box">
-            <h5 className="mb-3">
-              <i className="fas fa-users me-2"></i>
-              All Members ({members.length})
-            </h5>
-            <div className="list-group list-group-flush" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+        <div>
+          <div className="app-card">
+            <div className="app-card-header">
+              <h5 className="app-card-title"><i className="fas fa-users me-2"></i>All Members ({members.length})</h5>
+            </div>
+            <div className="app-card-content" style={{ maxHeight: '600px', overflowY: 'auto' }}>
               {members.map((member) => (
                 <div 
                   key={member.id}
-                  className={`list-group-item list-group-item-action cursor-pointer ${selectedMember?.id === member.id ? 'active' : ''}`}
                   onClick={() => handleMemberSelect(member)}
+                  style={{ cursor: 'pointer', marginBottom: '0.5rem' }}
                 >
-                  <div className="d-flex justify-content-between align-items-start">
-                    <div className="flex-grow-1">
-                      <h6 className="mb-1">{member.name}</h6>
-                      <p className="mb-1 small">{member.email || 'No email'}</p>
-                      <div className="d-flex gap-2">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <h6 style={{ margin: 0 }}>{member.name}</h6>
+                      <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>{member.email || 'No email'}</p>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {getRoleBadge(member.role)}
                         {getStatusBadge(member.status)}
                       </div>
                     </div>
-                    <div className="text-end">
-                      <div className="fw-bold">{formatCurrency(member.currentBalance || 0)}</div>
-                      <small className="text-muted">{member.totalUnits?.toFixed(2) || '0'} units</small>
+                    <div style={{ textAlign: 'right', marginLeft: '0.75rem' }}>
+                      <div style={{ fontWeight: 700 }}>{formatCurrency(member.currentBalance || 0)}</div>
+                      <small className="app-text-muted">{member.totalUnits?.toFixed(2) || '0'} units</small>
                     </div>
                   </div>
                 </div>
@@ -185,42 +184,41 @@ export default function AdminMemberManagement() {
         </div>
 
         {/* Selected Member Details */}
-        <div className="col-md-8">
+        <div>
           {selectedMember ? (
             <>
               {/* Member Header */}
-              <div className="task-box mb-4">
-                <div className="d-flex justify-content-between align-items-start">
+              <div className="app-card mb-4">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <h4>{selectedMember.name}</h4>
-                    <p className="text-muted mb-2">
-                      {selectedMember.email || 'No email provided'} • 
-                      Member since {formatDate(selectedMember.joinDate)}
+                    <p className="app-text-muted" style={{ marginBottom: '0.5rem' }}>
+                      {selectedMember.email || 'No email provided'} • Member since {formatDate(selectedMember.joinDate)}
                     </p>
-                    <div className="d-flex gap-2">
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                       {getRoleBadge(selectedMember.role)}
                       {getStatusBadge(selectedMember.status)}
                     </div>
                   </div>
-                  <div className="btn-group">
-                    <button 
-                      className="btn btn-outline-primary btn-sm"
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      className="app-btn app-btn-outline app-btn-sm"
                       onClick={() => {
                         setInviteData({ memberId: selectedMember.id, email: selectedMember.email || '', role: selectedMember.role });
                         setShowInviteModal(true);
                       }}
                     >
-                      <i className="fas fa-envelope me-1"></i>
+                      <i className="fas fa-envelope" style={{ marginRight: '0.5rem' }}></i>
                       {selectedMember.status === 'pending_invite' ? 'Send Invite' : 'Resend Invite'}
                     </button>
-                    <button 
-                      className="btn btn-outline-secondary btn-sm"
+                    <button
+                      className="app-btn app-btn-outline app-btn-sm"
                       onClick={() => {
                         setRoleData({ memberId: selectedMember.id, role: selectedMember.role });
                         setShowRoleModal(true);
                       }}
                     >
-                      <i className="fas fa-user-cog me-1"></i>
+                      <i className="fas fa-user-cog" style={{ marginRight: '0.5rem' }}></i>
                       Change Role
                     </button>
                   </div>
@@ -228,39 +226,34 @@ export default function AdminMemberManagement() {
               </div>
 
               {/* Member Stats */}
-              <div className="row g-3 mb-4">
-                <div className="col-md-4">
-                  <div className="card-stat">
-                    <div>
-                      <div className="fw-bold">Current Balance</div>
-                      <div className="fs-5">{formatCurrency(selectedMember.currentBalance || 0)}</div>
-                    </div>
-                    <i className="fas fa-wallet fa-2x text-primary"></i>
+              <div className="app-grid cols-3" style={{ marginBottom: '1rem' }}>
+                <div className="app-card app-card-stat">
+                  <div>
+                    <div className="app-heading-md">Current Balance</div>
+                    <div className="app-heading-lg">{formatCurrency(selectedMember.currentBalance || 0)}</div>
                   </div>
+                  <i className="fas fa-wallet fa-2x" />
                 </div>
-                <div className="col-md-4">
-                  <div className="card-stat">
-                    <div>
-                      <div className="fw-bold">Total Units</div>
-                      <div className="fs-5">{selectedMember.totalUnits?.toFixed(4) || '0.0000'}</div>
-                    </div>
-                    <i className="fas fa-coins fa-2x text-warning"></i>
+                <div className="app-card app-card-stat">
+                  <div>
+                    <div className="app-heading-md">Total Units</div>
+                    <div className="app-heading-lg">{selectedMember.totalUnits?.toFixed(4) || '0.0000'}</div>
                   </div>
+                  <i className="fas fa-coins fa-2x" />
                 </div>
-                <div className="col-md-4">
-                  <div className="card-stat">
-                    <div>
-                      <div className="fw-bold">Data Points</div>
-                      <div className="fs-5">{memberTimeline.length}</div>
-                    </div>
-                    <i className="fas fa-chart-bar fa-2x text-info"></i>
+                <div className="app-card app-card-stat">
+                  <div>
+                    <div className="app-heading-md">Data Points</div>
+                    <div className="app-heading-lg">{memberTimeline.length}</div>
                   </div>
+                  <i className="fas fa-chart-bar fa-2x" />
                 </div>
               </div>
 
               {/* Portfolio Chart */}
-              <div className="task-box mb-4">
-                <h5 className="mb-3">Portfolio Performance</h5>
+              <div className="app-card mb-4">
+                <div className="app-card-header"><h5 className="app-card-title">Portfolio Performance</h5></div>
+                <div className="app-card-content">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
@@ -278,17 +271,19 @@ export default function AdminMemberManagement() {
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="text-center text-muted py-4">
+                  <div className="text-center app-text-muted py-4">
                     No timeline data available for this member
                   </div>
                 )}
+                </div>
               </div>
 
               {/* Recent Activity */}
-              <div className="task-box">
-                <h5 className="mb-3">Recent Portfolio Activity</h5>
-                <div className="table-responsive">
-                  <table className="table table-sm">
+              <div className="app-card">
+                <div className="app-card-header"><h5 className="app-card-title">Recent Portfolio Activity</h5></div>
+                <div className="app-card-content">
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="app-table">
                     <thead>
                       <tr>
                         <th>Date</th>
@@ -305,25 +300,28 @@ export default function AdminMemberManagement() {
                           <td>{entry.totalUnits?.toFixed(4)}</td>
                           <td>
                             {entry.portfolioGrowth ? (
-                              <span className={`badge ${entry.portfolioGrowth >= 0 ? 'bg-success' : 'bg-danger'}`}>
+                              <span className={`app-pill`}>
                                 {entry.portfolioGrowth >= 0 ? '+' : ''}{(entry.portfolioGrowth * 100).toFixed(2)}%
                               </span>
                             ) : (
-                              <span className="text-muted">-</span>
+                              <span className="app-text-muted">-</span>
                             )}
                           </td>
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="task-box text-center">
-              <i className="fas fa-user-friends fa-3x text-muted mb-3"></i>
-              <h5>Select a Member</h5>
-              <p className="text-muted">Choose a member from the list to view their account details</p>
+            <div className="app-card text-center">
+              <div className="app-card-content">
+                <i className="fas fa-user-friends fa-3x mb-3"></i>
+                <h5>Select a Member</h5>
+                <p className="app-text-muted">Choose a member from the list to view their account details</p>
+              </div>
             </div>
           )}
         </div>
@@ -331,50 +329,50 @@ export default function AdminMemberManagement() {
 
       {/* Invite Modal */}
       {showInviteModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Send Account Invitation</h5>
-                <button type="button" className="btn-close" onClick={() => setShowInviteModal(false)}></button>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true">
+            <div className="app-card">
+              <div className="app-card-header">
+                <h5 className="app-card-title">Send Account Invitation</h5>
+                <button type="button" className="modal-close" onClick={() => setShowInviteModal(false)} aria-label="Close" />
               </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">Email Address</label>
+              <div className="app-card-content">
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="app-text-muted">Email Address</label>
                   <input
                     type="email"
-                    className="form-control"
+                    className="app-form-control"
                     value={inviteData.email}
                     onChange={(e) => setInviteData({...inviteData, email: e.target.value})}
                     placeholder="Enter member's email address"
                   />
                 </div>
-                <div className="mb-3">
-                  <label className="form-label">Account Role</label>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="app-text-muted">Account Role</label>
                   <select
-                    className="form-select"
+                    className="app-form-control"
                     value={inviteData.role}
                     onChange={(e) => setInviteData({...inviteData, role: e.target.value})}
                   >
                     <option value="member">Member (View only access)</option>
                     <option value="admin">Admin (Full access)</option>
                   </select>
-                  <div className="form-text">
+                  <div className="app-text-muted" style={{ marginTop: '0.5rem' }}>
                     Members can only view their own accounts. Admins can manage all accounts.
                   </div>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowInviteModal(false)}>
+              <div className="app-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="app-btn app-btn-outline" onClick={() => setShowInviteModal(false)}>
                   Cancel
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
+                <button
+                  type="button"
+                  className="app-btn app-btn-primary"
                   onClick={handleSendInvite}
                   disabled={!inviteData.email}
                 >
-                  <i className="fas fa-paper-plane me-1"></i>
+                  <i className="fas fa-paper-plane" style={{ marginRight: '0.5rem' }}></i>
                   Send Invitation
                 </button>
               </div>
@@ -385,40 +383,40 @@ export default function AdminMemberManagement() {
 
       {/* Role Change Modal */}
       {showRoleModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Change Member Role</h5>
-                <button type="button" className="btn-close" onClick={() => setShowRoleModal(false)}></button>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true">
+            <div className="app-card">
+              <div className="app-card-header">
+                <h5 className="app-card-title">Change Member Role</h5>
+                <button type="button" className="modal-close" onClick={() => setShowRoleModal(false)} aria-label="Close" />
               </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label">Select New Role</label>
+              <div className="app-card-content">
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="app-text-muted">Select New Role</label>
                   <select
-                    className="form-select"
+                    className="app-form-control"
                     value={roleData.role}
                     onChange={(e) => setRoleData({...roleData, role: e.target.value})}
                   >
                     <option value="member">Member (View only access)</option>
                     <option value="admin">Admin (Full management access)</option>
                   </select>
-                  <div className="form-text">
+                  <div className="app-text-muted" style={{ marginTop: '0.5rem' }}>
                     <strong>Member:</strong> Can only view their own account dashboard<br/>
                     <strong>Admin:</strong> Can manage all accounts, invite users, and access admin features
                   </div>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowRoleModal(false)}>
+              <div className="app-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button type="button" className="app-btn app-btn-outline" onClick={() => setShowRoleModal(false)}>
                   Cancel
                 </button>
-                <button 
-                  type="button" 
-                  className="btn btn-warning" 
+                <button
+                  type="button"
+                  className="app-btn app-btn-warning"
                   onClick={handleRoleChange}
                 >
-                  <i className="fas fa-user-cog me-1"></i>
+                  <i className="fas fa-user-cog" style={{ marginRight: '0.5rem' }}></i>
                   Update Role
                 </button>
               </div>

@@ -88,23 +88,21 @@ export default function InviteAccept() {
 
   if (loading) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f7f9fc' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f9fc' }}>
+        <div className="spinner-page" role="status" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f7f9fc' }}>
-        <div className="card shadow-lg" style={{ width: '400px' }}>
-          <div className="card-body p-4 text-center">
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f9fc' }}>
+        <div className="app-card" style={{ width: 400 }}>
+          <div className="app-card-content text-center">
             <i className="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
             <h4>Invalid Invitation</h4>
-            <p className="text-muted">{error}</p>
-            <a href="/login" className="btn btn-primary">
+            <p className="app-text-muted">{error}</p>
+            <a href="/login" className="app-btn app-btn-primary" style={{ display: 'inline-block', marginTop: '0.5rem' }}>
               Go to Login
             </a>
           </div>
@@ -114,52 +112,52 @@ export default function InviteAccept() {
   }
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f7f9fc' }}>
-      <div className="card shadow-lg" style={{ width: '450px' }}>
-        <div className="card-body p-4">
-          <div className="text-center mb-4">
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f9fc' }}>
+      <div className="app-card" style={{ width: 450 }}>
+        <div className="app-card-content">
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
             <i className="fas fa-dollar-sign text-primary fs-1 mb-3"></i>
             <h2 className="fw-bold">Welcome to FFA Investments</h2>
-            <p className="text-muted">Complete your account setup</p>
+            <p className="app-text-muted">Complete your account setup</p>
           </div>
 
-          <div className="alert alert-info">
+          <div className="app-alert app-alert-info">
             <i className="fas fa-info-circle me-2"></i>
             <strong>Hello {inviteData?.name}!</strong><br/>
             You've been invited to join as a <strong>{inviteData?.role}</strong>.
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label">Email Address</label>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label className="app-text-muted">Email Address</label>
               <input
                 type="email"
-                className="form-control"
+                className="app-input"
                 value={inviteData?.email || ''}
                 disabled
               />
-              <div className="form-text">This email is associated with your invitation</div>
+              <div className="app-text-muted">This email is associated with your invitation</div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label">Create Password</label>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label className="app-text-muted">Create Password</label>
               <input
                 type="password"
-                className="form-control"
+                className="app-input"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="Enter a secure password"
                 minLength="6"
                 required
               />
-              <div className="form-text">Password must be at least 6 characters long</div>
+              <div className="app-text-muted">Password must be at least 6 characters long</div>
             </div>
 
-            <div className="mb-3">
-              <label className="form-label">Confirm Password</label>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label className="app-text-muted">Confirm Password</label>
               <input
                 type="password"
-                className="form-control"
+                className="app-input"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                 placeholder="Confirm your password"
@@ -168,30 +166,29 @@ export default function InviteAccept() {
               />
             </div>
 
-            <div className="mb-3">
-              <div className="form-check">
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
-                  className="form-check-input"
                   type="checkbox"
-                  id="agreedToTerms"
                   checked={formData.agreedToTerms}
                   onChange={(e) => setFormData({...formData, agreedToTerms: e.target.checked})}
                   required
                 />
-                <label className="form-check-label" htmlFor="agreedToTerms">
-                  I agree to the <a href="#" className="text-decoration-none">Terms and Conditions</a> and <a href="#" className="text-decoration-none">Privacy Policy</a>
-                </label>
-              </div>
+                <span>
+                  I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a>
+                </span>
+              </label>
             </div>
 
             <button 
               type="submit" 
-              className="btn btn-primary w-100 mb-3"
+              className="app-btn app-btn-primary w-100" 
+              style={{ marginBottom: '0.75rem' }}
               disabled={submitting}
             >
               {submitting ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <span className="spinner-inline me-2" role="status" />
                   Activating Account...
                 </>
               ) : (
@@ -203,8 +200,8 @@ export default function InviteAccept() {
             </button>
           </form>
 
-          <div className="text-center">
-            <small className="text-muted">
+          <div style={{ textAlign: 'center' }}>
+            <small className="app-text-muted">
               Need help? Contact your administrator
             </small>
           </div>

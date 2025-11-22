@@ -14,6 +14,8 @@ export default function AdminUsers() {
   const [showCsvImport, setShowCsvImport] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [topMenuOpen, setTopMenuOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   useEffect(() => {
     loadMembers();
@@ -122,78 +124,72 @@ export default function AdminUsers() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>Members</h2>
         <div>
           <button className="app-btn app-btn-outline me-2" onClick={() => setShowAddModal(true)}>
             + Add Member
           </button>
-          <div className="btn-group">
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button 
               className="app-btn app-btn-primary" 
               onClick={() => setShowCsvImport(!showCsvImport)}
             >
-              <i className="fas fa-upload me-1"></i>
+              <i className="fas fa-upload" style={{ marginRight: 8 }}></i>
               {showCsvImport ? 'Hide' : 'Show'} CSV Import
             </button>
             <button 
-              className="app-btn app-btn-success me-2" 
+              className="app-btn app-btn-success"
               onClick={forceLoadDefaultMembers}
             >
-              <i className="fas fa-database me-1"></i>
+              <i className="fas fa-database" style={{ marginRight: 8 }}></i>
               Load FFA Members
             </button>
-            <button 
-              className="app-btn app-btn-primary dropdown-toggle dropdown-toggle-split"
-              data-bs-toggle="dropdown"
-            >
-              <span className="visually-hidden">Toggle Dropdown</span>
-            </button>
-            <ul className="dropdown-menu">
-              <li>
-                <button 
-                  className="dropdown-item"
-                  onClick={() => {
-                    if (window.confirm('Send invitations to all members without email addresses?')) {
-                      // Bulk invite functionality
-                      members.filter(m => !m.email && m.status === 'pending_invite').forEach(member => {
-                        const email = prompt(`Enter email for ${member.name}:`);
-                        if (email) {
-                          handleInviteMember(member.id);
+
+            <div style={{ position: 'relative' }}>
+              <button className="app-btn app-btn-outline" onClick={() => setTopMenuOpen(!topMenuOpen)}>
+                •••
+              </button>
+              {topMenuOpen && (
+                <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, zIndex: 30 }}>
+                  <div className="app-card">
+                    <div className="app-card-content">
+                      <button className="app-btn app-btn-plain" onClick={() => {
+                        setTopMenuOpen(false);
+                        if (window.confirm('Send invitations to all members without email addresses?')) {
+                          members.filter(m => !m.email && m.status === 'pending_invite').forEach(member => {
+                            const email = prompt(`Enter email for ${member.name}:`);
+                            if (email) handleInviteMember(member.id);
+                          });
                         }
-                      });
-                    }
-                  }}
-                >
-                  <i className="fas fa-envelope-bulk me-2"></i>
-                  Bulk Send Invites
-                </button>
-              </li>
-              <li><hr className="dropdown-divider" /></li>
-              <li>
-                <button 
-                  className="dropdown-item text-warning"
-                  onClick={() => {
-                    if (window.confirm('Export all member data to CSV?')) {
-                      // Export functionality
-                      const csvData = members.map(m => ({
-                        Name: m.name,
-                        Email: m.email || '',
-                        Role: m.role,
-                        Status: m.status,
-                        'Portfolio Value': m.currentBalance || 0,
-                        'Total Units': m.totalUnits || 0
-                      }));
-                      console.log('Export data:', csvData);
-                      alert('Export functionality would be implemented here');
-                    }
-                  }}
-                >
-                  <i className="fas fa-download me-2"></i>
-                  Export Member Data
-                </button>
-              </li>
-            </ul>
+                      }}>
+                        <i className="fas fa-envelope-bulk" style={{ marginRight: 8 }}></i>
+                        Bulk Send Invites
+                      </button>
+                      <hr />
+                      <button className="app-btn app-btn-plain app-text-warning" onClick={() => {
+                        setTopMenuOpen(false);
+                        if (window.confirm('Export all member data to CSV?')) {
+                          const csvData = members.map(m => ({
+                            Name: m.name,
+                            Email: m.email || '',
+                            Role: m.role,
+                            Status: m.status,
+                            'Portfolio Value': m.currentBalance || 0,
+                            'Total Units': m.totalUnits || 0
+                          }));
+                          console.log('Export data:', csvData);
+                          alert('Export functionality would be implemented here');
+                        }
+                      }}>
+                        <i className="fas fa-download" style={{ marginRight: 8 }}></i>
+                        Export Member Data
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -301,7 +297,7 @@ export default function AdminUsers() {
                     <td>{member.totalUnits?.toFixed(2) || '0.00'}</td>
                     <td>{getStatusBadge(member.status)}</td>
                     <td>
-                      <div className="btn-group" role="group">
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         {member.status === 'pending_invite' && (
                           <button 
                             className="app-btn app-btn-sm app-btn-outline"
@@ -318,27 +314,29 @@ export default function AdminUsers() {
                         >
                           <i className="fas fa-edit"></i>
                         </button>
-                        <div className="btn-group" role="group">
-                          <button 
-                            className="app-btn app-btn-sm app-btn-outline app-btn-warning dropdown-toggle"
-                            type="button"
-                            data-bs-toggle="dropdown"
+
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            className="app-btn app-btn-sm app-btn-outline app-btn-warning"
+                            onClick={() => setOpenDropdownId(openDropdownId === member.id ? null : member.id)}
                             title="Change Role"
                           >
                             <i className="fas fa-user-cog"></i>
                           </button>
-                          <ul className="dropdown-menu">
-                            <li>
-                              <button 
-                                className="dropdown-item"
-                                onClick={() => handleRoleChange(member, member.role === 'admin' ? 'member' : 'admin')}
-                              >
-                                <i className={`fas ${member.role === 'admin' ? 'fa-user' : 'fa-crown'} me-2`}></i>
-                                Make {member.role === 'admin' ? 'Member' : 'Admin'}
-                              </button>
-                            </li>
-                          </ul>
+                          {openDropdownId === member.id && (
+                            <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, zIndex: 30 }}>
+                              <div className="app-card">
+                                <div className="app-card-content">
+                                  <button className="app-btn app-btn-plain" onClick={() => { setOpenDropdownId(null); handleRoleChange(member, member.role === 'admin' ? 'member' : 'admin'); }}>
+                                    <i className={`fas ${member.role === 'admin' ? 'fa-user' : 'fa-crown'}`} style={{ marginRight: 8 }}></i>
+                                    Make {member.role === 'admin' ? 'Member' : 'Admin'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
+
                         <a 
                           href={`/member/${member.id}/dashboard`} 
                           className="app-btn app-btn-sm app-btn-outline app-btn-info"

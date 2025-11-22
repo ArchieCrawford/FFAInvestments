@@ -25,7 +25,6 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
   };
 
   if (!show || !member) return null;
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -34,58 +33,51 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
   };
 
   return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header bg-danger text-white">
-            <h5 className="modal-title">
+    <div className="modal-backdrop">
+      <div className="modal-panel" role="dialog" aria-modal="true">
+        <div className="app-card">
+          <div className="app-card-header app-card-danger">
+            <h5 className="app-card-title">
               <i className="fas fa-exclamation-triangle me-2"></i>
               Delete Member Account
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={onClose}></button>
+            <button type="button" className="modal-close" onClick={onClose} aria-label="Close" />
           </div>
-          
-          <div className="modal-body">
-            <div className="alert alert-danger">
+
+          <div className="app-card-content">
+            <div className="app-alert app-alert-destructive">
               <i className="fas fa-warning me-2"></i>
               <strong>Warning:</strong> This action cannot be undone!
             </div>
 
             <p>You are about to permanently delete the following member:</p>
-            
-            <div className="card">
-              <div className="card-body">
-                <h6 className="card-title">{member.name}</h6>
-                <div className="row">
-                  <div className="col-sm-6">
-                    <small className="text-muted">Email:</small><br/>
+
+            <div className="app-card">
+              <div className="app-card-content">
+                <h6 className="app-heading-md">{member.name}</h6>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div>
+                    <small className="app-text-muted">Email:</small><br/>
                     <span>{member.email || 'Not provided'}</span>
                   </div>
-                  <div className="col-sm-6">
-                    <small className="text-muted">Role:</small><br/>
-                    <span className={`badge ${member.role === 'admin' ? 'bg-primary' : 'bg-info'}`}>
-                      {member.role}
-                    </span>
+                  <div>
+                    <small className="app-text-muted">Role:</small><br/>
+                    <span className={`app-pill`}>{member.role}</span>
                   </div>
                 </div>
                 <hr/>
-                <div className="row">
-                  <div className="col-sm-4">
-                    <small className="text-muted">Portfolio Value:</small><br/>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div>
+                    <small className="app-text-muted">Portfolio Value:</small><br/>
                     <strong className="text-success">{formatCurrency(member.currentBalance || 0)}</strong>
                   </div>
-                  <div className="col-sm-4">
-                    <small className="text-muted">Total Units:</small><br/>
+                  <div>
+                    <small className="app-text-muted">Total Units:</small><br/>
                     <strong>{member.totalUnits?.toFixed(4) || '0.0000'}</strong>
                   </div>
-                  <div className="col-sm-4">
-                    <small className="text-muted">Status:</small><br/>
-                    <span className={`badge ${
-                      member.status === 'active' ? 'bg-success' : 
-                      member.status === 'invited' ? 'bg-warning' : 'bg-secondary'
-                    }`}>
-                      {member.status}
-                    </span>
+                  <div>
+                    <small className="app-text-muted">Status:</small><br/>
+                    <span className="app-pill">{member.status}</span>
                   </div>
                 </div>
               </div>
@@ -93,7 +85,7 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
 
             <div className="mt-4">
               <h6>What will be deleted:</h6>
-              <ul className="list-unstyled">
+              <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li><i className="fas fa-check text-danger me-2"></i>Member profile and account information</li>
                 <li><i className="fas fa-check text-danger me-2"></i>All portfolio timeline history</li>
                 <li><i className="fas fa-check text-danger me-2"></i>Investment records and performance data</li>
@@ -102,36 +94,36 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
             </div>
 
             <div className="mt-4">
-              <label className="form-label fw-bold">
+              <label className="fw-bold">
                 Type "<code>{member.name}</code>" to confirm deletion:
               </label>
               <input
                 type="text"
-                className="form-control"
+                className="app-input"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={`Type "${member.name}" here`}
                 autoComplete="off"
               />
-              <div className="form-text">
+              <div className="app-text-muted">
                 This confirms you understand the consequences of deleting this member.
               </div>
             </div>
           </div>
-          
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+
+          <div className="app-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+            <button type="button" className="app-btn app-btn-outline" onClick={onClose}>
               Cancel
             </button>
-            <button 
-              type="button" 
-              className="btn btn-danger" 
+            <button
+              type="button"
+              className="app-btn app-btn-destructive"
               onClick={handleDelete}
               disabled={deleting || confirmText !== member.name}
             >
               {deleting ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <span className="spinner-inline" role="status" />
                   Deleting...
                 </>
               ) : (

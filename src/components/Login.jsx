@@ -21,13 +21,13 @@ export default function Login() {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f7f9fc' }}>
+    <div className="min-vh-100" style={{ backgroundColor: '#f7f9fc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="app-card shadow-lg" style={{ width: '400px' }}>
         <div className="app-card-content p-4">
           <div className="text-center mb-4">
             <i className="fas fa-dollar-sign text-primary fs-1 mb-3"></i>
             <h2 className="fw-bold">FFA Investments</h2>
-            <p className="text-muted">Investment Club Portal</p>
+            <p className="app-text-muted">Investment Club Portal</p>
           </div>
           
           <form onSubmit={handleSubmit}>

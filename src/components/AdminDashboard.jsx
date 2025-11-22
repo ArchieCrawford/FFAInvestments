@@ -64,7 +64,7 @@ export default function AdminDashboard() {
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.label}</p>
               <p style={{ fontSize: '1.6rem', fontWeight: 700 }}>
                 {item.value}
-                {item.badge && <span className="badge bg-success" style={{ marginLeft: '0.6rem' }}>{item.badge}</span>}
+                {item.badge && <span className="app-pill" style={{ marginLeft: '0.6rem' }}>{item.badge}</span>}
               </p>
             </div>
             <div className="app-pill">{item.icon}</div>

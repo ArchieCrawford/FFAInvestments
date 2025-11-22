@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { AlertCircle, AlertTriangle, DollarSign, Download, Eye, EyeOff, TrendingUp, Users } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { useMemo } from 'react'
 
 const DuesTracker = () => {
   const [duesData, setDuesData] = useState(null)
@@ -86,6 +85,30 @@ const DuesTracker = () => {
     return { text: '$0.00', color: '#cbd5f5' }
   }
 
+  // Derived visible rows (hooks must be declared before any early returns)
+  const visibleRows = useMemo(() => {
+    const nameFilter = filterName.trim().toLowerCase()
+    const now = new Date()
+    // default cutoff not used directly but kept for clarity
+    const cutoff = new Date(now)
+    cutoff.setMonth(cutoff.getMonth() - 12)
+
+    return rows.filter((r) => {
+      if (nameFilter && !(r.member_name || '').toLowerCase().includes(nameFilter)) return false
+      if (filterRange !== 'all') {
+        // filterRange is months count like '12'
+        const months = Number(filterRange)
+        if (!isNaN(months) && r.report_date) {
+          const d = new Date(r.report_date)
+          const from = new Date(now)
+          from.setMonth(from.getMonth() - months)
+          if (d < from) return false
+        }
+      }
+      return true
+    })
+  }, [rows, filterName, filterRange])
+
   if (loading) {
     return (
       <div className="fullscreen-center">
@@ -108,29 +131,6 @@ const DuesTracker = () => {
       </div>
     )
   }
-
-  // Derived visible rows
-  const visibleRows = useMemo(() => {
-    const nameFilter = filterName.trim().toLowerCase()
-    const now = new Date()
-    const cutoff = new Date(now)
-    cutoff.setMonth(cutoff.getMonth() - 12)
-
-    return rows.filter((r) => {
-      if (nameFilter && !(r.member_name || '').toLowerCase().includes(nameFilter)) return false
-      if (filterRange !== 'all') {
-        // filterRange is months count like '12'
-        const months = Number(filterRange)
-        if (!isNaN(months) && r.report_date) {
-          const d = new Date(r.report_date)
-          const from = new Date(now)
-          from.setMonth(from.getMonth() - months)
-          if (d < from) return false
-        }
-      }
-      return true
-    })
-  }, [rows, filterName, filterRange])
 
   const totalPaymentsCollected = rows.reduce((s, r) => s + (Number(r.total_contribution) || 0), 0)
 
