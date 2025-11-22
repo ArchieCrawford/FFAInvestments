@@ -42,7 +42,7 @@ const PostComposer = ({ onCreate, currentUserId }) => {
 
   const handleSubmit = async (e) => {
     e?.preventDefault()
-    if (!content.trim()) return
+    if (!content.trim() && !imageFile && !linkUrl) return
     setSubmitting(true)
     setUploadError(null)
     try {
@@ -55,7 +55,7 @@ const PostComposer = ({ onCreate, currentUserId }) => {
         const filePath = `${currentUserId}/${Date.now()}-${imageFile.name}`
         const { data: uploadData, error: uploadErr } = await supabase.storage
           .from('member-post-images')
-          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false })
+          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false, metadata: { uploader: currentUserId, 'content-type': imageFile.type } })
         if (uploadErr) {
           setUploadError(uploadErr.message || 'Upload failed')
           setUploading(false)
@@ -109,7 +109,7 @@ const PostComposer = ({ onCreate, currentUserId }) => {
             <div className="flex items-center gap-1"><Image size={16} /> Image</div>
             <div className="flex items-center gap-1"><LinkIcon size={16} /> Link</div>
           </div>
-          <button className="btn btn-primary btn-sm" type="submit" disabled={submitting || uploading || !content.trim()}>
+          <button className="btn btn-primary btn-sm" type="submit" disabled={submitting || uploading || (!content.trim() && !imageFile && !linkUrl)}>
             {uploading ? 'Uploading…' : submitting ? 'Posting…' : 'Post'}
           </button>
         </div>

@@ -54,6 +54,7 @@ const memberNav = [
       { title: "Complete Unit Guide", url: "/education/unit-value-guide", icon: "fas fa-book" },
     ]
   },
+  { title: "Member Feed", url: "/member/feed", icon: "fas fa-comments" },
 ];
 
 const BackgroundAnimation = () => (
