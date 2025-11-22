@@ -10,6 +10,7 @@ const adminNav = [
   { title: "Members", url: "/admin/members", icon: "fas fa-users" },
   { title: "User Management", url: "/admin/user-management", icon: "fas fa-user-shield" },
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
+  { title: "Member Feed", url: "/member/feed", icon: "fas fa-comments" },
   { title: "Accounts", url: createPageUrl("AdminAccounts"), icon: "fas fa-user-circle" },
   { title: "Dues Tracker", url: "/admin/dues", icon: "fas fa-money-check-alt" },
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
@@ -88,7 +89,20 @@ export default function Layout({ children, currentPageName }) {
   };
 
   const isAdmin = profile?.role === 'admin';
-  const navigationItems = isAdmin ? adminNav : memberNav;
+  // If admin, show both admin and member navigation items (deduplicated by URL)
+  const navigationItems = isAdmin
+    ? (() => {
+        const seen = new Set();
+        const merged = [];
+        for (const it of adminNav.concat(memberNav)) {
+          if (!seen.has(it.url)) {
+            merged.push(it);
+            seen.add(it.url);
+          }
+        }
+        return merged;
+      })()
+    : memberNav;
 
   // Initialize expanded state for active submenus
   useEffect(() => {

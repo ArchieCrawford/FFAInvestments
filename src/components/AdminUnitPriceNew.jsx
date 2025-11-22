@@ -118,52 +118,52 @@ const AdminUnitPriceNew = () => {
   return (
     <div className="app-page">
       {message && (
-        <div className="card" style={{ borderColor: message.type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)' }}>
+        <div className="app-card" style={{ borderColor: message.type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)' }}>
           <p style={{ color: message.type === 'error' ? '#fecaca' : '#bbf7d0' }}>{message.text}</p>
         </div>
       )}
 
-      <div className="card">
-        <div className="card-header">
+      <div className="app-card">
+        <div className="app-card-header">
           <div>
-            <p className="heading-lg">Unit Value System</p>
-            <p className="text-muted">Historical view of the club unit price</p>
+            <p className="app-heading-lg">Unit Value System</p>
+            <p className="app-text-muted">Historical view of the club unit price</p>
           </div>
           {isAdmin && (
-            <button className="btn btn-primary btn-pill" onClick={() => setEditingId(null)}>
+            <button className="app-btn app-btn-primary app-btn-pill" onClick={() => setEditingId(null)}>
               <Plus size={16} className="mr-2" />
               New Entry
             </button>
           )}
         </div>
         <div className="grid-3">
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <p className="text-muted">Current Unit Price</p>
-            <p className="heading-lg">{currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}</p>
-            <p className="text-muted">{currentPrice ? `Updated ${formatDate(currentPrice.price_date)}` : 'No data yet'}</p>
+          <div className="app-card" style={{ padding: '1.5rem' }}>
+            <p className="app-text-muted">Current Unit Price</p>
+            <p className="app-heading-lg">{currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}</p>
+            <p className="app-text-muted">{currentPrice ? `Updated ${formatDate(currentPrice.price_date)}` : 'No data yet'}</p>
           </div>
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <p className="text-muted">Change vs Previous</p>
+          <div className="app-card" style={{ padding: '1.5rem' }}>
+            <p className="app-text-muted">Change vs Previous</p>
             {change ? (
-              <p className="heading-lg" style={{ color: change.pct >= 0 ? '#4ade80' : '#f87171' }}>
+              <p className="app-heading-lg" style={{ color: change.pct >= 0 ? '#4ade80' : '#f87171' }}>
                 {change.pct >= 0 ? '+' : ''}
                 {change.pct.toFixed(2)}%
               </p>
             ) : (
-              <p className="heading-lg text-muted">N/A</p>
+              <p className="app-heading-lg app-text-muted">N/A</p>
             )}
           </div>
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <p className="text-muted">History Entries</p>
-            <p className="heading-lg">{unitPrices.length}</p>
-            <p className="text-muted">Stored in Supabase</p>
+          <div className="app-card" style={{ padding: '1.5rem' }}>
+            <p className="app-text-muted">History Entries</p>
+            <p className="app-heading-lg">{unitPrices.length}</p>
+            <p className="app-text-muted">Stored in Supabase</p>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <p className="heading-md">Price History</p>
+      <div className="app-card">
+        <div className="app-card-header">
+          <p className="app-heading-md">Price History</p>
         </div>
         {unitPrices.length > 0 ? (
           <>
@@ -178,8 +178,8 @@ const AdminUnitPriceNew = () => {
                 <path d={chartPath} fill="none" stroke="url(#unitPriceGradient)" strokeWidth="3" />
               </svg>
             </div>
-            <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-              <table className="table">
+            <div className="app-table-scroll" style={{ marginTop: '1rem' }}>
+              <table className="app-table">
                 <thead>
                   <tr>
                     <th>Date</th>
@@ -204,10 +204,10 @@ const AdminUnitPriceNew = () => {
                         <td>{price.notes || '—'}</td>
                         {isAdmin && (
                           <td style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-outline btn-sm" onClick={() => handleEdit(price)}>
+                            <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleEdit(price)}>
                               <Edit2 size={16} />
                             </button>
-                            <button className="btn btn-outline btn-sm" onClick={() => handleDelete(price.id)}>
+                            <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleDelete(price.id)}>
                               <Trash2 size={16} />
                             </button>
                           </td>
@@ -220,17 +220,17 @@ const AdminUnitPriceNew = () => {
             </div>
           </>
         ) : (
-          <p className="text-muted">No unit prices recorded yet.</p>
+          <p className="app-text-muted">No unit prices recorded yet.</p>
         )}
       </div>
 
       {isAdmin && (
-        <div className="card">
-          <div className="card-header">
-            <p className="heading-md">Unit prices are derived</p>
+        <div className="app-card">
+          <div className="app-card-header">
+            <p className="app-heading-md">Unit prices are derived</p>
           </div>
-          <div className="card-content">
-            <p className="text-muted">Unit prices are now calculated from member monthly balances and cannot be edited via this UI. Manage source balances or run the back-end process to adjust historical values.</p>
+          <div className="app-card-content">
+            <p className="app-text-muted">Unit prices are now calculated from member monthly balances and cannot be edited via this UI. Manage source balances or run the back-end process to adjust historical values.</p>
           </div>
         </div>
       )}

@@ -163,19 +163,19 @@ export default function CSVImporter({ onImportComplete }) {
     <div className="app-card">
       <div className="app-card-header">
         <h5 className="app-card-title">
-          <i className="fas fa-upload me-2"></i>
+          <i className="fas fa-upload" style={{ marginRight: '0.5rem' }}></i>
           Import Members from CSV File
         </h5>
       </div>
       <div className="app-card-content">
         <div className="app-alert">
-          <i className="fas fa-info-circle me-2"></i>
+          <i className="fas fa-info-circle" style={{ marginRight: '0.5rem' }}></i>
           <strong>Ready to Import:</strong> Select your legacy timeline CSV file (historical timeline data) to automatically create member accounts with their portfolio history.
         </div>
 
         <div className="mb-3">
           <label htmlFor="csvFile" className="fw-bold">
-            <i className="fas fa-file-csv me-2"></i>
+            <i className="fas fa-file-csv" style={{ marginRight: '0.5rem' }}></i>
             Choose CSV File:
           </label>
           <input
@@ -191,22 +191,22 @@ export default function CSVImporter({ onImportComplete }) {
           </div>
         </div>
 
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <small className="app-text-muted">
-            <i className="fas fa-shield-alt me-1"></i>
+            <i className="fas fa-shield-alt" style={{ marginRight: '0.35rem' }}></i>
             Your data is processed locally and stored securely
           </small>
-          <div>
+          <div className="flex flex-wrap items-center gap-2">
             <button 
-              className="app-btn app-btn-outline app-btn-sm me-2"
+              className="app-btn app-btn-outline app-btn-sm"
               onClick={() => document.getElementById('csvFile').click()}
               disabled={isUploading}
             >
-              <i className="fas fa-folder-open me-1"></i>
+              <i className="fas fa-folder-open" style={{ marginRight: '0.35rem' }}></i>
               Browse Files
             </button>
             <button 
-              className="app-btn app-btn-success app-btn-sm me-2"
+              className="app-btn app-btn-success app-btn-sm"
               onClick={() => {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -216,7 +216,7 @@ export default function CSVImporter({ onImportComplete }) {
               }}
               disabled={isUploading}
             >
-              <i className="fas fa-rocket me-1"></i>
+              <i className="fas fa-rocket" style={{ marginRight: '0.35rem' }}></i>
               Quick Import
             </button>
             <button 
@@ -224,7 +224,7 @@ export default function CSVImporter({ onImportComplete }) {
               onClick={loadSampleData}
               disabled={isUploading}
             >
-              <i className="fas fa-database me-1"></i>
+              <i className="fas fa-database" style={{ marginRight: '0.35rem' }}></i>
               Load Sample Data
             </button>
           </div>
@@ -232,8 +232,8 @@ export default function CSVImporter({ onImportComplete }) {
 
         {isUploading && (
           <div className="app-alert">
-            <div className="d-flex align-items-center">
-              <div className="spinner-inline me-2" role="status"></div>
+            <div className="flex items-center gap-2">
+              <div className="spinner-inline" role="status"></div>
               Processing CSV file...
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function CSVImporter({ onImportComplete }) {
 
         {importStatus && (
           <div className={`app-alert ${importStatus.type === 'success' ? 'app-alert-success' : 'app-alert-destructive'}`}>
-            <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2`}></i>
+            <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`} style={{ marginRight: '0.5rem' }}></i>
             {importStatus.message}
           </div>
         )}

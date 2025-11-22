@@ -292,7 +292,7 @@ export default function UnitValueSystemGuide() {
           box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
         }
         
-        .row {
+        .guide-row {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
           gap: 15px;
@@ -431,7 +431,7 @@ export default function UnitValueSystemGuide() {
             grid-template-columns: 1fr;
           }
           
-          .row {
+          .guide-row {
             grid-template-columns: 1fr;
           }
           
@@ -539,7 +539,7 @@ export default function UnitValueSystemGuide() {
           <section className="card">
             <h2>💰 How Deposits & Withdrawals Work</h2>
             <div className="pad">
-              <div className="row">
+              <div className="guide-row">
                 <div className="box">
                   <h3>💵 Making a Deposit</h3>
                   <p><strong>Process:</strong></p>
@@ -638,7 +638,7 @@ export default function UnitValueSystemGuide() {
             <div className="pad">
               <p className="hint">🕹️ <strong>Experiment with the numbers!</strong> Play with different scenarios to see how unit transactions work in practice.</p>
               
-              <div className="row">
+              <div className="guide-row">
                 <div>
                   <label><strong>Total Portfolio Value ($)</strong></label>
                   <input 
@@ -682,7 +682,7 @@ export default function UnitValueSystemGuide() {
                 </div>
               </div>
               
-              <div className="row" style={{marginTop: '25px'}}>
+              <div className="guide-row" style={{marginTop: '25px'}}>
                 <div className="box">
                   <h4>💵 <strong>Try a Member Deposit</strong></h4>
                   <input 
@@ -720,7 +720,7 @@ export default function UnitValueSystemGuide() {
                 </div>
               </div>
               
-              <div className="row" style={{marginTop: '20px'}}>
+              <div className="guide-row" style={{marginTop: '20px'}}>
                 <div className="box">
                   <h4>📊 <strong>Direct Unit Transfer</strong></h4>
                   <input 
@@ -754,7 +754,7 @@ export default function UnitValueSystemGuide() {
           <section className="card">
             <h2>✅ Unit System Rules of Thumb</h2>
             <div className="pad">
-              <div className="row">
+              <div className="guide-row">
                 <div className="box">
                   <h3>🔹 <strong>For New Members</strong></h3>
                   <ul>

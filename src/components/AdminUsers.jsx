@@ -114,7 +114,7 @@ export default function AdminUsers() {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
+      <div className="flex items-center justify-center" style={{ height: "400px" }}>
         <div className="spinner-page" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
@@ -124,72 +124,70 @@ export default function AdminUsers() {
 
   return (
     <>
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>Members</h2>
-        <div>
-          <button className="app-btn app-btn-outline me-2" onClick={() => setShowAddModal(true)}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 className="app-heading-lg">Members</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="app-btn app-btn-outline" onClick={() => setShowAddModal(true)}>
             + Add Member
           </button>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button 
-              className="app-btn app-btn-primary" 
-              onClick={() => setShowCsvImport(!showCsvImport)}
-            >
-              <i className="fas fa-upload" style={{ marginRight: 8 }}></i>
-              {showCsvImport ? 'Hide' : 'Show'} CSV Import
-            </button>
-            <button 
-              className="app-btn app-btn-success"
-              onClick={forceLoadDefaultMembers}
-            >
-              <i className="fas fa-database" style={{ marginRight: 8 }}></i>
-              Load FFA Members
-            </button>
+          <button 
+            className="app-btn app-btn-primary" 
+            onClick={() => setShowCsvImport(!showCsvImport)}
+          >
+            <i className="fas fa-upload" style={{ marginRight: 8 }}></i>
+            {showCsvImport ? 'Hide' : 'Show'} CSV Import
+          </button>
+          <button 
+            className="app-btn app-btn-success"
+            onClick={forceLoadDefaultMembers}
+          >
+            <i className="fas fa-database" style={{ marginRight: 8 }}></i>
+            Load FFA Members
+          </button>
 
-            <div style={{ position: 'relative' }}>
-              <button className="app-btn app-btn-outline" onClick={() => setTopMenuOpen(!topMenuOpen)}>
-                •••
-              </button>
-              {topMenuOpen && (
-                <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, zIndex: 30 }}>
-                  <div className="app-card">
-                    <div className="app-card-content">
-                      <button className="app-btn app-btn-plain" onClick={() => {
-                        setTopMenuOpen(false);
-                        if (window.confirm('Send invitations to all members without email addresses?')) {
-                          members.filter(m => !m.email && m.status === 'pending_invite').forEach(member => {
-                            const email = prompt(`Enter email for ${member.name}:`);
-                            if (email) handleInviteMember(member.id);
-                          });
-                        }
-                      }}>
-                        <i className="fas fa-envelope-bulk" style={{ marginRight: 8 }}></i>
-                        Bulk Send Invites
-                      </button>
-                      <hr />
-                      <button className="app-btn app-btn-plain app-text-warning" onClick={() => {
-                        setTopMenuOpen(false);
-                        if (window.confirm('Export all member data to CSV?')) {
-                          const csvData = members.map(m => ({
-                            Name: m.name,
-                            Email: m.email || '',
-                            Role: m.role,
-                            Status: m.status,
-                            'Portfolio Value': m.currentBalance || 0,
-                            'Total Units': m.totalUnits || 0
-                          }));
-                          console.log('Export data:', csvData);
-                          alert('Export functionality would be implemented here');
-                        }
-                      }}>
-                        <i className="fas fa-download" style={{ marginRight: 8 }}></i>
-                        Export Member Data
-                      </button>
-                    </div>
+          <div style={{ position: 'relative' }}>
+            <button className="app-btn app-btn-outline" onClick={() => setTopMenuOpen(!topMenuOpen)}>
+              •••
+            </button>
+            {topMenuOpen && (
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 8, zIndex: 30 }}>
+                <div className="app-card">
+                  <div className="app-card-content">
+                    <button className="app-btn app-btn-plain" onClick={() => {
+                      setTopMenuOpen(false);
+                      if (window.confirm('Send invitations to all members without email addresses?')) {
+                        members.filter(m => !m.email && m.status === 'pending_invite').forEach(member => {
+                          const email = prompt(`Enter email for ${member.name}:`);
+                          if (email) handleInviteMember(member.id);
+                        });
+                      }
+                    }}>
+                      <i className="fas fa-envelope-bulk" style={{ marginRight: 8 }}></i>
+                      Bulk Send Invites
+                    </button>
+                    <hr />
+                    <button className="app-btn app-btn-plain app-text-warning" onClick={() => {
+                      setTopMenuOpen(false);
+                      if (window.confirm('Export all member data to CSV?')) {
+                        const csvData = members.map(m => ({
+                          Name: m.name,
+                          Email: m.email || '',
+                          Role: m.role,
+                          Status: m.status,
+                          'Portfolio Value': m.currentBalance || 0,
+                          'Total Units': m.totalUnits || 0
+                        }));
+                        console.log('Export data:', csvData);
+                        alert('Export functionality would be implemented here');
+                      }
+                    }}>
+                      <i className="fas fa-download" style={{ marginRight: 8 }}></i>
+                      Export Member Data
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -202,44 +200,36 @@ export default function AdminUsers() {
       )}
 
       {/* Members Statistics */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-3">
-          <div className="app-card app-card-stat">
-            <div>
-              <div className="app-heading-md">Total Members</div>
-              <div className="app-heading-lg">{members.length}</div>
-            </div>
-            <i className="fas fa-users fa-2x" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-4">
+        <div className="app-card app-card-stat">
+          <div>
+            <div className="app-heading-md">Total Members</div>
+            <div className="app-heading-lg">{members.length}</div>
           </div>
+          <i className="fas fa-users fa-2x" />
         </div>
-        <div className="col-md-3">
-          <div className="app-card app-card-stat">
-            <div>
-              <div className="app-heading-md">Active Members</div>
-              <div className="app-heading-lg">{members.filter(m => m.status === 'active').length}</div>
-            </div>
-            <i className="fas fa-user-check fa-2x" />
+        <div className="app-card app-card-stat">
+          <div>
+            <div className="app-heading-md">Active Members</div>
+            <div className="app-heading-lg">{members.filter(m => m.status === 'active').length}</div>
           </div>
+          <i className="fas fa-user-check fa-2x" />
         </div>
-        <div className="col-md-3">
-          <div className="app-card app-card-stat">
-            <div>
-              <div className="app-heading-md">Pending Invites</div>
-              <div className="app-heading-lg">{members.filter(m => m.status === 'pending_invite').length}</div>
-            </div>
-            <i className="fas fa-user-clock fa-2x" />
+        <div className="app-card app-card-stat">
+          <div>
+            <div className="app-heading-md">Pending Invites</div>
+            <div className="app-heading-lg">{members.filter(m => m.status === 'pending_invite').length}</div>
           </div>
+          <i className="fas fa-user-clock fa-2x" />
         </div>
-        <div className="col-md-3">
-          <div className="app-card app-card-stat">
-            <div>
-              <div className="app-heading-md">Total AUM</div>
-              <div className="app-heading-lg">
-                {formatCurrency(members.reduce((sum, m) => sum + (m.currentBalance || 0), 0))}
-              </div>
+        <div className="app-card app-card-stat">
+          <div>
+            <div className="app-heading-md">Total AUM</div>
+            <div className="app-heading-lg">
+              {formatCurrency(members.reduce((sum, m) => sum + (m.currentBalance || 0), 0))}
             </div>
-            <i className="fas fa-dollar-sign fa-2x" />
           </div>
+          <i className="fas fa-dollar-sign fa-2x" />
         </div>
       </div>
       
@@ -249,7 +239,7 @@ export default function AdminUsers() {
           <h5 className="app-card-title">Member Directory</h5>
         </div>
         <div className="app-card-content">
-          <div className="table-responsive">
+          <div className="app-table-scroll">
             <table className="app-table">
             <thead>
               <tr>
@@ -264,7 +254,7 @@ export default function AdminUsers() {
             <tbody>
               {members.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center text-muted">
+                  <td colSpan="6" className="text-center app-text-muted">
                     No members found. Import CSV data or add members manually.
                   </td>
                 </tr>
@@ -272,8 +262,8 @@ export default function AdminUsers() {
                 members.map((member) => (
                   <tr key={member.id}>
                     <td>
-                      <div className="d-flex align-items-center">
-                        <div className="app-user-avatar me-2" style={{ width: "32px", height: "32px", fontSize: "12px" }}>
+                      <div className="flex items-center gap-3">
+                        <div className="app-user-avatar" style={{ width: "32px", height: "32px", fontSize: "12px" }}>
                           {member.name?.split(' ').map(n => n[0]).join('') || '?'}
                         </div>
                         <div>
