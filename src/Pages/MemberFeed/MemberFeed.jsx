@@ -276,9 +276,7 @@ const MemberFeed = () => {
     setLoading(true)
     try {
       const { posts: p, nextCursor: nc } = await getMemberFeed({ limit: 20 })
-      // enrich posts with author display names and liked-by-me state
-      const enriched = await enrichPosts(p || [], profile?.id)
-      setPosts(enriched || [])
+      setPosts(p || [])
       setNextCursor(nc)
       setError(null)
     } catch (err) {
@@ -290,16 +288,16 @@ const MemberFeed = () => {
 
   useEffect(() => { loadInitial() }, [loadInitial])
 
-  const handleCreate = (post) => {
-    ;(async () => {
-      try {
-        const enriched = await enrichPosts([post], profile?.id)
-        setPosts(prev => [(enriched && enriched[0]) || post, ...(prev || [])])
-      } catch (err) {
-        console.error('Enrich new post failed', err)
-        setPosts(prev => [post, ...(prev || [])])
-      }
-    })()
+  const handleCreate = async (post) => {
+    // After creating a post we fetch the most recent enriched post from the RPC
+    try {
+      const { posts: latest } = await getMemberFeed({ limit: 1 })
+      const newPost = (latest && latest[0]) || post
+      setPosts(prev => [newPost, ...(prev || [])])
+    } catch (err) {
+      // Fallback to raw post if enrichment fails
+      setPosts(prev => [post, ...(prev || [])])
+    }
   }
 
   const loadMore = async () => {
@@ -307,8 +305,7 @@ const MemberFeed = () => {
     setLoadingMore(true)
     try {
       const { posts: p, nextCursor: nc } = await getMemberFeed({ limit: 20, cursor: nextCursor })
-      const enriched = await enrichPosts(p || [], profile?.id)
-      setPosts(prev => [...(prev || []), ...(enriched || p || [])])
+      setPosts(prev => [...(prev || []), ...(p || [])])
       setNextCursor(nc)
     } catch (err) {
       alert(err.message || 'Unable to load more')
@@ -317,55 +314,7 @@ const MemberFeed = () => {
     }
   }
 
-  // Enrich posts with author display names and whether current user liked them
-  async function enrichPosts(postsArr, currentUserId) {
-    if (!postsArr || postsArr.length === 0) return []
-    try {
-      const postIds = postsArr.map(p => p.id).filter(Boolean)
-      const authorIds = Array.from(new Set(postsArr.map(p => p.author_id).filter(Boolean)))
-
-      // fetch profiles for authors
-      let profileMap = {}
-      if (authorIds.length > 0) {
-        const { data: profileRows, error: profErr } = await supabase
-          .from('profiles')
-          .select('id, full_name, display_name, name')
-          .in('id', authorIds)
-        if (profErr) {
-          console.warn('profiles fetch error', profErr)
-        } else if (profileRows) {
-          profileRows.forEach(r => {
-            const display = r.full_name || r.display_name || r.name || r.id
-            profileMap[r.id] = display
-          })
-        }
-      }
-
-      // fetch likes by current user for these posts
-      const likedSet = new Set()
-      if (currentUserId && postIds.length > 0) {
-        const { data: likedRows, error: likedErr } = await supabase
-          .from('member_post_likes')
-          .select('post_id')
-          .in('post_id', postIds)
-          .eq('member_id', currentUserId)
-        if (likedErr) {
-          console.warn('liked fetch error', likedErr)
-        } else if (likedRows) {
-          likedRows.forEach(r => likedSet.add(r.post_id))
-        }
-      }
-
-      return postsArr.map(p => ({
-        ...p,
-        author_name: profileMap[p.author_id] || p.author_id,
-        liked_by_me: Boolean(likedSet.has(p.id)),
-      }))
-    } catch (err) {
-      console.error('enrichPosts error', err)
-      return postsArr
-    }
-  }
+  // server-side RPC returns enriched posts; no client-side enrichment needed
 
   const handleDeleteLocal = (postId) => {
     setPosts(prev => (prev || []).filter(p => p.id !== postId))

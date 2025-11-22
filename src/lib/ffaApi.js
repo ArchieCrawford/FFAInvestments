@@ -61,68 +61,32 @@ export async function getMemberDues(memberId) {
 // ----------------------------
 
 export async function getMemberFeed({ limit = 20, cursor = null } = {}) {
-  // Fetch posts, then fetch likes/comments counts in bulk
-  const fetchLimit = limit + 1 // fetch one extra to compute nextCursor
-  let query = supabase.from('member_posts').select('*').order('created_at', { ascending: false }).limit(fetchLimit)
-  if (cursor) {
-    // expect cursor to be an ISO date string
-    query = query.lt('created_at', cursor)
-  }
+  // Use server-side RPC that returns enriched feed rows
+  const { data, error } = await supabase.rpc('api_get_member_feed', {
+    limit_count: limit,
+    cursor_timestamp: cursor || null,
+  })
+  if (error) throw error
 
-  const { data: posts, error: postsError } = await query
-  if (postsError) throw postsError
-
-  const sliced = posts || []
-  let nextCursor = null
-  if (sliced.length > limit) {
-    // more pages available
-    const nextItem = sliced[limit]
-    nextCursor = nextItem?.created_at || null
-    sliced.splice(limit)
-  }
-
-  const postIds = sliced.map((p) => p.id).filter(Boolean)
-
-  // Fetch likes for these posts in one call
-  let likes = []
-  if (postIds.length > 0) {
-    const { data: likeRows, error: likesErr } = await supabase
-      .from('member_post_likes')
-      .select('post_id')
-      .in('post_id', postIds)
-    if (likesErr) throw likesErr
-    likes = likeRows || []
-  }
-
-  // Fetch comments for these posts in one call
-  let comments = []
-  if (postIds.length > 0) {
-    const { data: commentRows, error: commentsErr } = await supabase
-      .from('member_post_comments')
-      .select('post_id')
-      .in('post_id', postIds)
-    if (commentsErr) throw commentsErr
-    comments = commentRows || []
-  }
-
-  // Build map of counts
-  const likeCountMap = {}
-  likes.forEach((r) => { likeCountMap[r.post_id] = (likeCountMap[r.post_id] || 0) + 1 })
-  const commentCountMap = {}
-  comments.forEach((r) => { commentCountMap[r.post_id] = (commentCountMap[r.post_id] || 0) + 1 })
-
-  const postsOut = sliced.map((p) => ({
-    id: p.id,
-    author_id: p.author_id,
-    content: p.content,
-    image_url: p.image_url,
-    link_url: p.link_url,
-    created_at: p.created_at,
-    like_count: likeCountMap[p.id] || 0,
-    comment_count: commentCountMap[p.id] || 0,
+  const rows = data || []
+  // Map RPC fields to frontend shape
+  const posts = rows.map((r) => ({
+    id: r.post_id,
+    author_id: r.author_id,
+    author_name: r.author_name,
+    content: r.content,
+    image_url: r.image_url,
+    link_url: r.link_url,
+    visibility: r.visibility,
+    created_at: r.created_at,
+    like_count: r.like_count || 0,
+    comment_count: r.comment_count || 0,
+    liked_by_me: !!r.liked_by_me,
   }))
 
-  return { posts: postsOut, nextCursor }
+  // RPC returns next_cursor_timestamp (could be on each row or as last field)
+  const nextCursor = rows.length > 0 ? rows[rows.length - 1].next_cursor_timestamp || null : null
+  return { posts, nextCursor }
 }
 
 export async function createMemberPost({ content, imageUrl = null, linkUrl = null, visibility = 'members' }) {
