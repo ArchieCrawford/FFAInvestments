@@ -25,6 +25,7 @@ const adminNav = [
   },
   { title: "Import Data", url: createPageUrl("AdminImport"), icon: "fas fa-upload" },
   { title: "FFA Import", url: createPageUrl("AdminFFAImport"), icon: "fas fa-file-import" },
+  { title: "Settings", url: "/admin/settings", icon: "fas fa-cog" },
   { 
     title: "Charles Schwab", 
     icon: "fas fa-university", 
@@ -41,6 +42,8 @@ const memberNav = [
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "My Accounts", url: createPageUrl("MemberAccounts"), icon: "fas fa-wallet" },
   { title: "Make Contribution", url: createPageUrl("MemberContribute"), icon: "fas fa-dollar-sign" },
+  { title: "Unit Price", url: "/unit-price", icon: "fas fa-chart-line" },
+  { title: "Settings", url: "/settings", icon: "fas fa-cog" },
   { 
     title: "Education", 
     icon: "fas fa-graduation-cap", 

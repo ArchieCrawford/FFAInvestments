@@ -1,3 +1,6 @@
+// Legacy: client-side mock for member dues data moved to legacy folder on 2025-11-21
+// Kept for historical/reference purposes only — the runtime now queries `ffa_timeline`.
+
 // Lightweight client-side mock for member dues data.
 // This module intentionally returns a shaped object that matches what
 // AdminDues expects (summary + members array) so the UI can render

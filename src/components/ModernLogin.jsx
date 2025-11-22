@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
 import './ModernLogin.css'
 
@@ -26,6 +27,10 @@ const ModernLogin = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotStatus, setForgotStatus] = useState(null)
+  const [forgotSending, setForgotSending] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
@@ -296,6 +301,74 @@ const ModernLogin = () => {
               )}
             </button>
           </form>
+
+          {mode === 'signin' && (
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="mode-toggle"
+                onClick={() => setShowForgot(prev => !prev)}
+              >
+                <span className="toggle-link">Forgot password?</span>
+              </button>
+
+              {showForgot && (
+                <div style={{ marginTop: 12 }}>
+                  <div className="input-group">
+                    <div className="input-wrapper">
+                      <Mail size={20} className="input-icon" />
+                      <input
+                        type="email"
+                        name="forgotEmail"
+                        placeholder="Enter your email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={async () => {
+                        // inline kept for clarity but guarded by forgotSending
+                        if (forgotSending) return
+                        setForgotStatus(null)
+                        if (!forgotEmail) {
+                          setForgotStatus({ type: 'error', text: 'Please enter your email.' })
+                          return
+                        }
+                        setForgotSending(true)
+                        try {
+                          const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+                            redirectTo: `${window.location.origin}/reset-password`
+                          })
+                          if (error) {
+                            setForgotStatus({ type: 'error', text: error.message })
+                          } else {
+                            setForgotStatus({ type: 'success', text: 'If that email exists, a reset link was sent.' })
+                          }
+                        } catch (err) {
+                          setForgotStatus({ type: 'error', text: err.message || 'Unable to send reset email.' })
+                        } finally {
+                          setForgotSending(false)
+                        }
+                      }}
+                      disabled={forgotSending}
+                    >
+                      {forgotSending ? 'Sending…' : 'Send reset email'}
+                    </button>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => { setShowForgot(false); setForgotEmail(''); setForgotStatus(null) }}>Cancel</button>
+                  </div>
+                  {forgotStatus && (
+                    <div style={{ marginTop: 8 }} className={forgotStatus.type === 'error' ? 'error-alert' : 'text-success'}>
+                      {forgotStatus.text}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="form-footer">
             <button

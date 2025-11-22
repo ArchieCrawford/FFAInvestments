@@ -41,6 +41,11 @@ import SchwabCallback from './Pages/SchwabCallback.jsx'
 // Education Components
 import BeardstownLadies from './Pages/BeardstownLadies/index.jsx'
 
+// Additional pages (new)
+import MemberFeed from './Pages/MemberFeed/MemberFeed.jsx'
+import SettingsPage from './Pages/Settings/SettingsPage.jsx'
+import ResetPassword from './Pages/ResetPassword.jsx'
+
 // Admin Components  
 import AdminDues from './Pages/AdminDues/index.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
@@ -227,9 +232,23 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+          <Route path="/member/feed" element={
+            <ProtectedRoute>
+              <Layout currentPageName="MemberFeed">
+                <MemberFeed />
+              </Layout>
+            </ProtectedRoute>
+          } />
           <Route path="/education/catalog" element={
             <ProtectedRoute>
               <EducationCatalog />
+            </ProtectedRoute>
+          } />
+          <Route path="/unit-price" element={
+            <ProtectedRoute>
+              <Layout currentPageName="UnitPrice">
+                <AdminUnitPrice />
+              </Layout>
             </ProtectedRoute>
           } />
           <Route path="/education/unit-value-system" element={
@@ -257,6 +276,14 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Layout currentPageName="Settings">
+                <SettingsPage />
+              </Layout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/admin/debug-auth" element={
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminDebugAuth">
@@ -272,6 +299,8 @@ function App() {
             </ProtectedRoute>
           } />
           
+          <Route path="/reset-password" element={<ResetPassword />} />
+
           {/* Redirect any unknown routes to login instead of protected root */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

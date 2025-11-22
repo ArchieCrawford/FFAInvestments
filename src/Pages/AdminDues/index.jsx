@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { AlertCircle, AlertTriangle, DollarSign, Download, Eye, EyeOff, TrendingUp, Users } from 'lucide-react'
-import { readMemberDuesFromExcel } from '../../utils/memberDuesExcel'
+import { supabase } from '../../lib/supabase'
+import { useMemo } from 'react'
 
 const DuesTracker = () => {
   const [duesData, setDuesData] = useState(null)
@@ -8,21 +9,56 @@ const DuesTracker = () => {
   const [error, setError] = useState(null)
   const [expandedMembers, setExpandedMembers] = useState(new Set())
   const [selectedMonths, setSelectedMonths] = useState(12)
+  const [rows, setRows] = useState([])
+  const [filterName, setFilterName] = useState('')
+  const [filterRange, setFilterRange] = useState('12') // 'all' or number of months
 
   useEffect(() => {
+    let cancelled = false
     const load = async () => {
       setLoading(true)
-      const result = await readMemberDuesFromExcel()
-      if (!result.success) {
-        setError(result.error)
-      } else {
-        setDuesData(result)
-        setError(null)
+      try {
+        let query = supabase.from('ffa_timeline').select('*')
+
+        // Server-side member_name filter
+        if (filterName && filterName.trim() !== '') {
+          query = query.ilike('member_name', `%${filterName.trim()}%`)
+        }
+
+        // Server-side date range filter
+        if (filterRange && filterRange !== 'all') {
+          const months = Number(filterRange) || 12
+          const from = new Date()
+          from.setMonth(from.getMonth() - months)
+          // Use YYYY-MM-DD for date comparison
+          const iso = from.toISOString().split('T')[0]
+          query = query.gte('report_date', iso)
+        }
+
+        query = query.order('report_date', { ascending: false })
+
+        const { data, error } = await query
+
+        if (error) {
+          if (!cancelled) setError(error.message)
+          return
+        }
+
+        if (!cancelled) {
+          setRows(data || [])
+          setError(null)
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || String(err))
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setLoading(false)
     }
+
+    // Load immediately and when filters change
     load()
-  }, [selectedMonths])
+    return () => { cancelled = true }
+  }, [selectedMonths, filterName, filterRange])
 
   const toggleMemberDetails = (name) => {
     const next = new Set(expandedMembers)
@@ -57,8 +93,7 @@ const DuesTracker = () => {
       </div>
     )
   }
-
-  if (error || !duesData) {
+  if (error) {
     return (
       <div className="app-page">
         <div className="card">
@@ -67,128 +102,100 @@ const DuesTracker = () => {
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <AlertCircle size={20} style={{ color: '#f87171' }} />
-            <p className="text-muted">{error || 'Member dues information is currently unavailable.'}</p>
+            <p className="text-muted">{error}</p>
           </div>
         </div>
       </div>
     )
   }
 
-  const summary = [
-    { label: 'Total Members', value: duesData.summary.total_members, icon: <Users size={20} /> },
-    {
-      label: 'Total Payments',
-      value: `$${duesData.summary.total_payments_collected.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
-      icon: <DollarSign size={20} />
-    },
-    {
-      label: 'Overpayments',
-      value: duesData.summary.members_with_overpayments,
-      icon: <TrendingUp size={20} />
-    },
-    {
-      label: 'Members Owing',
-      value: duesData.summary.members_owing_money,
-      icon: <AlertTriangle size={20} />
-    }
-  ]
+  // Derived visible rows
+  const visibleRows = useMemo(() => {
+    const nameFilter = filterName.trim().toLowerCase()
+    const now = new Date()
+    const cutoff = new Date(now)
+    cutoff.setMonth(cutoff.getMonth() - 12)
+
+    return rows.filter((r) => {
+      if (nameFilter && !(r.member_name || '').toLowerCase().includes(nameFilter)) return false
+      if (filterRange !== 'all') {
+        // filterRange is months count like '12'
+        const months = Number(filterRange)
+        if (!isNaN(months) && r.report_date) {
+          const d = new Date(r.report_date)
+          const from = new Date(now)
+          from.setMonth(from.getMonth() - months)
+          if (d < from) return false
+        }
+      }
+      return true
+    })
+  }, [rows, filterName, filterRange])
+
+  const totalPaymentsCollected = rows.reduce((s, r) => s + (Number(r.total_contribution) || 0), 0)
 
   return (
     <div className="app-page">
       <div className="card">
         <div className="card-header">
           <div>
-            <p className="heading-lg">Member Dues Management</p>
-            <p className="text-muted">Track payments, overpayments, and outstanding balances</p>
+            <p className="heading-lg">Member Dues / Contributions</p>
+            <p className="text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
           </div>
           <div className="pill">
             <Download size={16} />
             Export
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          {[1, 3, 6, 12].map((months) => (
-            <button
-              key={months}
-              className={`btn btn-pill ${selectedMonths === months ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setSelectedMonths(months)}
-            >
-              Last {months} Month{months > 1 && 's'}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      <div className="grid-2">
-        {summary.map((item) => (
-          <div className="card" key={item.label} style={{ padding: '1.5rem' }}>
-            <div className="pill">{item.icon}</div>
-            <p className="text-muted">{item.label}</p>
-            <p className="heading-md">{item.value}</p>
-          </div>
-        ))}
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginTop: 8 }}>
+          <input
+            className="input"
+            placeholder="Filter by member name"
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+            style={{ minWidth: 220 }}
+          />
+          <select value={filterRange} onChange={(e) => setFilterRange(e.target.value)} className="input">
+            <option value="12">Last 12 months</option>
+            <option value="6">Last 6 months</option>
+            <option value="3">Last 3 months</option>
+            <option value="all">All</option>
+          </select>
+          <div className="text-xs text-slate-400">Total rows: {visibleRows.length}</div>
+          <div style={{ marginLeft: 'auto' }} className="text-xs text-slate-400">Total contribution: ${totalPaymentsCollected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <p className="heading-md">Member Details</p>
+          <p className="heading-md">Dues / Contributions by Member & Month</p>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table" style={{ minWidth: '800px' }}>
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Status</th>
-                <th>Amount Owed</th>
-                <th>Total Payments</th>
-                <th>Total Contribution</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {duesData.members.map((member) => {
-                const amount = formatAmount(member.amount_owed)
-                const badge = statusBadge(member.latest_status)
-                return (
-                  <React.Fragment key={member.member_name}>
-                    <tr>
-                      <td>{member.member_name}</td>
-                      <td>
-                        <span className="pill" style={{ color: badge.color }}>{badge.label}</span>
-                      </td>
-                      <td style={{ color: amount.color }}>{amount.text}</td>
-                      <td>${member.total_payments.toFixed(2)}</td>
-                      <td>${member.total_contribution.toFixed(2)}</td>
-                      <td>
-                        <button className="btn btn-outline btn-sm btn-pill" onClick={() => toggleMemberDetails(member.member_name)}>
-                          {expandedMembers.has(member.member_name) ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedMembers.has(member.member_name) && (
-                      <tr>
-                        <td colSpan={6} style={{ background: 'rgba(255,255,255,0.02)' }}>
-                          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                            {member.monthly_details.map((month) => (
-                              <div key={month.month} style={{ minWidth: '160px' }}>
-                                <p className="text-muted">{month.month}</p>
-                                <p style={{ color: month.payment > 0 ? '#4ade80' : '#f87171' }}>
-                                  Paid: ${month.payment.toFixed(2)}
-                                </p>
-                                <p style={{ color: month.owed > 0 ? '#f87171' : '#cbd5f5' }}>
-                                  Balance: ${month.owed.toFixed(2)}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80">
+          <div className="max-h-[70vh] overflow-y-auto border-t border-slate-800">
+            <table className="min-w-full border-collapse text-sm" style={{ width: '100%' }}>
+              <thead className="sticky top-0 z-10 bg-slate-900">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Member</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Period</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Contribution</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Portfolio Value</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Ownership %</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 bg-slate-950/40">
+                {visibleRows.map((row) => (
+                  <tr key={`${row.member_id}-${row.report_date}`} className="hover:bg-slate-900/80">
+                    <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name}</td>
+                    <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{row.report_month || (row.report_date ? new Date(row.report_date).toLocaleDateString() : '')}</td>
+                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.total_contribution != null ? `$${Number(row.total_contribution).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.portfolio_value != null ? `$${Number(row.portfolio_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}</td>
+                    <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{row.ownership_pct != null ? `${(Number(row.ownership_pct) * 100).toFixed(3)}%` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
