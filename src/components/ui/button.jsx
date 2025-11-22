@@ -1,18 +1,27 @@
 import React from 'react'
 
-export const Button = ({ children, className = "", variant = "default", ...props }) => {
-  const baseClasses = "px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2"
-  const variants = {
-    default: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
-    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-blue-500"
+export const Button = ({ children, className = "", variant = "default", size = "md", pill = false, ...props }) => {
+  // Map component props to design-system classes
+  const variantMap = {
+    default: 'app-btn',
+    primary: 'app-btn app-btn-primary',
+    outline: 'app-btn app-btn-outline',
+    ghost: 'app-btn',
+    success: 'app-btn app-btn-success',
+    danger: 'app-btn app-btn-danger'
   }
-  
+
+  const sizeMap = {
+    sm: 'app-btn-sm',
+    md: ''
+  }
+
+  const pillClass = pill ? 'app-btn-pill' : ''
+
+  const classes = [variantMap[variant] || variantMap.default, sizeMap[size] || '', pillClass, className].filter(Boolean).join(' ')
+
   return (
-    <button 
-      className={`${baseClasses} ${variants[variant]} ${className}`} 
-      {...props}
-    >
+    <button className={classes} {...props}>
       {children}
     </button>
   )

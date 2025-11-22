@@ -71,30 +71,30 @@ const ResetPassword = () => {
 
   return (
     <div className="app-page">
-      <div className="card">
-        <div className="card-header">
-          <p className="heading-lg">Reset Password</p>
-          <p className="text-muted">Set a new password for your account</p>
+      <div className="app-card">
+        <div className="app-card-header">
+          <p className="app-heading-lg">Reset Password</p>
+          <p className="app-text-muted">Set a new password for your account</p>
         </div>
-        <div className="card-content">
+        <div className="app-card-content">
           <form onSubmit={handleSubmit}>
-            {error && <div className="error-alert">{error}</div>}
-            {success && <div className="text-success">{success}</div>}
+            {error && <div className="app-alert app-alert-destructive">{error}</div>}
+            {success && <div className="app-text-success">{success}</div>}
             <div className="input-group">
               <div className="input-wrapper">
-                <input type="password" name="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <input className="app-input" type="password" name="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
             </div>
             <div className="input-group">
               <div className="input-wrapper">
-                <input type="password" name="confirm" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                <input className="app-input" type="password" name="confirm" placeholder="Confirm new password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '.5rem' }}>
-              <button className="btn btn-primary btn-pill" type="submit" disabled={processing}>
+              <button className="app-btn app-btn-primary app-btn-pill" type="submit" disabled={processing}>
                 {processing ? 'Updating…' : 'Set new password'}
               </button>
-              <button type="button" className="btn btn-outline btn-pill" onClick={() => navigate('/login')}>Cancel</button>
+              <button type="button" className="app-btn app-btn-outline app-btn-pill" onClick={() => navigate('/login')}>Cancel</button>
             </div>
           </form>
         </div>

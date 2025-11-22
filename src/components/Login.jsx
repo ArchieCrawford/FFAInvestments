@@ -22,8 +22,8 @@ export default function Login() {
 
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#f7f9fc' }}>
-      <div className="card shadow-lg" style={{ width: '400px' }}>
-        <div className="card-body p-4">
+      <div className="app-card shadow-lg" style={{ width: '400px' }}>
+        <div className="app-card-content p-4">
           <div className="text-center mb-4">
             <i className="fas fa-dollar-sign text-primary fs-1 mb-3"></i>
             <h2 className="fw-bold">FFA Investments</h2>
@@ -35,7 +35,7 @@ export default function Login() {
               <label htmlFor="email" className="form-label">Email address</label>
               <input
                 type="email"
-                className="form-control"
+                className="app-input"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -48,7 +48,7 @@ export default function Login() {
               <label htmlFor="password" className="form-label">Password</label>
               <input
                 type="password"
-                className="form-control"
+                className="app-input"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -59,7 +59,7 @@ export default function Login() {
             
             <button 
               type="submit" 
-              className="btn btn-primary w-100"
+              className="app-btn app-btn-primary w-100"
               disabled={loading}
             >
               {loading ? (
@@ -74,7 +74,7 @@ export default function Login() {
           </form>
           
           <div className="text-center mt-3">
-            <small className="text-muted">
+            <small className="app-text-muted">
               <strong>Admin Login:</strong><br/>
               admin@ffa.com / admin123<br/>
               archie.crawford1@gmail.com / archie123

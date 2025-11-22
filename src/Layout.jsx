@@ -197,9 +197,9 @@ export default function Layout({ children, currentPageName }) {
             </div>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
               <ThemeToggle />
-              <button className="btn btn-danger btn-pill app-signout" onClick={handleLogout}>
-                Sign Out
-              </button>
+                <button className="app-btn app-btn-danger app-btn-pill app-signout" onClick={handleLogout}>
+                  Sign Out
+                </button>
             </div>
           </div>
         </aside>

@@ -36,27 +36,27 @@ const EmailModal = ({ recipient, onClose }) => {
         <button className="modal-close" onClick={onClose} aria-label="Close email composer">
           ✕
         </button>
-        <h2 className="heading-md" style={{ marginBottom: '0.5rem' }}>
+        <h2 className="app-heading-md" style={{ marginBottom: '0.5rem' }}>
           Email {recipient.name}
         </h2>
-        <p className="text-muted" style={{ marginBottom: '1rem' }}>
+        <p className="app-text-muted" style={{ marginBottom: '1rem' }}>
           Message will be sent through the club email system.
         </p>
         <form onSubmit={handleSubmit} className="app-page" style={{ gap: '1rem' }}>
           <div>
-            <label className="text-muted text-sm">Subject</label>
+            <label className="app-text-muted text-sm">Subject</label>
             <input
               type="text"
-              className="input"
+              className="app-input"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="text-muted text-sm">Message</label>
+            <label className="app-text-muted text-sm">Message</label>
             <textarea
-              className="input"
+              className="app-input"
               rows={5}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -67,10 +67,10 @@ const EmailModal = ({ recipient, onClose }) => {
             <p style={{ color: status.type === 'error' ? '#fda4af' : '#86efac' }}>{status.text}</p>
           )}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-            <button type="button" className="btn btn-outline btn-pill" onClick={onClose}>
+            <button type="button" className="app-btn app-btn-outline app-btn-pill" onClick={onClose}>
               Close
             </button>
-            <button type="submit" className="btn btn-primary btn-pill" disabled={sending}>
+            <button type="submit" className="app-btn app-btn-primary app-btn-pill" disabled={sending}>
               {sending ? 'Sending…' : 'Send Email'}
             </button>
           </div>

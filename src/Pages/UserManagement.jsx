@@ -120,7 +120,7 @@ const UserManagement = () => {
                   <button
                     onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'member' : 'admin')}
                     disabled={updating === user.id}
-                    className={`btn btn-pill ${user.role === 'admin' ? 'btn-warning' : 'btn-success'}`}
+                    className={`${user.role === 'admin' ? 'app-btn app-btn-warning app-btn-pill' : 'app-btn app-btn-success app-btn-pill'}`}
                   >
                     {updating === user.id ? 'Updating…' : user.role === 'admin' ? 'Make Member' : 'Make Admin'}
                   </button>

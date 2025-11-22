@@ -166,7 +166,7 @@ export default function CSVImporter({ onImportComplete }) {
         Import Members from CSV File
       </h5>
       
-      <div className="alert alert-info">
+      <div className="app-alert">
         <i className="fas fa-info-circle me-2"></i>
         <strong>Ready to Import:</strong> Select your legacy timeline CSV file (historical timeline data) to automatically create member accounts with their portfolio history.
       </div>
@@ -178,7 +178,7 @@ export default function CSVImporter({ onImportComplete }) {
         </label>
         <input
           type="file"
-          className="form-control form-control-lg"
+          className="app-input"
           id="csvFile"
           accept=".csv"
           onChange={handleFileUpload}
@@ -196,7 +196,7 @@ export default function CSVImporter({ onImportComplete }) {
         </small>
         <div>
           <button 
-            className="btn btn-outline-secondary btn-sm me-2"
+            className="app-btn app-btn-outline app-btn-sm me-2"
             onClick={() => document.getElementById('csvFile').click()}
             disabled={isUploading}
           >
@@ -204,7 +204,7 @@ export default function CSVImporter({ onImportComplete }) {
             Browse Files
           </button>
           <button 
-            className="btn btn-success btn-sm me-2"
+            className="app-btn app-btn-success app-btn-sm me-2"
             onClick={() => {
               const input = document.createElement('input');
               input.type = 'file';
@@ -218,7 +218,7 @@ export default function CSVImporter({ onImportComplete }) {
             Quick Import
           </button>
           <button 
-            className="btn btn-warning btn-sm"
+            className="app-btn app-btn-warning app-btn-sm"
             onClick={loadSampleData}
             disabled={isUploading}
           >
@@ -228,8 +228,8 @@ export default function CSVImporter({ onImportComplete }) {
         </div>
       </div>
 
-      {isUploading && (
-        <div className="alert alert-info">
+        {isUploading && (
+        <div className="app-alert">
           <div className="d-flex align-items-center">
             <div className="spinner-border spinner-border-sm me-2" role="status"></div>
             Processing CSV file...
@@ -238,7 +238,7 @@ export default function CSVImporter({ onImportComplete }) {
       )}
 
       {importStatus && (
-        <div className={`alert ${importStatus.type === 'success' ? 'alert-success' : 'alert-danger'}`}>
+        <div className={`app-alert ${importStatus.type === 'success' ? 'app-alert-success' : 'app-alert-destructive'}`}>
           <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2`}></i>
           {importStatus.message}
         </div>

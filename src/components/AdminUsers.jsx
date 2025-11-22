@@ -124,26 +124,26 @@ export default function AdminUsers() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Members</h2>
         <div>
-          <button className="btn btn-outline-primary me-2" onClick={() => setShowAddModal(true)}>
+          <button className="app-btn app-btn-outline me-2" onClick={() => setShowAddModal(true)}>
             + Add Member
           </button>
           <div className="btn-group">
             <button 
-              className="btn btn-primary" 
+              className="app-btn app-btn-primary" 
               onClick={() => setShowCsvImport(!showCsvImport)}
             >
               <i className="fas fa-upload me-1"></i>
               {showCsvImport ? 'Hide' : 'Show'} CSV Import
             </button>
             <button 
-              className="btn btn-success me-2" 
+              className="app-btn app-btn-success me-2" 
               onClick={forceLoadDefaultMembers}
             >
               <i className="fas fa-database me-1"></i>
               Load FFA Members
             </button>
             <button 
-              className="btn btn-primary dropdown-toggle dropdown-toggle-split"
+              className="app-btn app-btn-primary dropdown-toggle dropdown-toggle-split"
               data-bs-toggle="dropdown"
             >
               <span className="visually-hidden">Toggle Dropdown</span>
@@ -207,7 +207,7 @@ export default function AdminUsers() {
       {/* Members Statistics */}
       <div className="row g-3 mb-4">
         <div className="col-md-3">
-          <div className="card-stat">
+          <div className="app-card app-card-stat">
             <div>
               <div className="fw-bold">Total Members</div>
               <div className="fs-4">{members.length}</div>
@@ -216,7 +216,7 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card-stat">
+          <div className="app-card app-card-stat">
             <div>
               <div className="fw-bold">Active Members</div>
               <div className="fs-4">{members.filter(m => m.status === 'active').length}</div>
@@ -225,7 +225,7 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card-stat">
+          <div className="app-card app-card-stat">
             <div>
               <div className="fw-bold">Pending Invites</div>
               <div className="fs-4">{members.filter(m => m.status === 'pending_invite').length}</div>
@@ -234,7 +234,7 @@ export default function AdminUsers() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card-stat">
+          <div className="app-card app-card-stat">
             <div>
               <div className="fw-bold">Total AUM</div>
               <div className="fs-4">
@@ -250,7 +250,7 @@ export default function AdminUsers() {
       <div className="task-box">
         <h5 className="mb-3">Member Directory</h5>
         <div className="table-responsive">
-          <table className="table table-hover">
+          <table className="app-table table-hover">
             <thead>
               <tr>
                 <th>Name</th>
@@ -301,7 +301,7 @@ export default function AdminUsers() {
                       <div className="btn-group" role="group">
                         {member.status === 'pending_invite' && (
                           <button 
-                            className="btn btn-sm btn-outline-success"
+                            className="app-btn app-btn-sm app-btn-outline app-btn-success"
                             onClick={() => handleInviteMember(member.id)}
                             title="Send Invitation"
                           >
@@ -309,7 +309,7 @@ export default function AdminUsers() {
                           </button>
                         )}
                         <button 
-                          className="btn btn-sm btn-outline-primary"
+                          className="app-btn app-btn-sm app-btn-outline app-btn-primary"
                           onClick={() => handleEditMember(member)}
                           title="Edit Member Profile"
                         >
@@ -317,7 +317,7 @@ export default function AdminUsers() {
                         </button>
                         <div className="btn-group" role="group">
                           <button 
-                            className="btn btn-sm btn-outline-warning dropdown-toggle"
+                            className="app-btn app-btn-sm app-btn-outline app-btn-warning dropdown-toggle"
                             type="button"
                             data-bs-toggle="dropdown"
                             title="Change Role"
@@ -338,13 +338,13 @@ export default function AdminUsers() {
                         </div>
                         <a 
                           href={`/member/${member.id}/dashboard`} 
-                          className="btn btn-sm btn-outline-info"
+                          className="app-btn app-btn-sm app-btn-outline app-btn-info"
                           title="View Member Dashboard"
                         >
                           <i className="fas fa-chart-line"></i>
                         </a>
                         <button 
-                          className="btn btn-sm btn-outline-danger"
+                          className="app-btn app-btn-sm app-btn-outline app-btn-danger"
                           onClick={() => handleDeleteMember(member)}
                           title="Delete Member"
                         >

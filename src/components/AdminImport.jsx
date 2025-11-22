@@ -16,7 +16,7 @@ export default function AdminImport() {
                 <i className="fas fa-file-csv fa-3x text-primary mb-3"></i>
                 <h6>Import CSV</h6>
                 <p className="text-muted small">Upload transaction data from CSV files</p>
-                <button className="btn btn-outline-primary">Choose File</button>
+                <button className="app-btn app-btn-outline">Choose File</button>
               </div>
             </div>
           </div>
@@ -26,7 +26,7 @@ export default function AdminImport() {
                 <i className="fas fa-file-excel fa-3x text-success mb-3"></i>
                 <h6>Import Excel</h6>
                 <p className="text-muted small">Upload data from Excel spreadsheets</p>
-                <button className="btn btn-outline-success">Choose File</button>
+                <button className="app-btn app-btn-outline app-btn-success">Choose File</button>
               </div>
             </div>
           </div>

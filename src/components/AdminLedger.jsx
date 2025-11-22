@@ -5,13 +5,13 @@ export default function AdminLedger() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Ledger</h2>
-        <button className="btn btn-primary">+ Record Transaction</button>
+        <button className="app-btn app-btn-primary">+ Record Transaction</button>
       </div>
       
       <div className="task-box">
         <h5 className="mb-3">Transaction History</h5>
         <div className="table-responsive">
-          <table className="table">
+          <table className="app-table">
             <thead>
               <tr>
                 <th>Date</th>

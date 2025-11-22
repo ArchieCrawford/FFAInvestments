@@ -46,37 +46,37 @@ const SettingsPage = () => {
 
   return (
     <div className="app-page">
-      <div className="card">
-        <div className="card-header">
-          <p className="heading-lg">Settings</p>
-          <p className="text-muted">Manage your profile and preferences</p>
+      <div className="app-card">
+        <div className="app-card-header">
+          <p className="app-heading-lg">Settings</p>
+          <p className="app-text-muted">Manage your profile and preferences</p>
         </div>
         <form onSubmit={handleSave}>
           <div className="grid-2" style={{ gap: '1rem' }}>
-            <div className="card" style={{ padding: '1rem' }}>
-              <p className="heading-md">Profile</p>
+            <div className="app-card" style={{ padding: '1rem' }}>
+              <p className="app-heading-md">Profile</p>
               <label className="form-label">Display name</label>
-              <input className="form-input" value={form.display_name} onChange={e => setForm({ ...form, display_name: e.target.value })} />
+              <input className="app-input" value={form.display_name} onChange={e => setForm({ ...form, display_name: e.target.value })} />
 
               <label className="form-label">Timezone</label>
-              <select className="form-input" value={form.timezone} onChange={e => setForm({ ...form, timezone: e.target.value })}>
+              <select className="app-input" value={form.timezone} onChange={e => setForm({ ...form, timezone: e.target.value })}>
                 {timezones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
               </select>
 
               <label className="form-label">Default landing page</label>
-              <select className="form-input" value={form.default_landing_page} onChange={e => setForm({ ...form, default_landing_page: e.target.value })}>
+              <select className="app-input" value={form.default_landing_page} onChange={e => setForm({ ...form, default_landing_page: e.target.value })}>
                 <option value="/member/home">Member Dashboard</option>
                 <option value="/unit-price">Unit Price History</option>
                 <option value="/education/catalog">Education Catalog</option>
               </select>
 
               <div style={{ marginTop: '1rem' }}>
-                <button className="btn btn-primary btn-pill" disabled={loading} type="submit">Save</button>
+                <button className="app-btn app-btn-primary app-btn-pill" disabled={loading} type="submit">Save</button>
               </div>
             </div>
 
-            <div className="card" style={{ padding: '1rem' }}>
-              <p className="heading-md">Notifications</p>
+            <div className="app-card" style={{ padding: '1rem' }}>
+              <p className="app-heading-md">Notifications</p>
               <label className="form-label">Email me when a new contribution is recorded</label>
               <input type="checkbox" checked={profile?.notify_on_contribution} onChange={() => {}} />
 
@@ -90,7 +90,7 @@ const SettingsPage = () => {
         </form>
 
         {message && (
-          <div className="card" style={{ marginTop: '1rem' }}>
+          <div className="app-card" style={{ marginTop: '1rem' }}>
             <p style={{ color: message.type === 'error' ? '#fecaca' : '#bbf7d0' }}>{message.text}</p>
           </div>
         )}

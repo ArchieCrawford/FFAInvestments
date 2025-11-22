@@ -4,8 +4,8 @@ export default function AdminUnitPrice() {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>Unit Price Management</h2>
-        <button className="btn btn-primary">+ Set Unit Price</button>
+  <h2>Unit Price Management</h2>
+  <button className="app-btn app-btn-primary">+ Set Unit Price</button>
       </div>
       
       <div className="row g-3 mb-4">
@@ -14,7 +14,7 @@ export default function AdminUnitPrice() {
             <h5 className="mb-3">Current Unit Price</h5>
             <div className="text-center">
               <h1 className="display-4 text-primary">$0.00</h1>
-              <span className="badge bg-warning">Pending</span>
+              <span className="app-pill">Pending</span>
               <p className="text-muted mt-2">Unit price not finalized for current period</p>
             </div>
           </div>
@@ -36,7 +36,7 @@ export default function AdminUnitPrice() {
               Unit price calculation is pending for the current period
             </div>
           </div>
-          <button className="btn btn-primary">Finalize Unit Price</button>
+          <button className="app-btn app-btn-primary">Finalize Unit Price</button>
         </div>
       </div>
     </>

@@ -5,7 +5,7 @@ export default function AdminEducation() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Education Management</h2>
-        <button className="btn btn-primary">+ Add Lesson</button>
+        <button className="app-btn app-btn-primary">+ Add Lesson</button>
       </div>
       
       <div className="task-box">
