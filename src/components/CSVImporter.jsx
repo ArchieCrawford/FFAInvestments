@@ -160,89 +160,92 @@ export default function CSVImporter({ onImportComplete }) {
   };
 
   return (
-    <div className="task-box border border-primary">
-      <h5 className="mb-3 text-primary">
-        <i className="fas fa-upload me-2"></i>
-        Import Members from CSV File
-      </h5>
-      
-      <div className="app-alert">
-        <i className="fas fa-info-circle me-2"></i>
-        <strong>Ready to Import:</strong> Select your legacy timeline CSV file (historical timeline data) to automatically create member accounts with their portfolio history.
+    <div className="app-card">
+      <div className="app-card-header">
+        <h5 className="app-card-title">
+          <i className="fas fa-upload me-2"></i>
+          Import Members from CSV File
+        </h5>
       </div>
-      
-      <div className="mb-3">
-        <label htmlFor="csvFile" className="form-label fw-bold">
-          <i className="fas fa-file-csv me-2"></i>
-          Choose CSV File:
-        </label>
-        <input
-          type="file"
-          className="app-input"
-          id="csvFile"
-          accept=".csv"
-          onChange={handleFileUpload}
-          disabled={isUploading}
-        />
-        <div className="form-text">
-          <strong>Expected columns:</strong> Member_Name, Report_Month, Report_Date, Portfolio_Value, Total_Units, Total_Contribution, etc.
-        </div>
-      </div>
-
-      <div className="d-flex justify-content-between align-items-center">
-        <small className="text-muted">
-          <i className="fas fa-shield-alt me-1"></i>
-          Your data is processed locally and stored securely
-        </small>
-        <div>
-          <button 
-            className="app-btn app-btn-outline app-btn-sm me-2"
-            onClick={() => document.getElementById('csvFile').click()}
-            disabled={isUploading}
-          >
-            <i className="fas fa-folder-open me-1"></i>
-            Browse Files
-          </button>
-          <button 
-            className="app-btn app-btn-success app-btn-sm me-2"
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.csv';
-              input.onchange = handleFileUpload;
-              input.click();
-            }}
-            disabled={isUploading}
-          >
-            <i className="fas fa-rocket me-1"></i>
-            Quick Import
-          </button>
-          <button 
-            className="app-btn app-btn-warning app-btn-sm"
-            onClick={loadSampleData}
-            disabled={isUploading}
-          >
-            <i className="fas fa-database me-1"></i>
-            Load Sample Data
-          </button>
-        </div>
-      </div>
-
-        {isUploading && (
+      <div className="app-card-content">
         <div className="app-alert">
-          <div className="d-flex align-items-center">
-            <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-            Processing CSV file...
+          <i className="fas fa-info-circle me-2"></i>
+          <strong>Ready to Import:</strong> Select your legacy timeline CSV file (historical timeline data) to automatically create member accounts with their portfolio history.
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="csvFile" className="fw-bold">
+            <i className="fas fa-file-csv me-2"></i>
+            Choose CSV File:
+          </label>
+          <input
+            type="file"
+            className="app-input"
+            id="csvFile"
+            accept=".csv"
+            onChange={handleFileUpload}
+            disabled={isUploading}
+          />
+          <div className="app-text-muted">
+            <strong>Expected columns:</strong> Member_Name, Report_Month, Report_Date, Portfolio_Value, Total_Units, Total_Contribution, etc.
           </div>
         </div>
-      )}
 
-      {importStatus && (
-        <div className={`app-alert ${importStatus.type === 'success' ? 'app-alert-success' : 'app-alert-destructive'}`}>
-          <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2`}></i>
-          {importStatus.message}
+        <div className="d-flex justify-content-between align-items-center">
+          <small className="app-text-muted">
+            <i className="fas fa-shield-alt me-1"></i>
+            Your data is processed locally and stored securely
+          </small>
+          <div>
+            <button 
+              className="app-btn app-btn-outline app-btn-sm me-2"
+              onClick={() => document.getElementById('csvFile').click()}
+              disabled={isUploading}
+            >
+              <i className="fas fa-folder-open me-1"></i>
+              Browse Files
+            </button>
+            <button 
+              className="app-btn app-btn-success app-btn-sm me-2"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.csv';
+                input.onchange = handleFileUpload;
+                input.click();
+              }}
+              disabled={isUploading}
+            >
+              <i className="fas fa-rocket me-1"></i>
+              Quick Import
+            </button>
+            <button 
+              className="app-btn app-btn-warning app-btn-sm"
+              onClick={loadSampleData}
+              disabled={isUploading}
+            >
+              <i className="fas fa-database me-1"></i>
+              Load Sample Data
+            </button>
+          </div>
         </div>
-      )}
+
+        {isUploading && (
+          <div className="app-alert">
+            <div className="d-flex align-items-center">
+              <div className="spinner-inline me-2" role="status"></div>
+              Processing CSV file...
+            </div>
+          </div>
+        )}
+
+        {importStatus && (
+          <div className={`app-alert ${importStatus.type === 'success' ? 'app-alert-success' : 'app-alert-destructive'}`}>
+            <i className={`fas ${importStatus.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2`}></i>
+            {importStatus.message}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

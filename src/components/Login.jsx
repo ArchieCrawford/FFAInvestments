@@ -64,7 +64,7 @@ export default function Login() {
             >
               {loading ? (
                 <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  <span className="spinner-inline me-2" role="status"></span>
                   Signing in...
                 </>
               ) : (

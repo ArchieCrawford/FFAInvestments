@@ -52,7 +52,7 @@ export default function MemberAccountDashboard() {
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: 400 }}>
-        <div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div>
+        <div className="spinner-page" role="status"><span className="visually-hidden">Loading...</span></div>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default function MemberAccountDashboard() {
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2>{member.name}</h2>
+          <h2 className="app-heading-lg">{member.name}</h2>
           <p className="app-text-muted mb-0">Member since {new Date(member.joinDate).toLocaleDateString()} • {member.email || 'No email provided'}</p>
         </div>
         <div>
@@ -78,8 +78,8 @@ export default function MemberAccountDashboard() {
         <div className="col-md-3">
           <div className="app-card app-card-stat blue">
             <div>
-              <div className="fw-bold">Current Portfolio Value</div>
-              <div className="fs-4">{formatCurrency(latestEntry?.portfolioValue || 0)}</div>
+              <div className="app-heading-md">Current Portfolio Value</div>
+              <div className="app-heading-lg">{formatCurrency(latestEntry?.portfolioValue || 0)}</div>
             </div>
             <i className="fas fa-wallet fa-2x" />
           </div>
@@ -87,35 +87,35 @@ export default function MemberAccountDashboard() {
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Total Units</div>
-              <div className="fs-4">{latestEntry?.totalUnits?.toFixed(2) || '0.00'}</div>
+              <div className="app-heading-md">Total Units</div>
+              <div className="app-heading-lg">{latestEntry?.totalUnits?.toFixed(2) || '0.00'}</div>
             </div>
-            <i className="fas fa-coins fa-2x text-muted" />
+            <i className="fas fa-coins fa-2x" />
           </div>
         </div>
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Total Growth</div>
-              <div className={`fs-4 ${totalGrowth >= 0 ? 'text-success' : 'text-danger'}`}>{totalGrowth >= 0 ? '+' : ''}{totalGrowth.toFixed(2)}%</div>
+              <div className="app-heading-md">Total Growth</div>
+              <div className={`app-heading-lg ${totalGrowth >= 0 ? 'text-success' : 'text-danger'}`}>{totalGrowth >= 0 ? '+' : ''}{totalGrowth.toFixed(2)}%</div>
             </div>
-            <i className="fas fa-chart-line fa-2x text-muted" />
+            <i className="fas fa-chart-line fa-2x" />
           </div>
         </div>
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Monthly Change</div>
-              <div className={`fs-4 ${monthlyGrowth >= 0 ? 'text-success' : 'text-danger'}`}>{monthlyGrowth >= 0 ? '+' : ''}{monthlyGrowth.toFixed(2)}%</div>
+              <div className="app-heading-md">Monthly Change</div>
+              <div className={`app-heading-lg ${monthlyGrowth >= 0 ? 'text-success' : 'text-danger'}`}>{monthlyGrowth >= 0 ? '+' : ''}{monthlyGrowth.toFixed(2)}%</div>
             </div>
-            <i className="fas fa-trending-up fa-2x text-muted" />
+            <i className="fas fa-trending-up fa-2x" />
           </div>
         </div>
       </div>
 
-      <div className="task-box mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5>Portfolio Performance Over Time</h5>
+      <div className="app-card mb-4">
+        <div className="app-card-header">
+          <h5 className="app-card-title">Portfolio Performance Over Time</h5>
           <div className="btn-group" role="group">
             <input type="radio" className="btn-check" name="period" id="3m" value="3m" checked={selectedPeriod === '3m'} onChange={(e) => setSelectedPeriod(e.target.value)} />
             <label className="app-btn app-btn-outline app-btn-sm" htmlFor="3m">3M</label>
@@ -145,49 +145,51 @@ export default function MemberAccountDashboard() {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="text-center text-muted py-5">No timeline data available for this member</div>
+          <div className="text-center app-text-muted py-5">No timeline data available for this member</div>
         )}
       </div>
 
       <div className="row g-3">
         <div className="col-md-6">
-          <div className="task-box">
-            <h5 className="mb-3">Recent Performance</h5>
-            <div className="table-responsive">
-              <table className="app-table table-sm">
-                <thead>
-                  <tr>
-                    <th>Month</th>
-                    <th>Value</th>
-                    <th>Change</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTimeline.slice(-5).reverse().map((entry, index) => {
-                    const prevEntry = filteredTimeline[filteredTimeline.length - 2 - index];
-                    const change = prevEntry ? ((entry.portfolioValue - prevEntry.portfolioValue) / prevEntry.portfolioValue) * 100 : 0;
-                    return (
-                      <tr key={entry.id}>
-                        <td>{formatDate(entry.reportDate)}</td>
-                        <td>{formatCurrency(entry.portfolioValue)}</td>
-                        <td><span className={`app-pill ${change >= 0 ? 'bg-success' : 'bg-danger'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <div className="app-card">
+            <div className="app-card-header"><h5 className="app-card-title">Recent Performance</h5></div>
+            <div className="app-card-content">
+              <div className="table-responsive">
+                <table className="app-table">
+                  <thead>
+                    <tr>
+                      <th>Month</th>
+                      <th>Value</th>
+                      <th>Change</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTimeline.slice(-5).reverse().map((entry, index) => {
+                      const prevEntry = filteredTimeline[filteredTimeline.length - 2 - index];
+                      const change = prevEntry ? ((entry.portfolioValue - prevEntry.portfolioValue) / prevEntry.portfolioValue) * 100 : 0;
+                      return (
+                        <tr key={entry.id}>
+                          <td>{formatDate(entry.reportDate)}</td>
+                          <td>{formatCurrency(entry.portfolioValue)}</td>
+                          <td><span className={`app-pill`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="col-md-6">
-          <div className="task-box">
-            <h5 className="mb-3">Account Summary</h5>
-            <div className="list-group list-group-flush">
-              <div className="list-group-item d-flex justify-content-between"><span>Total Data Points</span><strong>{timeline.length}</strong></div>
-              <div className="list-group-item d-flex justify-content-between"><span>First Record</span><strong>{timeline[0] ? formatDate(timeline[0].reportDate) : 'N/A'}</strong></div>
-              <div className="list-group-item d-flex justify-content-between"><span>Latest Record</span><strong>{latestEntry ? formatDate(latestEntry.reportDate) : 'N/A'}</strong></div>
-              <div className="list-group-item d-flex justify-content-between"><span>Account Status</span><span className="app-pill bg-success">Active</span></div>
+          <div className="app-card">
+            <div className="app-card-header"><h5 className="app-card-title">Account Summary</h5></div>
+            <div className="app-card-content">
+              <div className="app-card-row d-flex justify-content-between"><span>Total Data Points</span><strong>{timeline.length}</strong></div>
+              <div className="app-card-row d-flex justify-content-between"><span>First Record</span><strong>{timeline[0] ? formatDate(timeline[0].reportDate) : 'N/A'}</strong></div>
+              <div className="app-card-row d-flex justify-content-between"><span>Latest Record</span><strong>{latestEntry ? formatDate(latestEntry.reportDate) : 'N/A'}</strong></div>
+              <div className="app-card-row d-flex justify-content-between"><span>Account Status</span><span className="app-pill">Active</span></div>
             </div>
           </div>
         </div>

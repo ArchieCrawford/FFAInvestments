@@ -101,18 +101,19 @@ export default function AdminUsers() {
   };
 
   const getStatusBadge = (status) => {
+    // Use design-system pill for status; keep semantics only
     switch (status) {
-      case 'active': return <span className="badge bg-success">Active</span>;
-      case 'invited': return <span className="badge bg-warning">Invited</span>;
-      case 'pending_invite': return <span className="badge bg-secondary">Pending Invite</span>;
-      default: return <span className="badge bg-light">Unknown</span>;
+      case 'active': return <span className="app-pill">Active</span>;
+      case 'invited': return <span className="app-pill">Invited</span>;
+      case 'pending_invite': return <span className="app-pill">Pending Invite</span>;
+      default: return <span className="app-pill">Unknown</span>;
     }
   };
 
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
-        <div className="spinner-border text-primary" role="status">
+        <div className="spinner-page" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
       </div>
@@ -209,48 +210,51 @@ export default function AdminUsers() {
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Total Members</div>
-              <div className="fs-4">{members.length}</div>
+              <div className="app-heading-md">Total Members</div>
+              <div className="app-heading-lg">{members.length}</div>
             </div>
-            <i className="fas fa-users fa-2x text-muted"></i>
+            <i className="fas fa-users fa-2x" />
           </div>
         </div>
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Active Members</div>
-              <div className="fs-4">{members.filter(m => m.status === 'active').length}</div>
+              <div className="app-heading-md">Active Members</div>
+              <div className="app-heading-lg">{members.filter(m => m.status === 'active').length}</div>
             </div>
-            <i className="fas fa-user-check fa-2x text-success"></i>
+            <i className="fas fa-user-check fa-2x" />
           </div>
         </div>
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Pending Invites</div>
-              <div className="fs-4">{members.filter(m => m.status === 'pending_invite').length}</div>
+              <div className="app-heading-md">Pending Invites</div>
+              <div className="app-heading-lg">{members.filter(m => m.status === 'pending_invite').length}</div>
             </div>
-            <i className="fas fa-user-clock fa-2x text-warning"></i>
+            <i className="fas fa-user-clock fa-2x" />
           </div>
         </div>
         <div className="col-md-3">
           <div className="app-card app-card-stat">
             <div>
-              <div className="fw-bold">Total AUM</div>
-              <div className="fs-4">
+              <div className="app-heading-md">Total AUM</div>
+              <div className="app-heading-lg">
                 {formatCurrency(members.reduce((sum, m) => sum + (m.currentBalance || 0), 0))}
               </div>
             </div>
-            <i className="fas fa-dollar-sign fa-2x text-primary"></i>
+            <i className="fas fa-dollar-sign fa-2x" />
           </div>
         </div>
       </div>
       
       {/* Members Table */}
-      <div className="task-box">
-        <h5 className="mb-3">Member Directory</h5>
-        <div className="table-responsive">
-          <table className="app-table table-hover">
+      <div className="app-card">
+        <div className="app-card-header">
+          <h5 className="app-card-title">Member Directory</h5>
+        </div>
+        <div className="app-card-content">
+          <div className="table-responsive">
+            <table className="app-table">
             <thead>
               <tr>
                 <th>Name</th>
@@ -273,13 +277,12 @@ export default function AdminUsers() {
                   <tr key={member.id}>
                     <td>
                       <div className="d-flex align-items-center">
-                        <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
-                             style={{ width: "32px", height: "32px", fontSize: "12px" }}>
+                        <div className="app-user-avatar me-2" style={{ width: "32px", height: "32px", fontSize: "12px" }}>
                           {member.name?.split(' ').map(n => n[0]).join('') || '?'}
                         </div>
                         <div>
-                          <div className="fw-medium">{member.name}</div>
-                          <small className="text-muted">
+                          <div className="app-heading-md">{member.name}</div>
+                          <small className="app-text-muted">
                             Joined {new Date(member.joinDate).toLocaleDateString()}
                           </small>
                         </div>
@@ -291,7 +294,7 @@ export default function AdminUsers() {
                           {member.email}
                         </a>
                       ) : (
-                        <span className="text-muted">Not provided</span>
+                        <span className="app-text-muted">Not provided</span>
                       )}
                     </td>
                     <td>{formatCurrency(member.currentBalance || 0)}</td>
@@ -301,7 +304,7 @@ export default function AdminUsers() {
                       <div className="btn-group" role="group">
                         {member.status === 'pending_invite' && (
                           <button 
-                            className="app-btn app-btn-sm app-btn-outline app-btn-success"
+                            className="app-btn app-btn-sm app-btn-outline"
                             onClick={() => handleInviteMember(member.id)}
                             title="Send Invitation"
                           >
