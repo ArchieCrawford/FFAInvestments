@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { getMemberTimeline, getMemberDues } from '../lib/ffaApi'
+import { getMemberTimeline, getCurrentMemberProfile } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, 
@@ -22,20 +21,10 @@ const MemberDashboard = () => {
 
   const fetchMemberData = async () => {
     try {
-      // Fetch profile from new members table
-      const { data: member, error: memberError } = await supabase
-        .from('members')
-        .select('*')
-        .eq('email', user.email)
-        .single();
-
-      if (memberError) {
-        if (memberError.code === 'PGRST116') {
-          setError('Member profile not found. Please contact an administrator.');
-        } else {
-          throw memberError;
-        }
-        return;
+      const member = await getCurrentMemberProfile()
+      if (!member) {
+        setError('Member profile not found. Please contact an administrator.')
+        return
       }
 
       // Fetch timeline via RPC

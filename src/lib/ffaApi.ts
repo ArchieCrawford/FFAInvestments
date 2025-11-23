@@ -1,6 +1,40 @@
 import { supabase } from './supabase.js'
 
-// API module for the new normalized schema
+const MEMBER_ACCOUNT_FIELDS = `
+  id,
+  member_name,
+  full_name,
+  first_name,
+  last_name,
+  email,
+  phone,
+  join_date,
+  membership_status,
+  dues_status,
+  notes,
+  profile_user_id,
+  account_status,
+  user_id,
+  user_role
+`
+
+const shapeMemberRow = (row: any) => {
+  const fullName = row.full_name || row.member_name || row.email || 'Member'
+  const membershipStatus = row.membership_status ?? row.status ?? 'active'
+  const accountStatus = row.account_status || (row.user_id ? 'registered' : 'not_registered')
+
+  return {
+    ...row,
+    full_name: fullName,
+    member_name: row.member_name || fullName,
+    first_name: row.first_name || '',
+    last_name: row.last_name || '',
+    status: membershipStatus,
+    membership_status: membershipStatus,
+    account_status: accountStatus,
+    role: row.user_role || row.role || 'member'
+  }
+}
 
 export async function getDashboard(asOfDate: string) {
   const { data, error } = await supabase.rpc('api_get_dashboard', {
@@ -12,11 +46,33 @@ export async function getDashboard(asOfDate: string) {
 
 export async function getMembers() {
   const { data, error } = await supabase
-    .from('members')
-    .select('id, external_short_id, member_name, email, status')
-    .order('member_name', { ascending: true })
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .order('full_name', { ascending: true })
   if (error) throw error
-  return data
+  return (data || []).map(shapeMemberRow)
+}
+
+export async function getCurrentMemberProfile() {
+  const { data: authData, error: authError } = await supabase.auth.getUser()
+  if (authError) throw authError
+  const user = authData?.user
+  if (!user) return null
+
+  const { data, error } = await supabase
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .or(
+      `profile_user_id.eq.${user.id},user_id.eq.${user.id}${
+        user.email ? `,email.eq.${encodeURIComponent(user.email)}` : ''
+      }`
+    )
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data ? shapeMemberRow(data) : null
 }
 
 export async function getMemberTimeline(memberId: string) {
@@ -59,6 +115,7 @@ export async function getMemberDues(memberId: string) {
 export default {
   getDashboard,
   getMembers,
+  getCurrentMemberProfile,
   getMemberTimeline,
   getOrgBalanceHistory,
   getUnitPriceHistory,

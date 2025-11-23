@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { getMembers } from '../lib/ffaApi'
 import { Users, Mail, Phone, Search, UserCheck } from 'lucide-react';
 import EmailModal from '../components/EmailModal.jsx';
@@ -18,19 +17,7 @@ const MemberDirectory = () => {
   const fetchMembers = async () => {
     try {
       const data = await getMembers()
-      // Map members to expected UI shape
-      const mapped = (data || []).map(m => ({
-        id: m.id,
-        member_id: m.id,
-        email: m.email,
-        full_name: m.member_name,
-        first_name: '',
-        last_name: '',
-        phone: '',
-        membership_status: m.status || 'active',
-        account_status: 'member'
-      }))
-      setMembers(mapped.filter(m => m.membership_status === 'active'))
+      setMembers((data || []).filter(m => (m.membership_status || m.status || 'active') === 'active'))
     } catch (error) {
       console.error('Error fetching members:', error);
     } finally {

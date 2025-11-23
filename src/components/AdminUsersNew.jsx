@@ -24,14 +24,7 @@ const AdminUsersNew = () => {
   const fetchMembers = async () => {
     try {
       const data = await getMembers()
-      const mapped = (data || []).map(m => ({
-        id: m.id,
-        email: m.email,
-        full_name: m.member_name,
-        user_role: m.role || 'member',
-        account_status: 'member'
-      }))
-      setMembers(mapped)
+      setMembers(data || [])
     } catch (error) {
       console.error('Error fetching members:', error);
       setMessage({ type: 'error', text: 'Failed to load members' });
