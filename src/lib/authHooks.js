@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCurrentMemberProfile } from './ffaApi'
+import { getCurrentMemberAccount } from './ffaApi'
 import { supabase } from './supabase'
 
 // Lightweight hook to load the current member row from the members table
@@ -38,7 +38,7 @@ export function useCurrentMember() {
           return
         }
 
-        const profile = await getCurrentMemberProfile()
+        const profile = await getCurrentMemberAccount()
         if (mounted) {
           setMember(profile)
           setLoading(false)

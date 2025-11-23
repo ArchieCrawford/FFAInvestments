@@ -13,7 +13,18 @@ const DuesTracker = () => {
     setLoading(true)
     setError(null)
     try {
-      let query = supabase.from('ffa_timeline').select('*')
+      let query = supabase.from('ffa_timeline').select(`
+        id,
+        member_name,
+        report_month,
+        report_date,
+        portfolio_value,
+        total_units,
+        total_contribution,
+        ownership_pct,
+        portfolio_growth,
+        portfolio_growth_amount
+      `)
 
       if (filterName && filterName.trim() !== '') {
         query = query.ilike('member_name', `%${filterName.trim()}%`)
@@ -27,7 +38,7 @@ const DuesTracker = () => {
         query = query.gte('report_date', iso)
       }
 
-      query = query.order('report_date', { ascending: false })
+        query = query.order('report_date', { ascending: true })
 
       const { data, error } = await query
 

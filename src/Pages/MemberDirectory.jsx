@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getMembers } from '../lib/ffaApi'
 import { Users, Mail, Phone, Search, UserCheck } from 'lucide-react';
 import EmailModal from '../components/EmailModal.jsx';
@@ -6,6 +6,7 @@ import EmailModal from '../components/EmailModal.jsx';
 const MemberDirectory = () => {
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedEmail, setCopiedEmail] = useState(null)
   const [emailRecipient, setEmailRecipient] = useState(null)
@@ -15,25 +16,54 @@ const MemberDirectory = () => {
   }, []);
 
   const fetchMembers = async () => {
+    setLoading(true)
+    setError(null)
     try {
       const data = await getMembers()
-      setMembers((data || []).filter(m => (m.membership_status || m.status || 'active') === 'active'))
+      setMembers(data || [])
     } catch (error) {
       console.error('Error fetching members:', error);
+      setError(error.message || 'Unable to load members')
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredMembers = members.filter(member => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      member.full_name?.toLowerCase().includes(searchLower) ||
-      member.first_name?.toLowerCase().includes(searchLower) ||
-      member.last_name?.toLowerCase().includes(searchLower) ||
-      member.email?.toLowerCase().includes(searchLower)
-    )
-  })
+  const normalizedMembers = useMemo(() => {
+    return members.map((member) => {
+      const fallbackName = `${member.first_name || ''} ${member.last_name || ''}`.trim()
+      const displayName =
+        member.member_name ||
+        member.full_name ||
+        (fallbackName.length > 0 ? fallbackName : member.email) ||
+        'Member'
+      return {
+        ...member,
+        displayName,
+        status: (member.status || member.membership_status || 'active').toLowerCase(),
+      }
+    })
+  }, [members])
+
+  const filteredMembers = useMemo(() => {
+    const searchLower = searchTerm.trim().toLowerCase()
+    if (!searchLower) return normalizedMembers
+    return normalizedMembers.filter((member) => {
+      const nameMatch = member.displayName?.toLowerCase().includes(searchLower)
+      const emailMatch = member.email?.toLowerCase().includes(searchLower)
+      return Boolean(nameMatch || emailMatch)
+    })
+  }, [normalizedMembers, searchTerm])
+
+  const directoryStats = useMemo(() => {
+    const activeCount = normalizedMembers.filter((m) => m.status === 'active').length
+    const contactsCount = normalizedMembers.filter((m) => m.phone || m.email).length
+    return {
+      total: normalizedMembers.length,
+      active: activeCount,
+      contacts: contactsCount,
+    }
+  }, [normalizedMembers])
 
   const handleCopyEmail = async (email) => {
     try {
@@ -47,7 +77,7 @@ const MemberDirectory = () => {
 
   const handleOpenEmail = (member) => {
     setEmailRecipient({
-      name: member.full_name || `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim() || 'Member',
+      name: member.displayName || 'Member',
       email: member.email
     })
   }
@@ -70,7 +100,7 @@ const MemberDirectory = () => {
           </div>
           <div className="app-pill">
             <Users size={16} />
-            {members.length} Active
+            {directoryStats.active} Active
           </div>
         </div>
         <div className="app-card-content">
@@ -91,21 +121,27 @@ const MemberDirectory = () => {
         </div>
       </div>
 
+      {error && (
+        <div className="app-card">
+          <div className="app-card-content text-red-300">{error}</div>
+        </div>
+      )}
+
       <div className="app-grid cols-3">
         {[
           {
-            label: 'Active Members',
-            value: members.length,
+            label: 'Total Members',
+            value: directoryStats.total,
             icon: <Users size={20} />,
           },
           {
-            label: 'Registered Users',
-            value: members.filter(m => m.account_status === 'registered').length,
+            label: 'Active Members',
+            value: directoryStats.active,
             icon: <UserCheck size={20} />,
           },
           {
             label: 'Total Contacts',
-            value: members.filter(m => m.phone || m.email).length,
+            value: directoryStats.contacts,
             icon: <Mail size={20} />,
           },
         ].map((stat) => (
@@ -124,36 +160,42 @@ const MemberDirectory = () => {
           <div className="app-card" key={member.id}>
             <div className="app-card-header">
               <div>
-                <p className="app-card-title">{member.full_name || 'Member'}</p>
-                {member.first_name && member.last_name && member.full_name !== `${member.first_name} ${member.last_name}` && (
-                  <p className="app-card-subtitle">{member.first_name} {member.last_name}</p>
+                <p className="app-card-title">{member.displayName || 'Member'}</p>
+                {member.member_name && member.member_name !== member.displayName && (
+                  <p className="app-card-subtitle">{member.member_name}</p>
                 )}
               </div>
-              <div className="app-pill" style={{ background: member.account_status === 'registered' ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.2)', color: '#fff' }}>
-                {member.account_status === 'registered' ? 'Active User' : 'Member'}
+              <div className="app-pill" style={{ background: member.status === 'active' ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.2)', color: '#fff' }}>
+                {member.status === 'active' ? 'Active' : 'Member'}
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Mail size={16} />
-                  <span style={{ color: 'var(--text-primary)' }}>{member.email}</span>
-                </span>
-                <button
-                  className="btn btn-outline btn-sm btn-pill"
-                  type="button"
-                  onClick={() => handleCopyEmail(member.email)}
-                >
-                  Copy
-                </button>
-                <button
-                  className="btn btn-primary btn-sm btn-pill"
-                  type="button"
-                  onClick={() => handleOpenEmail(member)}
-                >
-                  Email
-                </button>
+                {member.email ? (
+                  <>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Mail size={16} />
+                      <span style={{ color: 'var(--text-primary)' }}>{member.email}</span>
+                    </span>
+                    <button
+                      className="btn btn-outline btn-sm btn-pill"
+                      type="button"
+                      onClick={() => handleCopyEmail(member.email)}
+                    >
+                      Copy
+                    </button>
+                    <button
+                      className="btn btn-primary btn-sm btn-pill"
+                      type="button"
+                      onClick={() => handleOpenEmail(member)}
+                    >
+                      Email
+                    </button>
+                  </>
+                ) : (
+                  <span style={{ color: 'var(--text-secondary)' }}>Email unavailable</span>
+                )}
               </div>
               {copiedEmail === member.email && (
                 <p style={{ fontSize: '0.75rem', color: '#c084fc' }}>Email copied to clipboard</p>
@@ -176,7 +218,7 @@ const MemberDirectory = () => {
         ))}
       </div>
 
-      {filteredMembers.length === 0 && (
+      {filteredMembers.length === 0 && !error && (
         <div className="app-card app-empty-state">
           <Users size={32} style={{ marginBottom: '0.8rem' }} />
           <h3>No Members Found</h3>

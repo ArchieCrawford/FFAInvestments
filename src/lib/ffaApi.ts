@@ -3,38 +3,16 @@ import { supabase } from './supabase.js'
 const MEMBER_ACCOUNT_FIELDS = `
   id,
   member_name,
-  full_name,
-  first_name,
-  last_name,
   email,
-  phone,
-  join_date,
-  membership_status,
-  dues_status,
-  notes,
-  profile_user_id,
-  account_status,
-  user_id,
-  user_role
+  member_id,
+  current_units,
+  total_contributions,
+  current_value,
+  ownership_percentage,
+  is_active,
+  created_at,
+  updated_at
 `
-
-const shapeMemberRow = (row: any) => {
-  const fullName = row.full_name || row.member_name || row.email || 'Member'
-  const membershipStatus = row.membership_status ?? row.status ?? 'active'
-  const accountStatus = row.account_status || (row.user_id ? 'registered' : 'not_registered')
-
-  return {
-    ...row,
-    full_name: fullName,
-    member_name: row.member_name || fullName,
-    first_name: row.first_name || '',
-    last_name: row.last_name || '',
-    status: membershipStatus,
-    membership_status: membershipStatus,
-    account_status: accountStatus,
-    role: row.user_role || row.role || 'member'
-  }
-}
 
 export async function getDashboard(asOfDate: string) {
   const { data, error } = await supabase.rpc('api_get_dashboard', {
@@ -46,14 +24,23 @@ export async function getDashboard(asOfDate: string) {
 
 export async function getMembers() {
   const { data, error } = await supabase
-    .from('member_accounts')
-    .select(MEMBER_ACCOUNT_FIELDS)
-    .order('full_name', { ascending: true })
+    .from('members')
+    .select('*')
+    .order('member_name', { ascending: true })
   if (error) throw error
-  return (data || []).map(shapeMemberRow)
+  return data || []
 }
 
-export async function getCurrentMemberProfile() {
+export async function getMemberAccounts() {
+  const { data, error } = await supabase
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .order('member_name', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function getCurrentMemberAccount() {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError) throw authError
   const user = authData?.user
@@ -62,17 +49,12 @@ export async function getCurrentMemberProfile() {
   const { data, error } = await supabase
     .from('member_accounts')
     .select(MEMBER_ACCOUNT_FIELDS)
-    .or(
-      `profile_user_id.eq.${user.id},user_id.eq.${user.id}${
-        user.email ? `,email.eq.${encodeURIComponent(user.email)}` : ''
-      }`
-    )
-    .order('updated_at', { ascending: false })
+    .eq('email', user.email)
     .limit(1)
     .maybeSingle()
 
   if (error && error.code !== 'PGRST116') throw error
-  return data ? shapeMemberRow(data) : null
+  return data || null
 }
 
 export async function getMemberTimeline(memberId: string) {
@@ -96,18 +78,154 @@ export async function getOrgBalanceHistory() {
 
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase
-    .from('member_monthly_balances')
-    .select('report_date, portfolio_value, total_units')
+    .from('unit_prices')
+    .select('id, price_date, unit_price')
+    .order('price_date', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function getMemberDues(memberId?: string) {
+  let query = supabase
+    .from('ffa_timeline')
+    .select(`
+      id,
+      member_name,
+      report_month,
+      report_date,
+      portfolio_value,
+      total_units,
+      total_contribution,
+      ownership_pct,
+      portfolio_growth,
+      portfolio_growth_amount
+    `)
     .order('report_date', { ascending: true })
+
+  if (memberId) {
+    query = query.eq('member_id', memberId)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
+export async function getMemberFeed({ limit = 20, cursor = null }: { limit?: number; cursor?: string | null } = {}) {
+  const { data, error } = await supabase.rpc('api_get_member_feed', {
+    limit_count: limit,
+    cursor_timestamp: cursor || null,
+  })
+  if (error) throw error
+
+  const posts = data || []
+  const nextCursor = posts.length > 0 ? posts[posts.length - 1].next_cursor_timestamp || null : null
+  return { posts, nextCursor }
+}
+
+export async function createMemberPost({ content, imageUrl = null, linkUrl = null, visibility = 'members' }: { content: string; imageUrl?: string | null; linkUrl?: string | null; visibility?: string }) {
+  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  if (userErr) throw userErr
+  const user = userData?.user
+  if (!user) throw new Error('Not authenticated')
+
+  const insertObj = {
+    author_id: user.id,
+    content,
+    image_url: imageUrl,
+    link_url: linkUrl,
+    visibility,
+  }
+
+  const { data, error } = await supabase
+    .from('member_posts')
+    .insert(insertObj)
+    .select()
+    .single()
   if (error) throw error
   return data
 }
 
-export async function getMemberDues(memberId: string) {
+export async function deleteMemberPost(postId: string) {
   const { data, error } = await supabase
-    .from('member_dues')
-    .select('dues_paid_buyout, dues_owed_oct_25, total_contribution, notes')
-    .eq('member_id', memberId)
+    .from('member_posts')
+    .delete()
+    .eq('id', postId)
+  if (error) throw error
+  return data
+}
+
+export async function likeMemberPost(postId: string) {
+  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  if (userErr) throw userErr
+  const user = userData?.user
+  if (!user) throw new Error('Not authenticated')
+
+  const likeObj = { post_id: postId, member_id: user.id }
+  try {
+    const { data, error } = await supabase
+      .from('member_post_likes')
+      .insert(likeObj)
+      .select()
+      .single()
+    if (error) {
+      if (error?.code === '23505' || (error?.details && error.details.includes('already exists'))) {
+        return { success: true }
+      }
+      throw error
+    }
+    return data
+  } catch (err: any) {
+    if (err?.code === '23505') return { success: true }
+    throw err
+  }
+}
+
+export async function unlikeMemberPost(postId: string) {
+  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  if (userErr) throw userErr
+  const user = userData?.user
+  if (!user) throw new Error('Not authenticated')
+
+  const { data, error } = await supabase
+    .from('member_post_likes')
+    .delete()
+    .match({ post_id: postId, member_id: user.id })
+  if (error) throw error
+  return data
+}
+
+export async function getPostComments(postId: string) {
+  const { data, error } = await supabase
+    .from('member_post_comments')
+    .select('*')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function createPostComment({ postId, content }: { postId: string; content: string }) {
+  const { data: userData, error: userErr } = await supabase.auth.getUser()
+  if (userErr) throw userErr
+  const user = userData?.user
+  if (!user) throw new Error('Not authenticated')
+
+  const insertObj = { post_id: postId, author_id: user.id, content }
+  const { data, error } = await supabase
+    .from('member_post_comments')
+    .insert(insertObj)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deletePostComment(commentId: string) {
+  const { data, error } = await supabase
+    .from('member_post_comments')
+    .delete()
+    .eq('id', commentId)
   if (error) throw error
   return data
 }
@@ -115,9 +233,18 @@ export async function getMemberDues(memberId: string) {
 export default {
   getDashboard,
   getMembers,
-  getCurrentMemberProfile,
+  getMemberAccounts,
+  getCurrentMemberAccount,
   getMemberTimeline,
   getOrgBalanceHistory,
   getUnitPriceHistory,
-  getMemberDues
+  getMemberDues,
+  getMemberFeed,
+  createMemberPost,
+  deleteMemberPost,
+  likeMemberPost,
+  unlikeMemberPost,
+  getPostComments,
+  createPostComment,
+  deletePostComment,
 }

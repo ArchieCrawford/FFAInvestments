@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { AdminGuard } from '@/components/AdminGuard'
-import { getMembers } from '../../lib/ffaApi'
+import { getMemberAccounts } from '../../lib/ffaApi'
 
 const AdminMembers = () => {
-  const [members, setMembers] = useState([])
+  const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -11,16 +11,16 @@ const AdminMembers = () => {
     async function load() {
       setLoading(true)
       try {
-        const rows = await getMembers()
-        if (mounted) setMembers(rows || [])
-      } catch (err) {
-        console.error('Failed to load members', err)
+        const rows = await getMemberAccounts()
+        if (mounted) setAccounts(rows)
       } finally {
         if (mounted) setLoading(false)
       }
     }
     load()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [])
 
   if (loading) return <div className="fullscreen-center"><div className="spinner-page" /></div>
@@ -30,26 +30,32 @@ const AdminMembers = () => {
       <div className="app-page">
         <div className="card">
           <div className="card-header">
-            <p className="heading-lg">Members</p>
-            <p className="text-muted">All registered members</p>
+            <p className="heading-lg">Member Accounts</p>
+            <p className="text-muted">Data pulled from member_accounts</p>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Role</th>
+                  <th>Units</th>
+                  <th>Contributions</th>
+                  <th>Value</th>
+                  <th>Ownership %</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {members.map(m => (
+                {accounts.map((m) => (
                   <tr key={m.id}>
-                    <td>{m.id}</td>
                     <td>{m.member_name}</td>
-                    <td>{m.email}</td>
-                    <td>{m.role}</td>
+                    <td>{m.email || '—'}</td>
+                    <td>{Number(m.current_units || 0).toFixed(4)}</td>
+                    <td>${Number(m.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${Number(m.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{Number(m.ownership_percentage || 0).toFixed(2)}%</td>
+                    <td>{m.is_active ? 'Active' : 'Inactive'}</td>
                   </tr>
                 ))}
               </tbody>

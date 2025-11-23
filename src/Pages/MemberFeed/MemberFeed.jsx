@@ -203,11 +203,11 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   const toggleLike = async () => {
     try {
       if (likedByMe) {
-        await unlikeMemberPost(post.id)
+        await unlikeMemberPost(post.post_id)
         setLikedByMe(false)
         setLikes(l => Math.max(0, l - 1))
       } else {
-        await likeMemberPost(post.id)
+        await likeMemberPost(post.post_id)
         setLikedByMe(true)
         setLikes(l => l + 1)
       }
@@ -220,8 +220,8 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   const handleDelete = async () => {
     if (!confirm('Delete this post?')) return
     try {
-      await deleteMemberPost(post.id)
-      onDelete && onDelete(post.id)
+      await deleteMemberPost(post.post_id)
+      onDelete && onDelete(post.post_id)
     } catch (err) {
       alert(err.message || 'Unable to delete post')
     }
@@ -257,7 +257,7 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
 
       {commentsOpen && (
         <div className="mt-3">
-          <CommentList postId={post.id} currentUserId={currentUserId} canDeleteComment={profile?.role === 'admin'} />
+          <CommentList postId={post.post_id} currentUserId={currentUserId} canDeleteComment={profile?.role === 'admin'} />
         </div>
       )}
     </div>
@@ -317,7 +317,7 @@ const MemberFeed = () => {
   // server-side RPC returns enriched posts; no client-side enrichment needed
 
   const handleDeleteLocal = (postId) => {
-    setPosts(prev => (prev || []).filter(p => p.id !== postId))
+    setPosts(prev => (prev || []).filter(p => p.post_id !== postId))
   }
 
   if (!profile) return null
@@ -340,7 +340,7 @@ const MemberFeed = () => {
             <div className="space-y-4">
               {(posts || []).length === 0 && <div className="text-slate-400">No posts yet.</div>}
               {(posts || []).map(post => (
-                <PostCard key={post.id} post={post} currentUserId={profile.id} profile={profile} onDelete={handleDeleteLocal} />
+                <PostCard key={post.post_id} post={post} currentUserId={profile.id} profile={profile} onDelete={handleDeleteLocal} />
               ))}
               {nextCursor && (
                 <div className="text-center">

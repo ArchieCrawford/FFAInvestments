@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMemberTimeline, getCurrentMemberProfile } from '../lib/ffaApi'
+import { getMemberTimeline, getCurrentMemberAccount } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, 
@@ -21,8 +21,8 @@ const MemberDashboard = () => {
 
   const fetchMemberData = async () => {
     try {
-      const member = await getCurrentMemberProfile()
-      if (!member) {
+      const account = await getCurrentMemberAccount()
+      if (!account) {
         setError('Member profile not found. Please contact an administrator.')
         return
       }
@@ -30,7 +30,7 @@ const MemberDashboard = () => {
       // Fetch timeline via RPC
       let timeline = []
       try {
-        timeline = await getMemberTimeline(member.id)
+        timeline = await getMemberTimeline(account.id)
       } catch (err) {
         console.warn('Could not load member timeline:', err)
       }
@@ -39,13 +39,15 @@ const MemberDashboard = () => {
       const latest = (timeline && timeline.length > 0) ? timeline[timeline.length - 1] : null
 
       setMemberData({
-        ...member,
+        ...account,
         timeline,
-        calculated_current_value: latest?.portfolio_value || member.current_value || 0,
-        current_units: latest?.total_units || member.current_units || 0,
+        calculated_current_value: latest?.portfolio_value || account.current_value || 0,
+        current_units: latest?.total_units || account.current_units || 0,
+        total_contributions: account.total_contributions || 0,
+        ownership_percentage: account.ownership_percentage || 0,
         total_gain_loss: latest?.portfolio_growth_amount || 0,
         return_percentage: latest?.portfolio_growth || 0,
-        current_unit_price: latest && latest.total_units ? (latest.portfolio_value / latest.total_units) : member.current_unit_price || 0,
+        current_unit_price: latest && latest.total_units ? (latest.portfolio_value / latest.total_units) : null,
         unit_price_date: latest?.report_date || null
       })
     } catch (error) {
@@ -108,7 +110,7 @@ const MemberDashboard = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {memberData.first_name || memberData.full_name || 'Member'}!
+            Welcome back, {memberData.member_name || memberData.email || 'Member'}!
           </h1>
           <p className="text-blue-200">Here's your investment portfolio overview</p>
         </div>
@@ -233,34 +235,24 @@ const MemberDashboard = () => {
             <h3 className="text-xl font-semibold text-white mb-4">Account Status</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Membership Status</span>
+                <span className="text-blue-200">Status</span>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  memberData.membership_status === 'active' 
-                    ? 'bg-green-500/20 text-green-400' 
+                  memberData.is_active
+                    ? 'bg-green-500/20 text-green-400'
                     : 'bg-red-500/20 text-red-400'
                 }`}>
-                  {memberData.membership_status || 'Unknown'}
+                  {memberData.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Account Registration</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  memberData.account_status === 'registered' 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-yellow-500/20 text-yellow-400'
-                }`}>
-                  {memberData.account_status || 'Not Registered'}
+                <span className="text-blue-200">Email</span>
+                <span className="text-white font-semibold">
+                  {memberData.email || 'Not provided'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Investment Account</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  memberData.account_active 
-                    ? 'bg-green-500/20 text-green-400' 
-                    : 'bg-red-500/20 text-red-400'
-                }`}>
-                  {memberData.account_active ? 'Active' : 'Inactive'}
-                </span>
+                <span className="text-blue-200">Member Name</span>
+                <span className="text-white font-semibold">{memberData.member_name}</span>
               </div>
             </div>
           </div>
