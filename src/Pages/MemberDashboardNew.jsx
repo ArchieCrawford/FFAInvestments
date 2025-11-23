@@ -105,6 +105,18 @@ const MemberDashboard = () => {
     fetchMemberData()
   }, [fetchMemberData])
 
+  const timelineChartData = useMemo(() => {
+    if (!memberData?.timeline) return []
+    return memberData.timeline.map((entry) => ({
+      date: entry.report_date
+        ? new Date(entry.report_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : 'Unknown',
+      portfolio_value: Number(entry.portfolio_value || 0),
+    }))
+  }, [memberData?.timeline])
+
+  const isPositiveReturn = (memberData?.return_percentage || 0) >= 0
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -148,18 +160,6 @@ const MemberDashboard = () => {
       </div>
     );
   }
-
-  const timelineChartData = useMemo(() => {
-    if (!memberData?.timeline) return []
-    return memberData.timeline.map((entry) => ({
-      date: entry.report_date
-        ? new Date(entry.report_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        : 'Unknown',
-      portfolio_value: Number(entry.portfolio_value || 0),
-    }))
-  }, [memberData?.timeline])
-
-  const isPositiveReturn = (memberData.return_percentage || 0) >= 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-6">
