@@ -99,6 +99,16 @@ const DuesTracker = () => {
     [currencyFormatter, totalPaymentsCollected]
   )
 
+  const totalPortfolioValue = useMemo(
+    () => visibleRows.reduce((s, r) => s + (Number(r.portfolio_value) || 0), 0),
+    [visibleRows]
+  )
+
+  const totalPortfolioDisplay = useMemo(
+    () => `$${currencyFormatter.format(totalPortfolioValue)}`,
+    [currencyFormatter, totalPortfolioValue]
+  )
+
   const formatCurrency = useCallback(
     (value) => {
       const num = Number(value)
@@ -166,7 +176,10 @@ const DuesTracker = () => {
             </select>
           </div>
           <div className="text-xs text-slate-400">Rows: {visibleRows.length}</div>
-          <div className="text-xs text-slate-400 ml-auto">Total contribution: {totalContributionsDisplay}</div>
+          <div className="text-xs text-slate-400 ml-auto flex flex-col sm:flex-row sm:items-center sm:gap-4 text-right">
+            <span>Total contribution: {totalContributionsDisplay}</span>
+            <span>Total portfolio value: {totalPortfolioDisplay}</span>
+          </div>
         </div>
       </div>
 

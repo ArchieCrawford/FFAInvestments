@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { getMemberTimeline, getCurrentMemberAccount } from '../lib/ffaApi'
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase'
+import { getMemberTimeline } from '../lib/ffaApi'
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, 
   Activity, BookOpen, Calendar, Target,
@@ -8,26 +8,46 @@ import {
 } from 'lucide-react';
 
 const MemberDashboard = () => {
-  const { user, profile } = useAuth();
   const [memberData, setMemberData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchMemberData();
-    }
-  }, [user]);
-
-  const fetchMemberData = async () => {
+  const fetchMemberData = useCallback(async () => {
+    setLoading(true)
+    setError('')
     try {
-      const account = await getCurrentMemberAccount()
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
+      const authUser = authData?.user
+      if (!authUser?.email) {
+        setMemberData(null)
+        setError('No authenticated user found.')
+        return
+      }
+
+      const { data: account, error: accountError } = await supabase
+        .from('member_accounts')
+        .select(`
+          id,
+          member_name,
+          email,
+          current_units,
+          total_contributions,
+          current_value,
+          ownership_percentage,
+          is_active
+        `)
+        .eq('email', authUser.email)
+        .limit(1)
+        .maybeSingle()
+
+      if (accountError) throw accountError
       if (!account) {
+        setMemberData(null)
         setError('Member profile not found. Please contact an administrator.')
         return
       }
 
-      // Fetch timeline via RPC
       let timeline = []
       try {
         timeline = await getMemberTimeline(account.id)
@@ -35,7 +55,6 @@ const MemberDashboard = () => {
         console.warn('Could not load member timeline:', err)
       }
 
-      // Use latest timeline entry for derived metrics
       const latest = (timeline && timeline.length > 0) ? timeline[timeline.length - 1] : null
 
       setMemberData({
@@ -50,13 +69,18 @@ const MemberDashboard = () => {
         current_unit_price: latest && latest.total_units ? (latest.portfolio_value / latest.total_units) : null,
         unit_price_date: latest?.report_date || null
       })
-    } catch (error) {
-      console.error('Error fetching member data:', error);
-      setError('Failed to load member data');
+    } catch (err) {
+      console.error('Error fetching member data:', err)
+      setMemberData(null)
+      setError(err.message || 'Failed to load member data')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [])
+
+  useEffect(() => {
+    fetchMemberData()
+  }, [fetchMemberData])
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {

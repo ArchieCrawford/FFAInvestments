@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { getMemberAccounts } from '../lib/ffaApi'
+import { supabase } from '../lib/supabase'
 import { Users, DollarSign, Target } from 'lucide-react'
+
+const MEMBER_ACCOUNT_FIELDS = `
+  id,
+  member_name,
+  email,
+  current_units,
+  total_contributions,
+  current_value,
+  ownership_percentage,
+  is_active
+`
 
 const AdminMembers = () => {
   const [accounts, setAccounts] = useState([])
@@ -11,16 +22,21 @@ const AdminMembers = () => {
 
   useEffect(() => {
     let mounted = true
-    async function load() {
+    const load = async () => {
       setLoading(true)
+      setError(null)
       try {
-        const rows = await getMemberAccounts()
-        if (mounted) {
-          setAccounts(rows)
-          setError(null)
-        }
+        const { data, error } = await supabase
+          .from('member_accounts')
+          .select(MEMBER_ACCOUNT_FIELDS)
+          .order('member_name', { ascending: true })
+        if (error) throw error
+        if (mounted) setAccounts(data || [])
       } catch (err) {
-        if (mounted) setError(err.message || 'Unable to load member accounts')
+        if (mounted) {
+          setAccounts([])
+          setError(err.message || 'Unable to load member accounts')
+        }
       } finally {
         if (mounted) setLoading(false)
       }
@@ -144,11 +160,12 @@ const AdminMembers = () => {
               <tr>
                 <th>Member</th>
                 <th>Email</th>
-                <th className="text-right">Units</th>
-                <th className="text-right">Total Contributions</th>
                 <th className="text-right">Current Value</th>
+                <th className="text-right">Total Contributions</th>
+                <th className="text-right">Units</th>
                 <th className="text-right">Ownership %</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -156,18 +173,27 @@ const AdminMembers = () => {
                 <tr key={account.id}>
                   <td>{account.member_name}</td>
                   <td>{account.email || '—'}</td>
-                  <td className="text-right">{Number(account.current_units || 0).toFixed(4)}</td>
-                  <td className="text-right">
-                    ${Number(account.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
                   <td className="text-right">
                     ${Number(account.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
+                  <td className="text-right">
+                    ${Number(account.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="text-right">{Number(account.current_units || 0).toFixed(4)}</td>
                   <td className="text-right">{Number(account.ownership_percentage || 0).toFixed(2)}%</td>
                   <td>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${account.is_active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600 text-slate-200'}`}>
                       {account.is_active ? 'Active' : 'Inactive'}
                     </span>
+                  </td>
+                  <td>
+                    {account.email ? (
+                      <a className="app-btn app-btn-outline app-btn-sm" href={`mailto:${account.email}`}>
+                        Email
+                      </a>
+                    ) : (
+                      <span className="text-slate-500 text-sm">No email</span>
+                    )}
                   </td>
                 </tr>
               ))}
