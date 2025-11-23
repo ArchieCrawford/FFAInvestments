@@ -65,9 +65,17 @@ export const AuthProvider = ({ children }) => {
       const { user: currentUser, error: userError } = await auth.getCurrentUser()
       
       if (userError) {
-        console.error('❌ AuthProvider: Error checking user:', userError)
-        setError(`Error checking user: ${userError.message}`)
-        updateDebugInfo('checkUserError', userError.message)
+        const missingSession = userError.message?.toLowerCase().includes('session missing')
+        if (missingSession) {
+          console.log('ℹ️ AuthProvider: No active session (initial load)')
+          setUser(null)
+          setProfile(null)
+          updateDebugInfo('userStatus', 'Not authenticated (no session)')
+        } else {
+          console.error('❌ AuthProvider: Error checking user:', userError)
+          setError(`Error checking user: ${userError.message}`)
+          updateDebugInfo('checkUserError', userError.message)
+        }
         return
       }
       

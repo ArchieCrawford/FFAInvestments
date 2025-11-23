@@ -46,16 +46,27 @@ const PostComposer = ({ onCreate, currentUserId }) => {
     setSubmitting(true)
     setUploadError(null)
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      if (authError) {
+        setUploadError(authError.message || 'You must be signed in to post.')
+        setSubmitting(false)
+        return
+      }
+      const authUser = authData?.user
+      if (!authUser) {
+        setUploadError('You must be signed in to post.')
+        setSubmitting(false)
+        return
+      }
+
       let imageUrl = null
+      const uploaderId = currentUserId || authUser.id
       if (imageFile) {
-        if (!currentUserId) {
-          throw new Error('Missing current user id for image upload')
-        }
         setUploading(true)
-        const filePath = `${currentUserId}/${Date.now()}-${imageFile.name}`
+        const filePath = `${uploaderId}/${Date.now()}-${imageFile.name}`
         const { data: uploadData, error: uploadErr } = await supabase.storage
           .from('member-post-images')
-          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false, metadata: { uploader: currentUserId, 'content-type': imageFile.type } })
+          .upload(filePath, imageFile, { cacheControl: '3600', upsert: false, metadata: { uploader: uploaderId, 'content-type': imageFile.type } })
         if (uploadErr) {
           setUploadError(uploadErr.message || 'Upload failed')
           setUploading(false)
@@ -67,7 +78,12 @@ const PostComposer = ({ onCreate, currentUserId }) => {
         setUploading(false)
       }
 
-      const post = await createMemberPost({ content: content.trim(), imageUrl, linkUrl: linkUrl || null })
+      const post = await createMemberPost({
+        content: content.trim(),
+        imageUrl,
+        linkUrl: linkUrl || null,
+        authorId: authUser.id,
+      })
       setContent('')
       setLinkUrl('')
       setImageFile(null)

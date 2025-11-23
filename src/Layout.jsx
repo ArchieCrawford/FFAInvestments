@@ -159,12 +159,15 @@ export default function Layout({ children, currentPageName }) {
                       type="button"
                       className={`app-nav-link has-children ${isSubmenuActive(item.submenu) ? 'active' : ''}`}
                       onClick={() => toggleSubmenu(item.title)}
+                      aria-expanded={!!expandedMenus[item.title]}
                     >
-                      <span>
-                        <i className={`${item.icon} me-2`}></i>
+                      <span className="app-nav-link-label">
+                        <i className={`${item.icon} app-nav-icon`} aria-hidden="true"></i>
                         {item.title}
                       </span>
-                      <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'}`}></i>
+                      <span className="app-nav-chevron" aria-hidden="true">
+                        <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'}`}></i>
+                      </span>
                     </button>
                     {expandedMenus[item.title] && (
                       <div className="app-submenu">
@@ -173,9 +176,12 @@ export default function Layout({ children, currentPageName }) {
                             key={subItem.title}
                             to={subItem.url}
                             className={`app-nav-link sub ${location.pathname === subItem.url ? 'active' : ''}`}
+                            aria-current={location.pathname === subItem.url ? 'page' : undefined}
                           >
-                            <i className={`${subItem.icon} me-2`}></i>
-                            {subItem.title}
+                            <span className="app-nav-link-label">
+                              <i className={`${subItem.icon} app-nav-icon`} aria-hidden="true"></i>
+                              {subItem.title}
+                            </span>
                           </Link>
                         ))}
                       </div>
@@ -185,9 +191,12 @@ export default function Layout({ children, currentPageName }) {
                   <Link
                     to={item.url}
                     className={`app-nav-link ${location.pathname === item.url ? 'active' : ''}`}
+                    aria-current={location.pathname === item.url ? 'page' : undefined}
                   >
-                    <i className={`${item.icon} me-2`}></i>
-                    {item.title}
+                    <span className="app-nav-link-label">
+                      <i className={`${item.icon} app-nav-icon`} aria-hidden="true"></i>
+                      {item.title}
+                    </span>
                   </Link>
                 )}
               </div>

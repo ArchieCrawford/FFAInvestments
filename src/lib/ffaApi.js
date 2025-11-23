@@ -127,14 +127,18 @@ export async function getMemberFeed({ limit = 20, cursor = null } = {}) {
   return { posts, nextCursor }
 }
 
-export async function createMemberPost({ content, imageUrl = null, linkUrl = null, visibility = 'members' }) {
-  const { data: userData, error: userErr } = await supabase.auth.getUser()
-  if (userErr) throw userErr
-  const user = userData?.user
-  if (!user) throw new Error('Not authenticated')
+export async function createMemberPost({ content, imageUrl = null, linkUrl = null, visibility = 'members', authorId }) {
+  let resolvedAuthor = authorId
+  if (!resolvedAuthor) {
+    const { data: userData, error: userErr } = await supabase.auth.getUser()
+    if (userErr) throw userErr
+    const user = userData?.user
+    if (!user) throw new Error('Not authenticated')
+    resolvedAuthor = user.id
+  }
 
   const insertObj = {
-    author_id: user.id,
+    author_id: resolvedAuthor,
     content,
     image_url: imageUrl,
     link_url: linkUrl,
@@ -143,7 +147,7 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
 
   const { data, error } = await supabase
     .from('member_posts')
-    .insert(insertObj)
+    .insert([insertObj])
     .select()
     .single()
   if (error) throw error
