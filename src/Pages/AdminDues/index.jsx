@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { AlertCircle, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 
 const DuesTracker = () => {
   const [loading, setLoading] = useState(true)
@@ -8,6 +9,9 @@ const DuesTracker = () => {
   const [rows, setRows] = useState([])
   const [filterName, setFilterName] = useState('')
   const [filterRange, setFilterRange] = useState('12') // 'all' or number of months
+  const [valuationHistory, setValuationHistory] = useState([])
+  const [valuationLoading, setValuationLoading] = useState(true)
+  const [valuationError, setValuationError] = useState(null)
 
   const fetchRows = useCallback(async () => {
     setLoading(true)
@@ -57,9 +61,34 @@ const DuesTracker = () => {
     }
   }, [filterName, filterRange])
 
+  const fetchValuationHistory = useCallback(async () => {
+    setValuationLoading(true)
+    setValuationError(null)
+    try {
+      const { data, error } = await supabase
+        .from('org_balance_history')
+        .select(`
+          balance_date,
+          total_value
+        `)
+        .order('balance_date', { ascending: true })
+      if (error) throw error
+      setValuationHistory(data || [])
+    } catch (err) {
+      setValuationHistory([])
+      setValuationError(err.message || 'Unable to load valuation history')
+    } finally {
+      setValuationLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchRows()
   }, [fetchRows])
+
+  useEffect(() => {
+    fetchValuationHistory()
+  }, [fetchValuationHistory])
 
   const filteredRows = useMemo(() => {
     const nameFilter = filterName.trim().toLowerCase()
@@ -108,6 +137,15 @@ const DuesTracker = () => {
     () => `$${currencyFormatter.format(totalPortfolioValue)}`,
     [currencyFormatter, totalPortfolioValue]
   )
+
+  const valuationChartData = useMemo(() => {
+    return valuationHistory.map((entry) => ({
+      date: entry.balance_date
+        ? new Date(entry.balance_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : 'Unknown',
+      total_value: Number(entry.total_value) || 0,
+    }))
+  }, [valuationHistory])
 
   const formatCurrency = useCallback(
     (value) => {
@@ -180,6 +218,52 @@ const DuesTracker = () => {
             <span>Total contribution: {totalContributionsDisplay}</span>
             <span>Total portfolio value: {totalPortfolioDisplay}</span>
           </div>
+        </div>
+      </div>
+
+      <div className="app-card">
+        <div className="app-card-header">
+          <p className="app-heading-md">Club valuation trend</p>
+        </div>
+        <div className="app-card-content">
+          {valuationLoading ? (
+            <div className="py-8 text-center text-slate-400">Loading valuation history…</div>
+          ) : valuationError ? (
+            <div className="text-red-400 flex items-center gap-3 flex-wrap">
+              <span>{valuationError}</span>
+              <button className="app-btn app-btn-outline app-btn-xs" onClick={fetchValuationHistory}>
+                Retry
+              </button>
+            </div>
+          ) : valuationChartData.length === 0 ? (
+            <p className="text-slate-400">No valuation history available.</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={valuationChartData}>
+                  <CartesianGrid stroke="rgba(148,163,184,0.2)" />
+                  <XAxis dataKey="date" stroke="#94a3b8" />
+                  <YAxis
+                    stroke="#94a3b8"
+                    tickFormatter={(value) =>
+                      `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    formatter={(value) =>
+                      `$${Number(value).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    }
+                  />
+                  <Line type="monotone" dataKey="total_value" stroke="#48b0f7" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 

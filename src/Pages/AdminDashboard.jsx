@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -11,8 +11,14 @@ import {
   CheckCircle, Clock, Plus, ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "../lib/supabase";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function AdminDashboard() {
+  const [orgHistory, setOrgHistory] = useState([])
+  const [orgHistoryLoading, setOrgHistoryLoading] = useState(true)
+  const [orgHistoryError, setOrgHistoryError] = useState(null)
+
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
@@ -38,6 +44,43 @@ export default function AdminDashboard() {
   const totalMembers = users.filter(u => u.role === 'user').length;
   const activeAccounts = accounts.filter(a => a.status === 'active').length;
   const pendingKYC = users.filter(u => u.kyc_status === 'pending').length;
+
+  useEffect(() => {
+    let active = true
+    const loadHistory = async () => {
+      setOrgHistoryLoading(true)
+      setOrgHistoryError(null)
+      try {
+        const { data, error } = await supabase
+          .from('org_balance_history')
+          .select(`
+            balance_date,
+            total_value
+          `)
+          .order('balance_date', { ascending: true })
+        if (error) throw error
+        if (active) setOrgHistory(data || [])
+      } catch (err) {
+        if (active) {
+          setOrgHistory([])
+          setOrgHistoryError(err.message || 'Unable to load club history')
+        }
+      } finally {
+        if (active) setOrgHistoryLoading(false)
+      }
+    }
+    loadHistory()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const orgHistoryData = useMemo(() => {
+    return (orgHistory || []).map(entry => ({
+      date: entry.balance_date ? format(new Date(entry.balance_date), 'MMM yyyy') : 'Unknown',
+      total_value: Number(entry.total_value) || 0,
+    }))
+  }, [orgHistory])
 
   const tasks = [
     pendingKYC > 0 && { 
@@ -137,6 +180,43 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold text-slate-900">Club total portfolio value over time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {orgHistoryLoading ? (
+              <p className="text-slate-500">Loading portfolio trend…</p>
+            ) : orgHistoryError ? (
+              <p className="text-red-500">{orgHistoryError}</p>
+            ) : orgHistoryData.length === 0 ? (
+              <p className="text-slate-500">No portfolio history available.</p>
+            ) : (
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={orgHistoryData}>
+                    <CartesianGrid stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#475569" />
+                    <YAxis
+                      stroke="#475569"
+                      tickFormatter={(value) => `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                    />
+                    <Tooltip
+                      formatter={(value) =>
+                        `$${Number(value).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}`
+                      }
+                    />
+                    <Line type="monotone" dataKey="total_value" stroke="#2563eb" strokeWidth={3} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Tasks & Alerts */}
         {tasks.length > 0 && (

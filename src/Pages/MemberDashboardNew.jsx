@@ -1,6 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
-import { getMemberTimeline } from '../lib/ffaApi'
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from 'recharts'
 import { 
   DollarSign, TrendingUp, TrendingDown, Users, 
   Activity, BookOpen, Calendar, Target,
@@ -31,6 +39,7 @@ const MemberDashboard = () => {
           id,
           member_name,
           email,
+          member_id,
           current_units,
           total_contributions,
           current_value,
@@ -49,10 +58,24 @@ const MemberDashboard = () => {
       }
 
       let timeline = []
-      try {
-        timeline = await getMemberTimeline(account.id)
-      } catch (err) {
-        console.warn('Could not load member timeline:', err)
+      if (account.member_id) {
+        const { data: timelineData, error: timelineError } = await supabase
+          .from('member_monthly_balances')
+          .select(`
+            report_date,
+            portfolio_value,
+            total_units,
+            total_contribution,
+            growth_amount,
+            growth_pct
+          `)
+          .eq('member_id', account.member_id)
+          .order('report_date', { ascending: true })
+        if (timelineError) {
+          console.warn('Could not load member history:', timelineError)
+        } else {
+          timeline = timelineData || []
+        }
       }
 
       const latest = (timeline && timeline.length > 0) ? timeline[timeline.length - 1] : null
@@ -64,8 +87,8 @@ const MemberDashboard = () => {
         current_units: latest?.total_units || account.current_units || 0,
         total_contributions: account.total_contributions || 0,
         ownership_percentage: account.ownership_percentage || 0,
-        total_gain_loss: latest?.portfolio_growth_amount || 0,
-        return_percentage: latest?.portfolio_growth || 0,
+        total_gain_loss: (typeof latest?.growth_amount === 'number' ? latest.growth_amount : latest?.portfolio_growth_amount) || 0,
+        return_percentage: (typeof latest?.growth_pct === 'number' ? latest.growth_pct : latest?.portfolio_growth) || 0,
         current_unit_price: latest && latest.total_units ? (latest.portfolio_value / latest.total_units) : null,
         unit_price_date: latest?.report_date || null
       })
@@ -125,6 +148,16 @@ const MemberDashboard = () => {
       </div>
     );
   }
+
+  const timelineChartData = useMemo(() => {
+    if (!memberData?.timeline) return []
+    return memberData.timeline.map((entry) => ({
+      date: entry.report_date
+        ? new Date(entry.report_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : 'Unknown',
+      portfolio_value: Number(entry.portfolio_value || 0),
+    }))
+  }, [memberData?.timeline])
 
   const isPositiveReturn = (memberData.return_percentage || 0) >= 0;
 
@@ -199,6 +232,44 @@ const MemberDashboard = () => {
               <DollarSign className="w-8 h-8 text-purple-400" />
             </div>
           </div>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm text-blue-200 mb-1">Account value over time</p>
+              <p className="text-lg font-semibold text-white">Portfolio history</p>
+            </div>
+          </div>
+          {timelineChartData.length === 0 ? (
+            <p className="text-blue-200">No historical data available yet.</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timelineChartData}>
+                  <CartesianGrid stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="date" stroke="#cbd5f5" />
+                  <YAxis
+                    stroke="#cbd5f5"
+                    tickFormatter={(value) =>
+                      `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    formatter={(value) =>
+                      `$${Number(value).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    }
+                  />
+                  <Line type="monotone" dataKey="portfolio_value" stroke="#38bdf8" strokeWidth={3} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* Secondary Stats Row */}
