@@ -61,7 +61,7 @@ const DuesTracker = () => {
     fetchRows()
   }, [fetchRows])
 
-  const visibleRows = useMemo(() => {
+  const filteredRows = useMemo(() => {
     const nameFilter = filterName.trim().toLowerCase()
     return rows.filter((r) => {
       if (nameFilter && !(r.member_name || '').toLowerCase().includes(nameFilter)) return false
@@ -78,10 +78,53 @@ const DuesTracker = () => {
     })
   }, [rows, filterName, filterRange])
 
-  const totalPaymentsCollected = useMemo(
-    () => rows.reduce((s, r) => s + (Number(r.total_contribution) || 0), 0),
-    [rows]
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    []
   )
+
+  const visibleRows = filteredRows
+
+  const totalPaymentsCollected = useMemo(
+    () => visibleRows.reduce((s, r) => s + (Number(r.total_contribution) || 0), 0),
+    [visibleRows]
+  )
+
+  const totalContributionsDisplay = useMemo(
+    () => `$${currencyFormatter.format(totalPaymentsCollected)}`,
+    [currencyFormatter, totalPaymentsCollected]
+  )
+
+  const formatCurrency = useCallback(
+    (value) => {
+      const num = Number(value)
+      if (Number.isNaN(num)) return '—'
+      return `$${currencyFormatter.format(num)}`
+    },
+    [currencyFormatter]
+  )
+
+  const formatPercent = useCallback((value) => {
+    const num = Number(value)
+    if (Number.isNaN(num)) return '—'
+    return `${(num * 100).toFixed(3)}%`
+  }, [])
+
+  const formatPeriod = useCallback((row) => {
+    if (row.report_month) return row.report_month
+    if (row.report_date) {
+      const d = new Date(row.report_date)
+      if (!Number.isNaN(d.getTime())) return d.toLocaleDateString()
+    }
+    return ''
+  }, [])
+
+  const noVisibleRows = !loading && !error && visibleRows.length === 0
+
 
   return (
     <div className="app-content">
@@ -123,9 +166,7 @@ const DuesTracker = () => {
             </select>
           </div>
           <div className="text-xs text-slate-400">Rows: {visibleRows.length}</div>
-          <div className="text-xs text-slate-400 ml-auto">
-            Total contribution: ${totalPaymentsCollected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
+          <div className="text-xs text-slate-400 ml-auto">Total contribution: {totalContributionsDisplay}</div>
         </div>
       </div>
 
@@ -164,36 +205,26 @@ const DuesTracker = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 bg-slate-950/40">
-                  {visibleRows.map((row) => {
-                    const safeKey = row.id || `${row.member_name || 'unknown'}-${row.report_month || row.report_date || 'unknown'}`
-
-                    const totalContribution = Number(row.total_contribution)
-                    const contributionDisplay = !Number.isNaN(totalContribution)
-                      ? `$${totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      : '—'
-
-                    const portfolioValueNum = Number(row.portfolio_value)
-                    const portfolioDisplay = !Number.isNaN(portfolioValueNum)
-                      ? `$${portfolioValueNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                      : '—'
-
-                    const ownershipPct = Number(row.ownership_pct)
-                    const ownershipDisplay = !Number.isNaN(ownershipPct)
-                      ? `${(ownershipPct * 100).toFixed(3)}%`
-                      : '—'
-
-                    const period = row.report_month || (row.report_date ? new Date(row.report_date).toLocaleDateString() : '')
-
-                    return (
-                      <tr key={safeKey} className="hover:bg-slate-900/80">
-                        <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name || 'Unknown'}</td>
-                        <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{period}</td>
-                        <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{contributionDisplay}</td>
-                        <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{portfolioDisplay}</td>
-                        <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{ownershipDisplay}</td>
-                      </tr>
-                    )
-                  })}
+                  {noVisibleRows ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500 sm:px-6">
+                        No dues records for the selected filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleRows.map((row) => {
+                      const safeKey = row.id || `${row.member_name || 'unknown'}-${row.report_month || row.report_date || 'unknown'}`
+                      return (
+                        <tr key={safeKey} className="hover:bg-slate-900/80">
+                          <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name || 'Unknown'}</td>
+                          <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{formatPeriod(row)}</td>
+                          <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.total_contribution)}</td>
+                          <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.portfolio_value)}</td>
+                          <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatPercent(row.ownership_pct)}</td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             )}
