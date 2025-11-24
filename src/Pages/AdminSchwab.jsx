@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
+import AppLayout from '../components/AppLayout'
+import SchwabInsights from './SchwabInsights'
 
 /**
  * Charles Schwab Admin Integration Page
@@ -73,7 +75,8 @@ const AdminSchwab = () => {
   }
 
   return (
-    <div className="app-page">
+    <AppLayout>
+      <div className="app-page">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2>
           <i className="fas fa-university" style={{ marginRight: '0.5rem' }}></i>
@@ -144,7 +147,7 @@ const AdminSchwab = () => {
         </div>
       )}
 
-      {/* Feature Navigation */}
+      {/* Feature Navigation + Insights */}
       {isAuthenticated && (
         <div className="mb-4">
           <div className="app-card">
@@ -161,13 +164,9 @@ const AdminSchwab = () => {
                     <i className="fas fa-chart-pie fa-3x mb-3"></i>
                     <h5 className="app-heading-md">Account Insights</h5>
                     <p>View portfolio analytics, performance metrics, and export data to Excel.</p>
-                    <button 
-                      className="app-btn app-btn-success"
-                      onClick={() => navigate('/admin/schwab/insights')}
-                    >
-                      <i className="fas fa-chart-line" style={{ marginRight: '0.5rem' }}></i>
-                      View Insights
-                    </button>
+                    <div style={{ marginTop: 24 }}>
+                      <SchwabInsights />
+                    </div>
                   </div>
                 </div>
                 <div className="app-card h-100">
@@ -254,7 +253,8 @@ const AdminSchwab = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </AppLayout>
   )
 }
 
