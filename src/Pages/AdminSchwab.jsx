@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
 import AppLayout from '../components/AppLayout'
@@ -17,64 +17,100 @@ const AdminSchwab = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [error, setError] = useState('')
   const [accounts, setAccounts] = useState([])
-  const [connectionStatus, setConnectionStatus] = useState('checking')
+  const mounted = useRef(true)
   
   const navigate = useNavigate()
 
   useEffect(() => {
-    checkConnection()
+    mounted.current = true
+    ;(async () => {
+      await checkConnection()
+    })()
+    return () => {
+      mounted.current = false
+    }
   }, [])
 
   const checkConnection = async () => {
     try {
       setIsLoading(true)
-      const storedRaw = localStorage.getItem('schwab_tokens')
-      console.log('🔍 AdminSchwab: Stored schwab_tokens raw:', storedRaw)
-      const authenticated = schwabApi.isAuthenticated()
-      console.log('🔍 AdminSchwab: isAuthenticated() =>', authenticated)
-      setIsAuthenticated(authenticated)
-      
-      if (authenticated) {
+      setError('')
+      const raw = localStorage.getItem('schwab_tokens')
+      console.log('AdminSchwab: stored schwab_tokens:', raw)
+      const authed = await Promise.resolve(schwabApi.isAuthenticated?.() ?? false)
+      console.log('AdminSchwab: isAuthenticated() =>', authed)
+      if (!mounted.current) return
+      setIsAuthenticated(authed)
+      if (authed) {
         await loadAccounts()
       }
-      
-      setConnectionStatus('checked')
-    } catch (error) {
-      console.error('Failed to check Schwab connection:', error)
-      setError('Failed to check connection status')
+    } catch (e) {
+      console.error('checkConnection failed:', e)
+      if (!mounted.current) return
+      setError('Failed to check Schwab connection.')
       setIsAuthenticated(false)
-      setConnectionStatus('error')
     } finally {
-      setIsLoading(false)
+      if (mounted.current) setIsLoading(false)
     }
   }
 
   const loadAccounts = async () => {
     try {
-      console.log('🔄 AdminSchwab: Loading accounts...')
-      const accountData = await schwabApi.getAccounts()
-      setAccounts(Array.isArray(accountData) ? accountData : [])
-      console.log('✅ AdminSchwab: Loaded accounts count:', accountData?.length || 0)
-    } catch (error) {
-      console.error('Failed to load accounts:', error)
-      setError('Failed to load account information')
-      setIsAuthenticated(false)
+      console.log('AdminSchwab: loading accounts…')
+      const res = await schwabApi.getAccounts()
+      const list = Array.isArray(res) ? res : Array.isArray(res?.accounts) ? res.accounts : []
+      const normalized = list.map(a => ({
+        id: a.accountId ?? a.account_id ?? a.accountNumber ?? a.account_number ?? a.hashValue ?? a.id ?? 'unknown',
+        type: a.type ?? a.accountType ?? 'Investment Account',
+        isActive: a.isActive ?? a.active ?? true,
+        raw: a
+      }))
+      if (!mounted.current) return
+      setAccounts(normalized)
+      console.log('AdminSchwab: loaded accounts:', normalized.length)
+    } catch (e) {
+      console.error('loadAccounts failed:', e)
+      if (e instanceof SchwabAPIError) {
+        if (e.status === 401 || e.code === 'invalid_grant' || e.code === 'token_expired') {
+          if (mounted.current) {
+            setError('Your Schwab session expired. Please reconnect.')
+            setIsAuthenticated(false)
+            setAccounts([])
+          }
+          return
+        }
+        if (mounted.current) {
+          setError(`Schwab API error: ${e.message || 'Unable to load accounts.'}`)
+        }
+      } else {
+        if (mounted.current) {
+          setError('Failed to load account information.')
+        }
+      }
     }
   }
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     try {
-      const authUrl = schwabApi.getAuthorizationUrl()
-      console.log('➡️ Redirecting to Schwab auth URL:', authUrl)
+      setError('')
+      setIsLoading(true)
+      const authUrl = await Promise.resolve(schwabApi.getAuthorizationUrl())
+      console.log('Redirecting to Schwab auth URL:', authUrl)
       window.location.href = authUrl
-    } catch (error) {
-      console.error('Failed to generate auth URL:', error)
-      setError('Failed to initiate connection')
+    } catch (e) {
+      console.error('getAuthorizationUrl failed:', e)
+      setError('Failed to initiate Schwab connection.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleDisconnect = () => {
-    schwabApi.logout()
+    try {
+      schwabApi.logout?.()
+    } catch (e) {
+      console.warn('logout warning:', e)
+    }
     setIsAuthenticated(false)
     setAccounts([])
     setError('')
@@ -125,7 +161,7 @@ const AdminSchwab = () => {
       )}
 
       {/* Account Information */}
-      {isAuthenticated && accounts.length > 0 && (
+        {isAuthenticated && accounts.length > 0 && (
         <div className="mb-4">
           <div className="app-card">
             <div className="app-card-header">
@@ -136,13 +172,13 @@ const AdminSchwab = () => {
             </div>
             <div className="app-card-content">
               <div className="grid gap-3 md:grid-cols-2">
-                {accounts.map((account, index) => (
-                  <div key={index} className="app-card">
+                {accounts.map(acc => (
+                  <div key={acc.id} className="app-card">
                     <div className="app-card-content">
-                      <h6 className="app-heading-md">{account.type || 'Investment Account'}</h6>
+                      <h6 className="app-heading-md">{acc.type}</h6>
                       <p>
-                        <strong>Account ID:</strong> {account.accountId || 'N/A'}<br />
-                        <strong>Status:</strong> {account.isActive ? 'Active' : 'Inactive'}
+                        <strong>Account ID:</strong> {acc.id}<br />
+                        <strong>Status:</strong> {acc.isActive ? 'Active' : 'Inactive'}
                       </p>
                     </div>
                   </div>
@@ -212,26 +248,6 @@ const AdminSchwab = () => {
                 Securely connect to Charles Schwab to access account data, portfolio insights, and trading information.
               </p>
               
-              <div className="app-alert">
-                <h6><i className="fas fa-info-circle" style={{ marginRight: '0.5rem' }}></i>What you'll get:</h6>
-                <ul className="mb-0">
-                  <li>Real-time account balances and positions</li>
-                  <li>Portfolio analytics and performance metrics</li>
-                  <li>Export account data to Excel</li>
-                  <li>Debug and test API endpoints</li>
-                </ul>
-              </div>
-
-              <div className="app-alert">
-                <h6><i className="fas fa-shield-alt" style={{ marginRight: '0.5rem' }}></i>Security:</h6>
-                <ul className="mb-0">
-                  <li>Uses secure OAuth 2.0 authentication</li>
-                  <li>No passwords stored in this application</li>
-                  <li>Read-only access to your Schwab data</li>
-                  <li>You can disconnect at any time</li>
-                </ul>
-              </div>
-
               <button 
                 className="app-btn app-btn-primary app-btn-lg"
                 onClick={handleConnect}
