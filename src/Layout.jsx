@@ -27,15 +27,9 @@ const adminNav = [
   { title: "Import Data", url: createPageUrl("AdminImport"), icon: "fas fa-upload" },
   { title: "FFA Import", url: createPageUrl("AdminFFAImport"), icon: "fas fa-file-import" },
   { title: "Settings", url: "/admin/settings", icon: "fas fa-cog" },
-  { 
-    title: "Charles Schwab", 
-    icon: "fas fa-university", 
-    submenu: [
-      { title: "Connection & Overview", url: "/admin/schwab", icon: "fas fa-link" },
-      { title: "Account Insights", url: "/admin/schwab/insights", icon: "fas fa-chart-pie" },
-      { title: "Raw Data Viewer", url: "/admin/schwab/raw-data", icon: "fas fa-code" },
-    ]
-  },
+  { title: "Schwab Integration", url: "/admin/schwab", icon: "fas fa-university" },
+  { title: "Schwab Insights", url: "/admin/schwab/insights", icon: "fas fa-chart-pie" },
+  { title: "Schwab Raw Data", url: "/admin/schwab/raw-data", icon: "fas fa-code" },
 ];
 
 const memberNav = [

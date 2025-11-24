@@ -25,6 +25,7 @@ const ModernLogin = () => {
   })
   const [formError, setFormError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
@@ -34,11 +35,20 @@ const ModernLogin = () => {
   const location = useLocation()
 
   useEffect(() => {
-    if (error) {
+    if (!error) return
+
+    // Ignore benign "no session" messages from the auth client on initial load
+    const isSessionMissing = typeof error === 'string'
+      ? error.toLowerCase().includes('session missing')
+      : (error.message || '').toLowerCase().includes('session missing')
+
+    // Only show auth errors in the UI if the user attempted to submit the form
+    // or if the error is not the benign session-missing message.
+    if (attemptedSubmit || !isSessionMissing) {
       setFormError(error)
       setIsSubmitting(false)
     }
-  }, [error])
+  }, [error, attemptedSubmit])
 
   // Clear errors when switching modes
   const handleToggleMode = () => {
@@ -61,6 +71,7 @@ const ModernLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setAttemptedSubmit(true)
     setIsSubmitting(true)
     setFormError('')
     clearError()
@@ -113,6 +124,7 @@ const ModernLogin = () => {
           setFormError('')
           alert('✅ Account created successfully! Please check your email for a confirmation link before signing in.')
           setMode('signin') // Switch to sign-in mode
+          setAttemptedSubmit(false)
         }
       } else {
         console.log('🔑 Attempting sign in for:', formData.email)
@@ -128,6 +140,10 @@ const ModernLogin = () => {
           } else {
             setFormError(result.error.message || 'Sign in failed. Please try again.')
           }
+        }
+        else {
+          // successful sign in - clear attempted submit flag
+          setAttemptedSubmit(false)
         }
       }
     } catch (err) {

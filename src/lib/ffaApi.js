@@ -131,7 +131,14 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
   let resolvedAuthor = authorId
   if (!resolvedAuthor) {
     const { data: userData, error: userErr } = await supabase.auth.getUser()
-    if (userErr) throw userErr
+    // Treat the Supabase "Auth session missing" as a not-authenticated case
+    if (userErr) {
+      const isSessionMissing = (userErr.message || '').toLowerCase().includes('session missing')
+      if (isSessionMissing) {
+        throw new Error('Not authenticated')
+      }
+      throw userErr
+    }
     const user = userData?.user
     if (!user) throw new Error('Not authenticated')
     resolvedAuthor = user.id

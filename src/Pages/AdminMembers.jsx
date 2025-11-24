@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Users, DollarSign, Target } from 'lucide-react'
+import AppLayout from '../components/AppLayout'
 
 const MEMBER_ACCOUNT_FIELDS = `
   id,
@@ -77,27 +78,32 @@ const AdminMembers = () => {
 
   if (loading) {
     return (
-      <div className="fullscreen-center">
-        <div className="spinner-page" />
-      </div>
+      <AppLayout>
+        <div className="fullscreen-center">
+          <div className="spinner-page" />
+        </div>
+      </AppLayout>
     )
   }
 
   if (error) {
     return (
-      <div className="app-page">
-        <div className="app-card">
-          <div className="app-card-header">
-            <p className="app-heading-md">Member Accounts</p>
+      <AppLayout>
+        <div className="app-page">
+          <div className="app-card">
+            <div className="app-card-header">
+              <p className="app-heading-md">Member Accounts</p>
+            </div>
+            <div className="app-card-content text-red-300">{error}</div>
           </div>
-          <div className="app-card-content text-red-300">{error}</div>
         </div>
-      </div>
+      </AppLayout>
     )
   }
 
   return (
-    <div className="app-page">
+    <AppLayout>
+      <div className="app-page">
       <div className="app-card">
         <div className="app-card-header">
           <div>
@@ -201,7 +207,8 @@ const AdminMembers = () => {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </AppLayout>
   )
 }
 
