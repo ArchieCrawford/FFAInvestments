@@ -35,6 +35,11 @@ class SchwabApiService {
     this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
     this.clientSecret = import.meta.env.VITE_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '')
     this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://localhost:3001/admin/schwab/callback'
+    // Optional comma-separated list of allowed redirect URIs for validation
+    this.allowedRedirectsRaw = (import.meta.env.VITE_SCHWAB_ALLOWED_REDIRECTS || '').trim()
+    this.allowedRedirects = this.allowedRedirectsRaw
+      ? this.allowedRedirectsRaw.split(',').map(u => u.trim()).filter(Boolean)
+      : [this.redirectUri]
     
     // Token storage keys
     this.tokenStorageKey = 'schwab_tokens'
@@ -58,6 +63,7 @@ class SchwabApiService {
     if (this.clientSecret) {
       console.warn('🔐 Schwab clientSecret is present in frontend env. For production, move secret exchange server-side.')
     }
+    this._validateRedirectUri()
   }
 
   /**
@@ -232,10 +238,32 @@ class SchwabApiService {
     // Check if token is expired
     if (tokens.expires_at && Date.now() > tokens.expires_at) {
       console.log('🕐 Schwab access token expired')
+      // Treat as still logically authenticated if refresh token exists;
+      // the first real API call will trigger a refresh.
+      if (tokens.refresh_token) {
+        return true
+      }
       return false
     }
     
     return true
+  }
+
+  /**
+   * Detailed auth status snapshot (non-breaking addition)
+   */
+  getAuthStatus() {
+    const t = this._getStoredTokens()
+    if (!t) return { authenticated: false, reason: 'no_tokens' }
+    const expired = t.expires_at ? Date.now() > t.expires_at : false
+    return {
+      authenticated: !!t.access_token && (!expired || !!t.refresh_token),
+      expired,
+      has_access_token: !!t.access_token,
+      has_refresh_token: !!t.refresh_token,
+      expires_at: t.expires_at || null,
+      seconds_to_expiry: t.expires_at ? Math.round((t.expires_at - Date.now()) / 1000) : null
+    }
   }
 
   /**
@@ -474,6 +502,29 @@ class SchwabApiService {
     }
     console.log('🔍 validateStoredTokens:', info)
     return info
+  }
+
+  /**
+   * Validate redirect URI against allowed list & HTTPS requirements.
+   */
+  _validateRedirectUri() {
+    try {
+      const uri = new URL(this.redirectUri)
+      const isHttps = uri.protocol === 'https:'
+      const inAllowedList = this.allowedRedirects.includes(this.redirectUri)
+      if (!isHttps) {
+        console.warn('⚠️ Redirect URI is not HTTPS. Schwab requires HTTPS callback URLs.')
+      }
+      if (!inAllowedList) {
+        console.warn('⚠️ redirectUri not found in allowed list. allowedRedirects:', this.allowedRedirects)
+      }
+      if (this.allowedRedirects.length > 1 && !inAllowedList) {
+        console.warn('⚠️ Multiple redirect URIs registered; ensure the one used matches exactly (scheme, host, path, trailing slash).')
+      }
+      console.log('✅ Redirect URI validation snapshot:', { isHttps, inAllowedList, redirectUri: this.redirectUri })
+    } catch (e) {
+      console.error('❌ Invalid redirectUri format:', this.redirectUri, e.message)
+    }
   }
 }
 

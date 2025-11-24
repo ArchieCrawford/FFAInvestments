@@ -37,8 +37,9 @@ const AdminSchwab = () => {
       setError('')
       const raw = localStorage.getItem('schwab_tokens')
       console.log('AdminSchwab: stored schwab_tokens:', raw)
-      const authed = await Promise.resolve(schwabApi.isAuthenticated?.() ?? false)
-      console.log('AdminSchwab: isAuthenticated() =>', authed)
+      const status = schwabApi.getAuthStatus?.() || { authenticated: false }
+      console.log('AdminSchwab: auth status snapshot:', status)
+      const authed = status.authenticated
       if (!mounted.current) return
       setIsAuthenticated(authed)
       if (authed) {
@@ -119,6 +120,32 @@ const AdminSchwab = () => {
   return (
     <AppLayout>
       <div className="app-page">
+      {/* Optional debug panel (?debug=1) */}
+      {(() => {
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('debug') === '1') {
+          const tokenRaw = localStorage.getItem('schwab_tokens') || ''
+          const status = schwabApi.getAuthStatus?.()
+          return (
+            <div className="app-card app-mb-lg" style={{ border: '1px dashed var(--app-border-muted)' }}>
+              <div className="app-card-header">
+                <h6 className="app-card-title" style={{ display: 'flex', alignItems: 'center' }}>
+                  <i className="fas fa-bug" style={{ marginRight: '0.5rem' }}></i>
+                  Schwab Debug Panel
+                </h6>
+              </div>
+              <div className="app-card-content" style={{ fontSize: '0.75rem' }}>
+                <div><strong>Auth Status:</strong> {status ? JSON.stringify(status) : 'n/a'}</div>
+                <div style={{ marginTop: '0.5rem' }}><strong>Token (truncated):</strong> {tokenRaw.slice(0, 160)}{tokenRaw.length > 160 ? '…' : ''}</div>
+                <div style={{ marginTop: '0.5rem' }}><strong>Accounts loaded:</strong> {accounts.length}</div>
+                <div style={{ marginTop: '0.5rem' }}><strong>Error:</strong> {error || 'none'}</div>
+                <p style={{ marginTop: '0.5rem' }}>Remove <code>?debug=1</code> from URL to hide.</p>
+              </div>
+            </div>
+          )
+        }
+        return null
+      })()}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2>
           <i className="fas fa-university" style={{ marginRight: '0.5rem' }}></i>
