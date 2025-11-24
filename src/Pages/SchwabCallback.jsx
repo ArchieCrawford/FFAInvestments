@@ -111,6 +111,21 @@ const SchwabCallback = () => {
       } else if (error.status === 400) {
         setError('Invalid request to Schwab API')
         setMessage('There was a problem with the authentication request. Please try again.')
+        // Log full error details for debugging
+        console.error('Schwab API 400 error details:', {
+          error,
+          message: error.message,
+          response: error.response,
+          stack: error.stack,
+          code,
+          state,
+          locationSearch: location.search,
+          env: {
+            VITE_SCHWAB_CLIENT_ID: import.meta.env.VITE_SCHWAB_CLIENT_ID,
+            VITE_SCHWAB_CLIENT_SECRET: import.meta.env.VITE_SCHWAB_CLIENT_SECRET,
+            VITE_SCHWAB_REDIRECT_URI: import.meta.env.VITE_SCHWAB_REDIRECT_URI
+          }
+        })
       } else if (error.status === 401) {
         setError('Authentication credentials invalid')
         setMessage('The authentication credentials are invalid. Please check configuration.')
