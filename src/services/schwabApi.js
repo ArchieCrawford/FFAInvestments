@@ -51,6 +51,13 @@ class SchwabApiService {
       envViteClient: import.meta.env.VITE_SCHWAB_CLIENT_ID,
       envReactClient: import.meta.env.REACT_APP_SCHWAB_CLIENT_ID
     })
+
+    if (!this.clientId) {
+      console.warn('⚠️ Schwab clientId missing. OAuth will fail until VITE_SCHWAB_CLIENT_ID is set.')
+    }
+    if (this.clientSecret) {
+      console.warn('🔐 Schwab clientSecret is present in frontend env. For production, move secret exchange server-side.')
+    }
   }
 
   /**
@@ -107,11 +114,15 @@ class SchwabApiService {
     
     try {
       const response = await this._makeAuthenticatedRequest('/trader/v1/accounts')
-      console.log('✅ Accounts retrieved:', response.data?.length || 0, 'accounts')
-      return response.data || []
+      // Some APIs return { accounts: [...] }
+      const payload = response.data
+      const list = Array.isArray(payload) ? payload : Array.isArray(payload?.accounts) ? payload.accounts : []
+      console.log('✅ Accounts retrieved:', list.length, 'accounts')
+      return list
     } catch (error) {
-      console.error('❌ Failed to fetch accounts:', error)
-      throw new SchwabAPIError(`Failed to fetch accounts: ${error.message}`)
+      const status = error.response?.status || error.status || null
+      console.error('❌ Failed to fetch accounts:', { message: error.message, status })
+      throw new SchwabAPIError(`Failed to fetch accounts: ${error.message}`, status, error.response)
     }
   }
 
@@ -214,6 +225,7 @@ class SchwabApiService {
   isAuthenticated() {
     const tokens = this._getStoredTokens()
     if (!tokens || !tokens.access_token) {
+      // If we have a refresh token we can attempt refresh lazily
       return false
     }
     
@@ -269,6 +281,7 @@ class SchwabApiService {
         stored: !!persisted,
         accessTokenPresent: !!persisted?.access_token,
         expiresAt: persisted?.expires_at,
+        refreshTokenPresent: !!persisted?.refresh_token,
       })
       return tokens
     } catch (error) {
@@ -405,7 +418,9 @@ class SchwabApiService {
         return response
       }
       
-      throw error
+      // Wrap other errors so caller gets consistent SchwabAPIError
+      const status = error.response?.status || null
+      throw new SchwabAPIError(error.message || 'Schwab request failed', status, error.response)
     }
   }
 
@@ -423,6 +438,10 @@ class SchwabApiService {
   }
 
   _storeTokens(tokens) {
+    // Normalize token shape
+    if (!tokens.expires_at && tokens.expires_in) {
+      tokens.expires_at = Date.now() + tokens.expires_in * 1000
+    }
     localStorage.setItem(this.tokenStorageKey, JSON.stringify(tokens))
   }
 
@@ -435,6 +454,26 @@ class SchwabApiService {
       this.logout()
       return null
     }
+  }
+
+  /**
+   * Validate stored token structure for debugging
+   */
+  validateStoredTokens() {
+    const t = this._getStoredTokens()
+    if (!t) {
+      console.log('🔍 validateStoredTokens: no tokens stored')
+      return null
+    }
+    const info = {
+      access_token_present: !!t.access_token,
+      refresh_token_present: !!t.refresh_token,
+      expires_at: t.expires_at,
+      expires_in_seconds: t.expires_at ? Math.round((t.expires_at - Date.now()) / 1000) : null,
+      expired: t.expires_at ? Date.now() > t.expires_at : null
+    }
+    console.log('🔍 validateStoredTokens:', info)
+    return info
   }
 }
 
