@@ -261,7 +261,15 @@ class SchwabApiService {
       // Clear used state
       localStorage.removeItem(this.stateStorageKey)
       
-      console.log('✅ Successfully exchanged code for tokens')
+      console.log('✅ Successfully exchanged code for tokens; storing tokens in localStorage')
+      this._storeTokens(tokens)
+      // Extra diagnostic: verify persistence
+      const persisted = this._getStoredTokens()
+      console.log('🔍 Token persistence check:', {
+        stored: !!persisted,
+        accessTokenPresent: !!persisted?.access_token,
+        expiresAt: persisted?.expires_at,
+      })
       return tokens
     } catch (error) {
       console.error('❌ Failed to exchange code for tokens:', error)
