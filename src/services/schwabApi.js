@@ -74,18 +74,23 @@ class SchwabApiService {
    * Generate OAuth authorization URL
    */
   async getAuthorizationUrl() {
-    // Request auth URL from backend to centralize state handling
+    // Generate auth URL directly in frontend (no secret needed for this step)
     try {
-      const resp = await fetch(`${this.backendBase}/api/schwab/auth-url`)
-      const data = await resp.json()
-      if (!resp.ok || !data.url || !data.state) {
-        throw new Error('Failed to retrieve auth URL from backend')
-      }
-      localStorage.setItem(this.stateStorageKey, data.state)
-      console.log('🔑 Received Schwab auth URL (backend):', data.url)
-      return data.url
+      const state = this._generateState()
+      localStorage.setItem(this.stateStorageKey, state)
+      
+      const params = new URLSearchParams({
+        response_type: "code",
+        client_id: this.clientId,
+        redirect_uri: this.redirectUri,
+        state
+      })
+      
+      const authUrl = `${this.authURL}?${params.toString()}`
+      console.log("Generated Schwab auth URL:", authUrl)
+      return authUrl
     } catch (e) {
-      console.error('❌ getAuthorizationUrl backend failure:', e)
+      console.error("getAuthorizationUrl failed:", e)
       throw e
     }
   }
