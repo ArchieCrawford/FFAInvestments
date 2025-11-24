@@ -36,7 +36,8 @@ class SchwabApiService {
   // Client secret removed from frontend use; token exchange handled by backend
   this.clientSecret = undefined
   this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://ffainvestments.com/admin/schwab/callback'
-  this.backendBase = import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.com' // Adjust if running locally
+    // Use relative path for Vercel serverless functions (deployed together)
+    this.backendBase = import.meta.env.VITE_BACKEND_URL || ''
     // Optional comma-separated list of allowed redirect URIs for validation
     this.allowedRedirectsRaw = (import.meta.env.VITE_SCHWAB_ALLOWED_REDIRECTS || '').trim()
     this.allowedRedirects = this.allowedRedirectsRaw
