@@ -349,6 +349,7 @@ export default function AdminUsers() {
             </tbody>
           </table>
         </div>
+        </div>
       </div>
 
       {/* Edit Member Modal */}
