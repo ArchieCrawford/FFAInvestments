@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
-import schwabApi from '../services/schwabApi';
+import schwabApi, { SchwabAPIError } from '../services/schwabApi';
 
 const SchwabInsights = () => {
   const [snapshots, setSnapshots] = useState([]);
@@ -8,48 +9,130 @@ const SchwabInsights = () => {
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    let isMounted = true;
+
+    const loadSnapshot = async () => {
+      // Get all accounts
+      const accounts = await schwabApi.getAccounts();
+      if (!isMounted) return;
+
+      // For each account, get details and positions
+      const details = await Promise.all(accounts.map(acc => schwabApi.getAccountDetails(acc.accountNumber)));
+      if (!isMounted) return;
+
+      // Get all positions
+      const allPositions = details.flatMap(d => d.positions || []);
+      // Get market data for all symbols
+      const symbols = allPositions.map(p => p.symbol).filter(Boolean);
+      const marketData = symbols.length ? await schwabApi.getQuotes(symbols) : {};
+      if (!isMounted) return;
+
+      // Build snapshot
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        accounts,
+        details,
+        positions: allPositions,
+        marketData,
+      };
+
+      setSnapshots(prev => [...prev, snapshot]);
+      setLatest(snapshot);
+      setPositions(allPositions);
+    };
+
+    const initialize = async () => {
       setLoading(true);
+      setError('');
+
       try {
-        // Get all accounts
-        const accounts = await schwabApi.getAccounts();
-        // For each account, get details and positions
-        const details = await Promise.all(accounts.map(acc => schwabApi.getAccountDetails(acc.accountNumber)));
-        // Get all positions
-        const allPositions = details.flatMap(d => d.positions || []);
-        // Get market data for all symbols
-        const symbols = allPositions.map(p => p.symbol).filter(Boolean);
-        const marketData = symbols.length ? await schwabApi.getQuotes(symbols) : {};
+        const status = schwabApi.getAuthStatus?.() || { authenticated: false };
+        if (!isMounted) return;
 
-        // Build snapshot
-        const snapshot = {
-          timestamp: new Date().toISOString(),
-          accounts,
-          details,
-          positions: allPositions,
-          marketData,
-        };
+        const authed = !!status.authenticated;
+        setIsAuthenticated(authed);
+        setAuthChecked(true);
 
-        // Save snapshot (to backend or localStorage)
-        setSnapshots(prev => [...prev, snapshot]);
-        setLatest(snapshot);
-        setPositions(allPositions);
+        if (!authed) {
+          setSnapshots([]);
+          setPositions([]);
+          setLatest(null);
+          setError('You need to connect to Charles Schwab before viewing insights.');
+          return;
+        }
+
+        await loadSnapshot();
       } catch (err) {
-        setError(err.message || 'Failed to fetch Schwab data');
+        if (!isMounted) return;
+        if (err instanceof SchwabAPIError && err.message?.includes('No access token')) {
+          setIsAuthenticated(false);
+          setError('Your Schwab session isn\'t active. Please reconnect to continue.');
+        } else {
+          setError(err.message || 'Failed to fetch Schwab data');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
-    fetchData();
+
+    initialize();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  const handleConnect = async () => {
+    try {
+      setError('');
+      setIsConnecting(true);
+      const authUrl = await schwabApi.getAuthorizationUrl();
+      window.location.href = authUrl;
+    } catch (err) {
+      setError('Failed to initiate Schwab connection.');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   return (
     <AppLayout>
       <div className="app-page">
         <h1>Schwab Account Insights</h1>
         <p>Snapshots are captured each time you visit this page. Historical pulls are saved automatically so you can track value trends over time.</p>
+        {authChecked && !isAuthenticated && (
+          <div className="app-card mt-4">
+            <div className="app-card-content">
+              <h4 className="mb-2">Connect to Charles Schwab</h4>
+              <p className="app-text-muted mb-3">
+                You must authorize your Schwab account before we can pull account insights or historical snapshots.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className="app-btn app-btn-primary"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                >
+                  {isConnecting ? 'Redirecting…' : 'Connect to Charles Schwab'}
+                </button>
+                <button
+                  className="app-btn app-btn-outline"
+                  onClick={() => navigate('/admin/schwab')}
+                >
+                  View Schwab Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {loading && <div>Loading Schwab Insights…</div>}
         {error && <div className="error-alert">{error}</div>}
         {latest && (

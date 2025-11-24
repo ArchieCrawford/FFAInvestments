@@ -339,9 +339,12 @@ class SchwabApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, state, redirect_uri: redirectUri })
       })
-      const data = await resp.json()
+      const data = await this._parseJsonResponse(resp)
       if (!resp.ok) {
         throw new SchwabAPIError('Backend token exchange failed', resp.status, data)
+      }
+      if (!data || typeof data !== 'object' || !data.access_token) {
+        throw new SchwabAPIError('Token exchange response was empty or invalid', resp.status, data)
       }
       localStorage.removeItem(this.stateStorageKey)
       localStorage.removeItem(this.redirectStorageKey)
@@ -402,8 +405,11 @@ class SchwabApiService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: tokens.refresh_token })
       })
-      const data = await resp.json()
+      const data = await this._parseJsonResponse(resp)
       if (!resp.ok) throw new SchwabAPIError('Backend refresh failed', resp.status, data)
+      if (!data || typeof data !== 'object' || !data.access_token) {
+        throw new SchwabAPIError('Refresh response missing tokens', resp.status, data)
+      }
       this._storeTokens(data)
       console.log('✅ Schwab tokens refreshed (backend)')
       return data
@@ -458,6 +464,30 @@ class SchwabApiService {
       // Wrap other errors so caller gets consistent SchwabAPIError
       const status = error.response?.status || null
       throw new SchwabAPIError(error.message || 'Schwab request failed', status, error.response)
+    }
+  }
+
+  async _parseJsonResponse(response) {
+    let text
+    try {
+      text = await response.text()
+    } catch (err) {
+      console.error('❌ Failed to read backend response body:', err)
+      throw new SchwabAPIError('Failed to read backend response', response.status || null)
+    }
+
+    if (!text) {
+      return null
+    }
+
+    try {
+      return JSON.parse(text)
+    } catch (err) {
+      console.warn('⚠️ Backend response was not valid JSON. Returning raw body.', {
+        status: response.status,
+        bodyPreview: text.slice(0, 200)
+      })
+      return { rawBody: text }
     }
   }
 
