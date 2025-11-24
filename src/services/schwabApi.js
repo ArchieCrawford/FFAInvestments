@@ -74,23 +74,57 @@ class SchwabApiService {
    * Generate OAuth authorization URL
    */
   async getAuthorizationUrl() {
-    // Generate auth URL directly in frontend (no secret needed for this step)
+    // Generate Schwab OAuth authorization URL (frontend-only step; no secret needed)
+    // Adds: cryptographically secure state, scope parameter, smart redirect selection, detailed logging.
     try {
-      const state = this._generateState()
+      // Choose appropriate redirect URI based on current origin if multiple allowed were provided
+      let chosenRedirect = this.redirectUri
+      if (Array.isArray(this.allowedRedirects) && this.allowedRedirects.length > 1 && typeof window !== 'undefined') {
+        const origin = window.location.origin.toLowerCase()
+        // Prefer an allowed redirect whose origin matches current origin
+        const match = this.allowedRedirects.find(r => {
+          try { return new URL(r).origin.toLowerCase() === origin } catch { return false }
+        })
+        if (match) {
+          chosenRedirect = match
+        }
+      }
+
+      // Generate cryptographically secure state (32 bytes base64url)
+      let state
+      try {
+        const bytes = new Uint8Array(32)
+        crypto.getRandomValues(bytes)
+        state = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('')
+      } catch (_) {
+        // Fallback if crypto not available
+        state = this._generateState()
+      }
       localStorage.setItem(this.stateStorageKey, state)
-      
+
+      // Scope: allow override via env (VITE_SCHWAB_SCOPE); default to readonly like reference implementation
+      const scope = (import.meta.env.VITE_SCHWAB_SCOPE || 'readonly').trim()
+
       const params = new URLSearchParams({
-        response_type: "code",
+        response_type: 'code',
         client_id: this.clientId,
-        redirect_uri: this.redirectUri,
+        redirect_uri: chosenRedirect,
+        scope,
         state
       })
-      
+
       const authUrl = `${this.authURL}?${params.toString()}`
-      console.log("Generated Schwab auth URL:", authUrl)
+      console.log('[Schwab OAuth] Generated authorization URL', {
+        authUrlPreview: authUrl.split('?')[0] + '?…',
+        clientIdPrefix: this.clientId ? this.clientId.substring(0,8) : 'missing',
+        redirectUsed: chosenRedirect,
+        scope,
+        statePrefix: state.substring(0,8) + '…',
+        allowedRedirects: this.allowedRedirects
+      })
       return authUrl
     } catch (e) {
-      console.error("getAuthorizationUrl failed:", e)
+      console.error('[Schwab OAuth] getAuthorizationUrl failed:', e)
       throw e
     }
   }
