@@ -28,7 +28,10 @@ const AdminSchwab = () => {
   const checkConnection = async () => {
     try {
       setIsLoading(true)
+      const storedRaw = localStorage.getItem('schwab_tokens')
+      console.log('🔍 AdminSchwab: Stored schwab_tokens raw:', storedRaw)
       const authenticated = schwabApi.isAuthenticated()
+      console.log('🔍 AdminSchwab: isAuthenticated() =>', authenticated)
       setIsAuthenticated(authenticated)
       
       if (authenticated) {
@@ -48,8 +51,10 @@ const AdminSchwab = () => {
 
   const loadAccounts = async () => {
     try {
+      console.log('🔄 AdminSchwab: Loading accounts...')
       const accountData = await schwabApi.getAccounts()
       setAccounts(Array.isArray(accountData) ? accountData : [])
+      console.log('✅ AdminSchwab: Loaded accounts count:', accountData?.length || 0)
     } catch (error) {
       console.error('Failed to load accounts:', error)
       setError('Failed to load account information')
@@ -60,6 +65,7 @@ const AdminSchwab = () => {
   const handleConnect = () => {
     try {
       const authUrl = schwabApi.getAuthorizationUrl()
+      console.log('➡️ Redirecting to Schwab auth URL:', authUrl)
       window.location.href = authUrl
     } catch (error) {
       console.error('Failed to generate auth URL:', error)
