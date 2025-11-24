@@ -204,6 +204,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/schwab/callback" element={<SchwabCallback />} />
+          <Route path="/callback" element={<SchwabCallback />} />
           <Route path="/member/home" element={
             <ProtectedRoute>
               <Layout currentPageName="MemberHome">

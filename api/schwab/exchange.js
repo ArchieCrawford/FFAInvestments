@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { code } = req.body
+  const { code, redirect_uri: requestedRedirect } = req.body || {}
 
   if (!code) {
     return res.status(400).json({ error: 'Authorization code is required' })
@@ -21,11 +21,26 @@ export default async function handler(req, res) {
 
   const CLIENT_ID = process.env.SCHWAB_CLIENT_ID
   const CLIENT_SECRET = process.env.SCHWAB_CLIENT_SECRET
-  const REDIRECT_URI = process.env.SCHWAB_REDIRECT_URI
+  const DEFAULT_REDIRECT = process.env.SCHWAB_REDIRECT_URI
+  const ALLOWED_REDIRECTS = (process.env.SCHWAB_REDIRECT_URI_ALLOWED || process.env.SCHWAB_REDIRECT_URI || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
 
-  if (!CLIENT_ID || !CLIENT_SECRET || !REDIRECT_URI) {
+  if (!CLIENT_ID || !CLIENT_SECRET || !DEFAULT_REDIRECT) {
     console.error('Missing Schwab OAuth env vars')
     return res.status(500).json({ error: 'Server configuration error' })
+  }
+
+  const redirectUri = ALLOWED_REDIRECTS.includes(requestedRedirect)
+    ? requestedRedirect
+    : DEFAULT_REDIRECT
+
+  if (requestedRedirect && !ALLOWED_REDIRECTS.includes(requestedRedirect)) {
+    console.warn('Requested redirect URI not in allowed list, falling back to default', {
+      requestedRedirect,
+      allowed: ALLOWED_REDIRECTS
+    })
   }
 
   try {
@@ -35,7 +50,7 @@ export default async function handler(req, res) {
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: REDIRECT_URI
+      redirect_uri: redirectUri
     })
 
     const response = await fetch(tokenURL, {

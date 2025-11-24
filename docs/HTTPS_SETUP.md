@@ -77,7 +77,7 @@ Charles Schwab API requires HTTPS for OAuth callbacks in production. For develop
 Update your `.env` file for HTTPS:
 ```bash
 # Change from http to https
-REACT_APP_SCHWAB_REDIRECT_URI=https://localhost:3000/admin/schwab/callback
+VITE_SCHWAB_REDIRECT_URI=https://localhost:3000/callback
 VITE_APP_URL=https://localhost:3000
 ```
 
@@ -85,8 +85,8 @@ VITE_APP_URL=https://localhost:3000
 
 1. **Log into Schwab Developer Portal**: https://developer.schwab.com
 2. **Update your app configuration**:
-   - Redirect URI: `https://localhost:3000/admin/schwab/callback`
-   - For production: `https://www.ffainvestments.com/admin/schwab/callback`
+      - Redirect URI: `https://localhost:3000/callback`
+      - For production: `https://www.ffainvestments.com/callback`
 
 ## Testing the Setup
 
@@ -105,7 +105,7 @@ VITE_APP_URL=https://localhost:3000
 1. **Use proper SSL certificate** (Let's Encrypt, Cloudflare, etc.)
 2. **Update environment variables**:
    ```bash
-   REACT_APP_SCHWAB_REDIRECT_URI=https://www.ffainvestments.com/admin/schwab/callback
+   VITE_SCHWAB_REDIRECT_URI=https://www.ffainvestments.com/callback
    VITE_APP_URL=https://www.ffainvestments.com
    ```
 3. **Configure web server** (Nginx, Apache) for HTTPS

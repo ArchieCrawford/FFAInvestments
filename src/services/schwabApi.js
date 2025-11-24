@@ -35,7 +35,7 @@ class SchwabApiService {
     this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
   // Client secret removed from frontend use; token exchange handled by backend
   this.clientSecret = undefined
-  this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://ffainvestments.com/admin/schwab/callback'
+  this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://www.ffainvestments.com/callback'
     // Use relative path for Vercel serverless functions (deployed together)
     this.backendBase = import.meta.env.VITE_BACKEND_URL || ''
     // Optional comma-separated list of allowed redirect URIs for validation
@@ -46,7 +46,8 @@ class SchwabApiService {
     
     // Token storage keys
     this.tokenStorageKey = 'schwab_tokens'
-    this.stateStorageKey = 'schwab_oauth_state'
+  this.stateStorageKey = 'schwab_oauth_state'
+  this.redirectStorageKey = 'schwab_oauth_redirect'
     
     // Enhanced state management for security
     this.stateCache = new Map()
@@ -100,7 +101,8 @@ class SchwabApiService {
         // Fallback if crypto not available
         state = this._generateState()
       }
-      localStorage.setItem(this.stateStorageKey, state)
+  localStorage.setItem(this.stateStorageKey, state)
+  localStorage.setItem(this.redirectStorageKey, chosenRedirect)
 
       // Scope: allow override via env (VITE_SCHWAB_SCOPE); default to readonly like reference implementation
       const scope = (import.meta.env.VITE_SCHWAB_SCOPE || 'readonly').trim()
@@ -329,17 +331,19 @@ class SchwabApiService {
       throw new SchwabAPIError('Invalid OAuth state parameter - possible CSRF attempt', 400)
     }
     if (!code) throw new SchwabAPIError('Authorization code is required', 400)
+    const redirectUri = localStorage.getItem(this.redirectStorageKey) || this.redirectUri
     try {
       const resp = await fetch(`${this.backendBase}/api/schwab/exchange`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, state })
+        body: JSON.stringify({ code, state, redirect_uri: redirectUri })
       })
       const data = await resp.json()
       if (!resp.ok) {
         throw new SchwabAPIError('Backend token exchange failed', resp.status, data)
       }
       localStorage.removeItem(this.stateStorageKey)
+      localStorage.removeItem(this.redirectStorageKey)
       this._storeTokens(data)
       const persisted = this._getStoredTokens()
       console.log('🔍 Token persistence check (backend):', {
