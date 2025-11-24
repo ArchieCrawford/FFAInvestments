@@ -24,7 +24,7 @@ The Charles Schwab integration has been successfully added to the FFA Investment
 - API call history and response caching
 - Download API responses as JSON files
 
-### 4. OAuth Callback Handler (`/admin/schwab/callback`)
+### 4. OAuth Callback Handler (`/callback` and `/admin/schwab/callback`)
 - Handles OAuth redirect flow
 - Token exchange and storage
 - Automatic redirect to main Schwab page after successful authentication
@@ -44,9 +44,10 @@ To use the Charles Schwab integration, you need to set up the following environm
 
 ```bash
 # Add to .env file
-REACT_APP_SCHWAB_CLIENT_ID=your_schwab_app_key
-REACT_APP_SCHWAB_CLIENT_SECRET=your_schwab_secret
-REACT_APP_SCHWAB_REDIRECT_URI=http://localhost:3000/admin/schwab/callback
+VITE_SCHWAB_CLIENT_ID=your_schwab_app_key
+# client secret stays on the backend only
+VITE_SCHWAB_REDIRECT_URI=http://localhost:3000/callback
+VITE_SCHWAB_ALLOWED_REDIRECTS=http://localhost:3000/callback,https://www.ffainvestments.com/callback
 ```
 
 ## Schwab Developer Setup
@@ -54,7 +55,7 @@ REACT_APP_SCHWAB_REDIRECT_URI=http://localhost:3000/admin/schwab/callback
 1. **Register Your Application**
    - Go to [Schwab Developer Portal](https://developer.schwab.com)
    - Create a new app and get your App Key and Secret
-   - Set redirect URI to match your app's callback URL
+   - Set redirect URI to match your app's callback URL (the production default is `https://www.ffainvestments.com/callback`)
 
 2. **OAuth Flow**
    - Users click "Connect to Charles Schwab" 

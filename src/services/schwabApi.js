@@ -318,6 +318,7 @@ class SchwabApiService {
     console.log('🚪 Logging out of Schwab')
     localStorage.removeItem(this.tokenStorageKey)
     localStorage.removeItem(this.stateStorageKey)
+    localStorage.removeItem(this.redirectStorageKey)
   }
 
   /**
