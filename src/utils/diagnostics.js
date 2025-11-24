@@ -53,8 +53,8 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.log('\n📡 Testing connection...')
   supabase
     .from('profiles')
-    .select('count(*)')
-    .then(({ data, error }) => {
+    .select('id', { count: 'exact', head: true })
+    .then(({ error, count }) => {
       if (error) {
         console.error('❌ Connection test failed:', error)
         console.log('\n🔍 Possible issues:')
@@ -64,7 +64,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
         console.log('4. Ensure the profiles table exists')
       } else {
         console.log('✅ Connection successful!')
-        console.log('📊 Response data:', data)
+        console.log('📊 Profiles count (exact):', typeof count === 'number' ? count : 'N/A')
       }
     })
     .catch(err => {

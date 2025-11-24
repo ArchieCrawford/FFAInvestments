@@ -48,16 +48,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 console.log('✅ Supabase client initialized successfully')
 
-// Test connection on initialization
-supabase.from('profiles').select('count(*)').then(({ data, error }) => {
-  if (error) {
-    console.error('❌ Initial connection test failed:', error)
-  } else {
-    console.log('✅ Initial Supabase connection successful')
-  }
-}).catch(err => {
-  console.error('❌ Connection test error:', err)
-})
+// Test connection on initialization (avoid invalid count(*) syntax)
+supabase
+  .from('profiles')
+  .select('id', { count: 'exact', head: true })
+  .then(({ error, count }) => {
+    if (error) {
+      console.error('❌ Initial connection test failed:', error)
+    } else {
+      console.log('✅ Initial Supabase connection reachable', typeof count === 'number' ? `(profiles count: ${count})` : '')
+    }
+  })
+  .catch(err => {
+    console.error('❌ Connection test error:', err)
+  })
 
 // Auth helper functions with enhanced error handling
 export const auth = {
