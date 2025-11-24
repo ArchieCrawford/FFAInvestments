@@ -95,8 +95,8 @@ const AdminSchwab = () => {
     try {
       setError('')
       setIsLoading(true)
-      const authUrl = await Promise.resolve(schwabApi.getAuthorizationUrl())
-      console.log('Redirecting to Schwab auth URL:', authUrl)
+      const authUrl = await schwabApi.getAuthorizationUrl()
+      console.log('Redirecting to Schwab auth URL (backend provided):', authUrl)
       window.location.href = authUrl
     } catch (e) {
       console.error('getAuthorizationUrl failed:', e)

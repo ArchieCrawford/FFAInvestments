@@ -33,8 +33,10 @@ class SchwabApiService {
     
     // Configuration from environment variables (updated for Vite)
     this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
-    this.clientSecret = import.meta.env.VITE_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '')
-    this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://localhost:3001/admin/schwab/callback'
+  // Client secret removed from frontend use; token exchange handled by backend
+  this.clientSecret = undefined
+  this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://ffainvestments.com/admin/schwab/callback'
+  this.backendBase = import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.com' // Adjust if running locally
     // Optional comma-separated list of allowed redirect URIs for validation
     this.allowedRedirectsRaw = (import.meta.env.VITE_SCHWAB_ALLOWED_REDIRECTS || '').trim()
     this.allowedRedirects = this.allowedRedirectsRaw
@@ -60,8 +62,9 @@ class SchwabApiService {
     if (!this.clientId) {
       console.warn('⚠️ Schwab clientId missing. OAuth will fail until VITE_SCHWAB_CLIENT_ID is set.')
     }
-    if (this.clientSecret) {
-      console.warn('🔐 Schwab clientSecret is present in frontend env. For production, move secret exchange server-side.')
+    // Warn if legacy secret vars still present (should be removed from build)
+    if (import.meta.env.VITE_SCHWAB_CLIENT_SECRET || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET) {
+      console.warn('🔐 Detected Schwab client secret in frontend env. Remove it; backend now performs exchange.')
     }
     this._validateRedirectUri()
   }
@@ -69,21 +72,21 @@ class SchwabApiService {
   /**
    * Generate OAuth authorization URL
    */
-  getAuthorizationUrl() {
-    const state = this._generateState()
-    localStorage.setItem(this.stateStorageKey, state)
-    
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.clientId,
-      redirect_uri: this.redirectUri,
-      scope: 'readonly',
-      state: state
-    })
-    
-    const authUrl = `${this.authURL}?${params.toString()}`
-    console.log('🔑 Generated Schwab auth URL:', authUrl)
-    return authUrl
+  async getAuthorizationUrl() {
+    // Request auth URL from backend to centralize state handling
+    try {
+      const resp = await fetch(`${this.backendBase}/api/schwab/auth-url`)
+      const data = await resp.json()
+      if (!resp.ok || !data.url || !data.state) {
+        throw new Error('Failed to retrieve auth URL from backend')
+      }
+      localStorage.setItem(this.stateStorageKey, data.state)
+      console.log('🔑 Received Schwab auth URL (backend):', data.url)
+      return data.url
+    } catch (e) {
+      console.error('❌ getAuthorizationUrl backend failure:', e)
+      throw e
+    }
   }
 
   /**
@@ -280,41 +283,35 @@ class SchwabApiService {
    * Public method for OAuth callback handling
    */
   async exchangeCodeForTokens(code, state) {
-    console.log('🔄 Exchanging code for tokens with state validation:', {
-      code: code ? '✅ Present' : '❌ Missing',
-      state: state ? `✅ ${state.substring(0, 8)}...` : '❌ Missing'
-    })
-
-    // Validate state parameter (CSRF protection)
+    console.log('🔄 Backend exchangeCodeForTokens invoked')
     const storedState = localStorage.getItem(this.stateStorageKey)
     if (!storedState || storedState !== state) {
       throw new SchwabAPIError('Invalid OAuth state parameter - possible CSRF attempt', 400)
     }
-
-    if (!code) {
-      throw new SchwabAPIError('Authorization code is required', 400)
-    }
-
+    if (!code) throw new SchwabAPIError('Authorization code is required', 400)
     try {
-      const tokens = await this._exchangeCodeForTokens(code)
-      
-      // Clear used state
+      const resp = await fetch(`${this.backendBase}/api/schwab/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, state })
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new SchwabAPIError('Backend token exchange failed', resp.status, data)
+      }
       localStorage.removeItem(this.stateStorageKey)
-      
-      console.log('✅ Successfully exchanged code for tokens; storing tokens in localStorage')
-      this._storeTokens(tokens)
-      // Extra diagnostic: verify persistence
+      this._storeTokens(data)
       const persisted = this._getStoredTokens()
-      console.log('🔍 Token persistence check:', {
+      console.log('🔍 Token persistence check (backend):', {
         stored: !!persisted,
         accessTokenPresent: !!persisted?.access_token,
         expiresAt: persisted?.expires_at,
         refreshTokenPresent: !!persisted?.refresh_token,
       })
-      return tokens
-    } catch (error) {
-      console.error('❌ Failed to exchange code for tokens:', error)
-      throw error
+      return data
+    } catch (e) {
+      console.error('❌ Backend exchange error:', e)
+      throw e
     }
   }
 
@@ -346,61 +343,28 @@ class SchwabApiService {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
 
-  async _exchangeCodeForTokens(code) {
-    const auth = btoa(`${this.clientId}:${this.clientSecret}`)
-    
-    const data = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: this.redirectUri
-    })
-
-    const response = await axios.post(this.tokenURL, data, {
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })
-
-    const tokens = response.data
-    tokens.expires_at = Date.now() + (tokens.expires_in * 1000)
-    
-    return tokens
+  async _exchangeCodeForTokens() {
+    throw new SchwabAPIError('Direct code exchange disabled; use backend /api/schwab/exchange')
   }
 
   async _refreshTokens() {
     const tokens = this._getStoredTokens()
-    if (!tokens || !tokens.refresh_token) {
-      throw new SchwabAPIError('No refresh token available')
-    }
-
-    console.log('🔄 Refreshing Schwab access token')
-    
-    const auth = btoa(`${this.clientId}:${this.clientSecret}`)
-    
-    const data = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: tokens.refresh_token
-    })
-
+    if (!tokens || !tokens.refresh_token) throw new SchwabAPIError('No refresh token available')
+    console.log('🔄 Backend refreshing Schwab access token')
     try {
-      const response = await axios.post(this.tokenURL, data, {
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+      const resp = await fetch(`${this.backendBase}/api/schwab/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: tokens.refresh_token })
       })
-
-      const newTokens = response.data
-      newTokens.expires_at = Date.now() + (newTokens.expires_in * 1000)
-      
-      this._storeTokens(newTokens)
-      console.log('✅ Schwab tokens refreshed')
-      
-      return newTokens
+      const data = await resp.json()
+      if (!resp.ok) throw new SchwabAPIError('Backend refresh failed', resp.status, data)
+      this._storeTokens(data)
+      console.log('✅ Schwab tokens refreshed (backend)')
+      return data
     } catch (error) {
-      console.error('❌ Token refresh failed:', error)
-      this.logout() // Clear invalid tokens
+      console.error('❌ Token refresh failed (backend):', error)
+      this.logout()
       throw new SchwabAPIError('Token refresh failed - please login again')
     }
   }
