@@ -70,7 +70,7 @@ const BackgroundAnimation = () => (
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, isAdmin } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState({});
 
   const handleLogout = async () => {
@@ -88,9 +88,11 @@ export default function Layout({ children, currentPageName }) {
     return submenu.some(item => location.pathname === item.url);
   };
 
-  const isAdmin = profile?.role === 'admin';
+  // Use the AuthContext helper when available to determine admin status.
+  const showAdmin = (typeof isAdmin === 'function') ? isAdmin() : (profile?.role === 'admin');
+
   // If admin, show both admin and member navigation items (deduplicated by URL)
-  const navigationItems = isAdmin
+  const navigationItems = showAdmin
     ? (() => {
         const seen = new Set();
         const merged = [];
