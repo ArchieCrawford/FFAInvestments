@@ -82,6 +82,14 @@ export default function AdminDashboard() {
     }))
   }, [orgHistory])
 
+  const latestOrgSnapshot = useMemo(() => {
+    if (!orgHistory || orgHistory.length === 0) return null
+    const last = orgHistory[orgHistory.length - 1]
+    const totalValue = Number(last.total_value) || 0
+    const dateLabel = last.balance_date ? format(new Date(last.balance_date), 'MMM dd, yyyy') : '—'
+    return { totalValue, dateLabel }
+  }, [orgHistory])
+
   const tasks = [
     pendingKYC > 0 && { 
       type: 'warning', 
@@ -177,6 +185,26 @@ export default function AdminDashboard() {
               <Badge variant={latestUnitPrice?.is_finalized ? "default" : "outline"} className="mt-2">
                 {latestUnitPrice?.is_finalized ? 'Finalized' : 'Pending'}
               </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-sm font-medium text-slate-600">Charles Schwab Positions</CardTitle>
+                <DollarSign className="w-5 h-5 text-indigo-600" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-3xl font-bold text-slate-900">
+                ${latestOrgSnapshot ? latestOrgSnapshot.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+              </div>
+              <p className="text-sm text-slate-500">As of {latestOrgSnapshot?.dateLabel || '—'}</p>
+              <Link to="/admin/schwab">
+                <Button className="mt-2 w-full gap-2">
+                  View Schwab Positions <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
