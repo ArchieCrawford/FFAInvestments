@@ -219,16 +219,16 @@ app.get('/api/schwab/auth', (req, res) => {
   res.redirect(`${SCHWAB_AUTH_URL}?${params.toString()}`)
 })
 
-app.get('/api/schwab/callback', async (req, res) => {
-  const { code, state, redirect_uri: redirectQuery } = req.query
+app.post('/api/schwab/exchange', async (req, res) => {
+  const { code, state } = req.body || {}
   if (!code) {
-    return res.status(400).json({ error: 'Missing authorization code' })
+    return res.status(400).json({ error: 'Authorization code is required' })
   }
 
-  const redirectUri = resolveRedirectUri(redirectQuery)
+  // Always use the canonical redirect URI that matches the Schwab app config
+  const redirectUri = SCHWAB_REDIRECT_URI
 
   try {
-    logInfo('Handling Schwab callback', { has_state: Boolean(state), redirectUri })
     const tokens = await requestToken({
       grant_type: 'authorization_code',
       code,
@@ -236,11 +236,12 @@ app.get('/api/schwab/callback', async (req, res) => {
     })
 
     await persistTokens(tokens, state)
-    return res.json({ success: true, message: 'Tokens stored successfully' })
+    return res.json(normalizeTokens(tokens))
   } catch (err) {
     return handleTokenError(res, err)
   }
 })
+
 
 app.post('/api/schwab/exchange', async (req, res) => {
   const { code, redirect_uri: preferredRedirect, state } = req.body || {}
