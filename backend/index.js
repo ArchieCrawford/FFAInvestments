@@ -3,6 +3,9 @@ import cors from 'cors'
 import fetch from 'node-fetch'
 import dotenv from 'dotenv'
 import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { createClient } from '@supabase/supabase-js'
 
 dotenv.config()
@@ -16,15 +19,25 @@ const {
   SCHWAB_AUTH_URL = 'https://api.schwab.com/v1/oauth/authorize',
   SCHWAB_TOKEN_URL = 'https://api.schwab.com/v1/oauth/token',
   SCHWAB_REDIRECT_URI_ALLOWED,
+  FRONTEND_ORIGIN,
   PORT = 4000
 } = process.env
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing Supabase environment variables')
+const requiredEnv = {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  SCHWAB_CLIENT_ID,
+  SCHWAB_CLIENT_SECRET,
+  SCHWAB_REDIRECT_URI
 }
 
-if (!SCHWAB_CLIENT_ID || !SCHWAB_CLIENT_SECRET || !SCHWAB_REDIRECT_URI) {
-  throw new Error('Missing Schwab OAuth environment variables')
+const missingEnv = Object.entries(requiredEnv)
+  .filter(([, value]) => !value)
+  .map(([key]) => key)
+
+if (missingEnv.length) {
+  console.error('[Schwab Backend] Missing environment variables:', missingEnv)
+  throw new Error(`Missing required environment variables: ${missingEnv.join(', ')}`)
 }
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -33,10 +46,63 @@ const allowedRedirects = (SCHWAB_REDIRECT_URI_ALLOWED || SCHWAB_REDIRECT_URI)
   .map(value => value.trim())
   .filter(Boolean)
 
+const allowedOrigins = (FRONTEND_ORIGIN || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean)
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const LOG_DIR = path.join(__dirname, 'logs')
+const LOG_FILE = path.join(LOG_DIR, 'schwab.log')
+
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true })
+}
+
+function writeLog(level, message, meta) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    ...(meta ? { meta } : {})
+  }
+  const line = JSON.stringify(entry)
+  fs.appendFile(LOG_FILE, line + '\n', err => {
+    if (err) {
+      console.error('[Schwab Backend] Failed to write log file', err)
+    }
+  })
+}
+
+function logInfo(message, meta) {
+  if (meta) {
+    console.log(`[Schwab Backend] ${message}`, meta)
+  } else {
+    console.log(`[Schwab Backend] ${message}`)
+  }
+  writeLog('INFO', message, meta)
+}
+
+function logError(message, meta) {
+  if (meta) {
+    console.error(`[Schwab Backend] ${message}`, meta)
+  } else {
+    console.error(`[Schwab Backend] ${message}`)
+  }
+  writeLog('ERROR', message, meta)
+}
+
 const app = express()
 
-app.use(cors())
-app.use(express.json())
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : undefined))
+app.use(express.json({ limit: '1mb' }))
+
+logInfo('Service initialized', {
+  port: PORT,
+  corsOrigins: allowedOrigins.length ? allowedOrigins : 'ALL',
+  allowedRedirects
+})
 
 function resolveRedirectUri(preferred) {
   if (preferred && allowedRedirects.includes(preferred)) {
@@ -50,6 +116,11 @@ function buildAuthHeader() {
 }
 
 async function requestToken(params) {
+  logInfo('Requesting Schwab token', {
+    grant_type: params?.grant_type,
+    has_code: Boolean(params?.code),
+    has_refresh_token: Boolean(params?.refresh_token)
+  })
   const response = await fetch(SCHWAB_TOKEN_URL, {
     method: 'POST',
     headers: {
@@ -68,12 +139,20 @@ async function requestToken(params) {
   }
 
   if (!response.ok) {
+    logError('Schwab token request failed', {
+      status: response.status,
+      responsePreview: typeof text === 'string' ? text.slice(0, 500) : text
+    })
     const error = new Error('Schwab token request failed')
     error.status = response.status
     error.response = data || text
     throw error
   }
 
+  logInfo('Schwab token request succeeded', {
+    has_access_token: Boolean(data?.access_token),
+    has_refresh_token: Boolean(data?.refresh_token)
+  })
   return data
 }
 
@@ -91,8 +170,14 @@ async function persistTokens(tokens, state) {
 
   const { error } = await supabase.from('schwab_tokens').insert([record])
   if (error) {
+    logError('Failed to store Schwab tokens in Supabase', { error: error.message })
     throw new Error(`Failed to store tokens: ${error.message}`)
   }
+
+  logInfo('Schwab tokens stored in Supabase', {
+    stored_access_token: Boolean(record.access_token),
+    stored_refresh_token: Boolean(record.refresh_token)
+  })
 }
 
 function normalizeTokens(tokens) {
@@ -106,6 +191,7 @@ function normalizeTokens(tokens) {
 function handleTokenError(res, error) {
   const status = error?.status || 500
   const details = error?.response || error?.message || 'Unknown error'
+  logError('Returning Schwab error response to client', { status, details })
   return res.status(status).json({ error: 'Schwab token request failed', details })
 }
 
@@ -123,6 +209,7 @@ app.get('/api/schwab/auth', (req, res) => {
     state
   })
 
+  logInfo('Redirecting user to Schwab OAuth', { state, redirect_uri: SCHWAB_REDIRECT_URI })
   res.redirect(`${SCHWAB_AUTH_URL}?${params.toString()}`)
 })
 
@@ -135,6 +222,7 @@ app.get('/api/schwab/callback', async (req, res) => {
   const redirectUri = resolveRedirectUri(redirectQuery)
 
   try {
+    logInfo('Handling Schwab callback', { has_state: Boolean(state), redirectUri })
     const tokens = await requestToken({
       grant_type: 'authorization_code',
       code,
@@ -157,6 +245,7 @@ app.post('/api/schwab/exchange', async (req, res) => {
   const redirectUri = resolveRedirectUri(preferredRedirect)
 
   try {
+    logInfo('Backend exchange requested', { redirectUri, has_state: Boolean(state) })
     const tokens = await requestToken({
       grant_type: 'authorization_code',
       code,
@@ -177,6 +266,7 @@ app.post('/api/schwab/refresh', async (req, res) => {
   }
 
   try {
+    logInfo('Backend refresh requested', { has_refresh_token: Boolean(refreshToken) })
     const tokens = await requestToken({
       grant_type: 'refresh_token',
       refresh_token: refreshToken

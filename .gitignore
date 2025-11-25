@@ -26,6 +26,8 @@ Thumbs.db
 # Logs
 logs
 *.log
+backend/logs/
+/opt/render/project/src/backend/logs/
 
 # Runtime data
 pids
