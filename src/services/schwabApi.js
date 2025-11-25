@@ -11,6 +11,11 @@
  */
 
 import axios from 'axios'
+const BACKEND_BASE = (import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.onrender.com').replace(/\/$/, '')
+
+function backend(path) {
+  return BACKEND_BASE + path
+}
 
 class SchwabAPIError extends Error {
   constructor(message, status = null, response = null) {
@@ -37,7 +42,8 @@ class SchwabApiService {
   this.clientSecret = undefined
   this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://www.ffainvestments.com/callback'
     // Use relative path for Vercel serverless functions (deployed together)
-    this.backendBase = import.meta.env.VITE_BACKEND_URL || ''
+    this.backendBase = BACKEND_BASE
+    console.log('🔧 SchwabApiService backend base URL:', this.backendBase)
     // Optional comma-separated list of allowed redirect URIs for validation
     this.allowedRedirectsRaw = (import.meta.env.VITE_SCHWAB_ALLOWED_REDIRECTS || '').trim()
     this.allowedRedirects = this.allowedRedirectsRaw
