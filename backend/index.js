@@ -46,10 +46,12 @@ const allowedRedirects = (SCHWAB_REDIRECT_URI_ALLOWED || SCHWAB_REDIRECT_URI)
   .map(value => value.trim())
   .filter(Boolean)
 
+const defaultOrigins = ['https://www.ffainvestments.com', 'https://ffainvestments.com']
 const allowedOrigins = (FRONTEND_ORIGIN || '')
   .split(',')
   .map(origin => origin.trim())
   .filter(Boolean)
+const corsOrigins = allowedOrigins.length ? allowedOrigins : defaultOrigins
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -95,12 +97,16 @@ function logError(message, meta) {
 
 const app = express()
 
-app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : undefined))
+app.use(cors({
+  origin: corsOrigins,
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}))
 app.use(express.json({ limit: '1mb' }))
 
 logInfo('Service initialized', {
   port: PORT,
-  corsOrigins: allowedOrigins.length ? allowedOrigins : 'ALL',
+  corsOrigins,
   allowedRedirects
 })
 

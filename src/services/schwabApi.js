@@ -338,12 +338,11 @@ class SchwabApiService {
       throw new SchwabAPIError('Invalid OAuth state parameter - possible CSRF attempt', 400)
     }
     if (!code) throw new SchwabAPIError('Authorization code is required', 400)
-    const redirectUri = localStorage.getItem(this.redirectStorageKey) || this.redirectUri
     try {
       const resp = await fetch(`${this.backendBase}/api/schwab/exchange`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, state, redirect_uri: redirectUri })
+        body: JSON.stringify({ code, state, redirect_uri: this.redirectUri })
       })
       const data = await this._parseJsonResponse(resp)
       if (!resp.ok) {
@@ -353,7 +352,7 @@ class SchwabApiService {
         throw new SchwabAPIError('Token exchange response was empty or invalid', resp.status, data)
       }
       localStorage.removeItem(this.stateStorageKey)
-      localStorage.removeItem(this.redirectStorageKey)
+  localStorage.removeItem(this.redirectStorageKey)
       this._storeTokens(data)
       const persisted = this._getStoredTokens()
       console.log('🔍 Token persistence check (backend):', {
