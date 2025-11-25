@@ -26,13 +26,13 @@ const SchwabCallback = () => {
   }, [])
 
   const handleOAuthCallback = async () => {
-    const urlParams = new URLSearchParams(location.search)
-    const codeParam = urlParams.get('code')
-    const stateParam = urlParams.get('state')
-    const errorParam = urlParams.get('error')
-    const errorDescription = urlParams.get('error_description')
-
     try {
+      const urlParams = new URLSearchParams(location.search)
+      const code = urlParams.get('code')
+      const state = urlParams.get('state')
+      const errorParam = urlParams.get('error')
+      const errorDescription = urlParams.get('error_description')
+
       // Handle OAuth errors (user denied access, etc.)
       if (errorParam) {
         console.error('OAuth Error:', errorParam, errorDescription)
@@ -47,7 +47,7 @@ const SchwabCallback = () => {
       }
 
       // Validate required parameters
-      if (!codeParam) {
+      if (!code) {
         console.error('No authorization code received')
         setStatus('error')
         setError('No authorization code received from Schwab')
@@ -59,7 +59,7 @@ const SchwabCallback = () => {
         return
       }
 
-      if (!stateParam) {
+      if (!state) {
         console.error('No state parameter received - possible CSRF attack')
         setStatus('error')
         setError('Security validation failed')
@@ -76,13 +76,13 @@ const SchwabCallback = () => {
       setMessage('Exchanging authorization code for access tokens...')
 
       console.log('🔄 Processing OAuth callback with enhanced security...', {
-        code: codeParam ? '✅ Received' : '❌ Missing',
-        state: stateParam ? `✅ ${stateParam.substring(0, 8)}...` : '❌ Missing',
+        code: code ? '✅ Received' : '❌ Missing',
+        state: state ? `✅ ${state.substring(0, 8)}...` : '❌ Missing',
         timestamp: new Date().toISOString()
       })
       
       // Exchange authorization code for tokens with state validation
-      const tokens = await schwabApi.exchangeCodeForTokens(codeParam, stateParam)
+      const tokens = await schwabApi.exchangeCodeForTokens(code, state)
       
       if (tokens && tokens.access_token) {
         console.log('✅ OAuth flow completed successfully')
@@ -102,7 +102,7 @@ const SchwabCallback = () => {
       setStatus('error')
       
       // Provide specific error messages based on error type
-      if (error.message?.includes('Invalid or expired OAuth state') || error.message?.includes('Invalid OAuth state parameter')) {
+      if (error.message?.includes('Invalid or expired OAuth state')) {
         setError('Security validation failed - possible CSRF attempt detected')
         setMessage('For security reasons, the authentication was rejected. Please try logging in again.')
       } else if (error.message?.includes('authorization code')) {
@@ -117,8 +117,8 @@ const SchwabCallback = () => {
           message: error.message,
           response: error.response,
           stack: error.stack,
-          code: codeParam,
-          state: stateParam,
+          code,
+          state,
           locationSearch: location.search,
           env: {
             VITE_SCHWAB_CLIENT_ID: import.meta.env.VITE_SCHWAB_CLIENT_ID,

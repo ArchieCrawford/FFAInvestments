@@ -13,15 +13,6 @@
 import axios from 'axios'
 
 class SchwabAPIError extends Error {
-  _getSessionStorage() {
-    if (typeof window === 'undefined') return null
-    try {
-      return window.sessionStorage
-    } catch (err) {
-      return null
-    }
-  }
-
   constructor(message, status = null, response = null) {
     super(message)
     this.name = 'SchwabAPIError'
@@ -56,7 +47,6 @@ class SchwabApiService {
     // Token storage keys
     this.tokenStorageKey = 'schwab_tokens'
   this.stateStorageKey = 'schwab_oauth_state'
-  this.stateHistoryKey = 'schwab_oauth_state_history'
   this.redirectStorageKey = 'schwab_oauth_redirect'
     
     // Enhanced state management for security
@@ -110,9 +100,9 @@ class SchwabApiService {
       } catch (_) {
         // Fallback if crypto not available
         state = this._generateState()
-    }
-    this._rememberState(state)
-    localStorage.setItem(this.redirectStorageKey, chosenRedirect)
+      }
+  localStorage.setItem(this.stateStorageKey, state)
+  localStorage.setItem(this.redirectStorageKey, chosenRedirect)
 
       // Scope: allow override via env (VITE_SCHWAB_SCOPE); default to readonly like reference implementation
       const scope = (import.meta.env.VITE_SCHWAB_SCOPE || 'readonly').trim()
@@ -327,7 +317,7 @@ class SchwabApiService {
   logout() {
     console.log('🚪 Logging out of Schwab')
     localStorage.removeItem(this.tokenStorageKey)
-    this._clearRememberedState()
+    localStorage.removeItem(this.stateStorageKey)
     localStorage.removeItem(this.redirectStorageKey)
   }
 
@@ -337,11 +327,8 @@ class SchwabApiService {
    */
   async exchangeCodeForTokens(code, state) {
     console.log('🔄 Backend exchangeCodeForTokens invoked')
-    const session = this._getSessionStorage()
-    const storedState = localStorage.getItem(this.stateStorageKey) || session?.getItem(this.stateStorageKey)
-    const history = this._getStateHistory()
-    const stateKnown = (storedState && storedState === state) || history.some(entry => entry.state === state)
-    if (!stateKnown) {
+    const storedState = localStorage.getItem(this.stateStorageKey)
+    if (!storedState || storedState !== state) {
       throw new SchwabAPIError('Invalid OAuth state parameter - possible CSRF attempt', 400)
     }
     if (!code) throw new SchwabAPIError('Authorization code is required', 400)
@@ -359,7 +346,7 @@ class SchwabApiService {
       if (!data || typeof data !== 'object' || !data.access_token) {
         throw new SchwabAPIError('Token exchange response was empty or invalid', resp.status, data)
       }
-    this._clearRememberedState(state)
+      localStorage.removeItem(this.stateStorageKey)
       localStorage.removeItem(this.redirectStorageKey)
       this._storeTokens(data)
       const persisted = this._getStoredTokens()
@@ -501,61 +488,6 @@ class SchwabApiService {
         bodyPreview: text.slice(0, 200)
       })
       return { rawBody: text }
-    }
-  }
-
-  _rememberState(state) {
-    const session = this._getSessionStorage()
-    try {
-      localStorage.setItem(this.stateStorageKey, state)
-    } catch (err) {
-      console.warn('⚠️ Unable to store OAuth state in localStorage:', err)
-    }
-    try {
-      session?.setItem(this.stateStorageKey, state)
-    } catch (err) {
-      // sessionStorage may be unavailable in some environments
-    }
-
-    try {
-      const history = this._getStateHistory()
-        .filter(entry => entry && entry.state !== state)
-      history.unshift({ state, ts: Date.now() })
-      const trimmed = history.slice(0, 5)
-      localStorage.setItem(this.stateHistoryKey, JSON.stringify(trimmed))
-    } catch (err) {
-      console.warn('⚠️ Unable to store OAuth state history:', err)
-    }
-  }
-
-  _getStateHistory() {
-    try {
-      const raw = localStorage.getItem(this.stateHistoryKey)
-      if (!raw) return []
-      const parsed = JSON.parse(raw)
-      return Array.isArray(parsed) ? parsed : []
-    } catch (err) {
-      console.warn('⚠️ Failed to parse OAuth state history:', err)
-      return []
-    }
-  }
-
-  _clearRememberedState(state) {
-    const session = this._getSessionStorage()
-    try {
-      localStorage.removeItem(this.stateStorageKey)
-      session?.removeItem(this.stateStorageKey)
-    } catch (err) {}
-
-    try {
-      if (!state) {
-        localStorage.removeItem(this.stateHistoryKey)
-      } else {
-        const history = this._getStateHistory().filter(entry => entry.state !== state)
-        localStorage.setItem(this.stateHistoryKey, JSON.stringify(history))
-      }
-    } catch (err) {
-      // Ignore history cleanup issues
     }
   }
 
