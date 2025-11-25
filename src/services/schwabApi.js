@@ -339,14 +339,26 @@ class SchwabApiService {
     }
     if (!code) throw new SchwabAPIError('Authorization code is required', 400)
     try {
+      const redirectUri = this.redirectUri
       const resp = await fetch(`${this.backendBase}/api/schwab/exchange`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, state, redirect_uri: this.redirectUri })
+        body: JSON.stringify({ code, state, redirect_uri: redirectUri })
       })
+
       const data = await this._parseJsonResponse(resp)
+
       if (!resp.ok) {
-        throw new SchwabAPIError('Backend token exchange failed', resp.status, data)
+        console.error('Schwab backend /api/schwab/exchange failed:', {
+          status: resp.status,
+          body: data
+        })
+        // data is the { error, details } object from the backend
+        throw new SchwabAPIError(
+          'Backend token exchange failed',
+          resp.status,
+          data
+        )
       }
       if (!data || typeof data !== 'object' || !data.access_token) {
         throw new SchwabAPIError('Token exchange response was empty or invalid', resp.status, data)

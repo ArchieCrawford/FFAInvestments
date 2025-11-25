@@ -122,11 +122,6 @@ function buildAuthHeader() {
 }
 
 async function requestToken(params) {
-  logInfo('Requesting Schwab token', {
-    grant_type: params?.grant_type,
-    has_code: Boolean(params?.code),
-    has_refresh_token: Boolean(params?.refresh_token)
-  })
   const response = await fetch(SCHWAB_TOKEN_URL, {
     method: 'POST',
     headers: {
@@ -145,9 +140,10 @@ async function requestToken(params) {
   }
 
   if (!response.ok) {
-    logError('Schwab token request failed', {
+    console.error('Schwab token HTTP error:', {
+      url: SCHWAB_TOKEN_URL,
       status: response.status,
-      responsePreview: typeof text === 'string' ? text.slice(0, 500) : text
+      body: data || text?.slice(0, 400)
     })
     const error = new Error('Schwab token request failed')
     error.status = response.status
@@ -155,10 +151,6 @@ async function requestToken(params) {
     throw error
   }
 
-  logInfo('Schwab token request succeeded', {
-    has_access_token: Boolean(data?.access_token),
-    has_refresh_token: Boolean(data?.refresh_token)
-  })
   return data
 }
 
@@ -197,8 +189,16 @@ function normalizeTokens(tokens) {
 function handleTokenError(res, error) {
   const status = error?.status || 500
   const details = error?.response || error?.message || 'Unknown error'
-  logError('Returning Schwab error response to client', { status, details })
-  return res.status(status).json({ error: 'Schwab token request failed', details })
+
+  console.error('Schwab token error (wrapped):', {
+    status,
+    details
+  })
+
+  return res.status(status).json({
+    error: 'Schwab token request failed',
+    details
+  })
 }
 
 app.get('/health', (req, res) => {

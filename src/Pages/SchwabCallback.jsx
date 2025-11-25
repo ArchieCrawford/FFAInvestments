@@ -18,33 +18,37 @@ export default function SchwabCallback() {
       if (!code) {
         if (mounted) {
           setStatus('error')
-          setError('Missing authorization code in URL')
+          setError('Missing authorization code in callback URL')
         }
         return
       }
 
       try {
         await schwabApi.exchangeCodeForTokens(code, state)
-        if (mounted) {
-          setStatus('success')
-          navigate('/admin/schwab', { replace: true })
-        }
+        if (!mounted) return
+        setStatus('success')
+        navigate('/admin/schwab', { replace: true })
       } catch (err) {
-        let msg = err?.response?.error_description ||
-                  err?.details?.error_description ||
-                  err?.details ||
-                  err?.message ||
-                  'Unknown backend error'
+        if (!mounted) return
+        setStatus('error')
 
-        if (mounted) {
-          setStatus('error')
-          setError(msg)
-        }
+        const payload = err?.response || err?.data || err?.details || {}
+        let msg =
+          payload?.details?.error_description ||
+          payload?.details?.error ||
+          payload?.error_description ||
+          payload?.error ||
+          err?.message ||
+          'Backend token exchange failed'
+
+        setError(msg)
       }
     }
 
     run()
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [navigate])
 
   return (
@@ -53,8 +57,8 @@ export default function SchwabCallback() {
       {status === 'success' && <p>Success. Redirecting…</p>}
       {status === 'error' && (
         <div className="app-alert app-alert-destructive">
-          <h3>Schwab Login Failed</h3>
-          <p>{error}</p>
+          <strong>Schwab connection failed.</strong>
+          <div>{error}</div>
         </div>
       )}
     </div>
