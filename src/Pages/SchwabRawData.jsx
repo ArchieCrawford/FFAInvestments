@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
 import { format } from 'date-fns'
+import { useCurrentMember } from '@/lib/authHooks'
 
 const SchwabRawData = () => {
+  const { member, loading: memberLoading } = useCurrentMember();
   const [isLoading, setIsLoading] = useState(false)
   const [selectedEndpoint, setSelectedEndpoint] = useState('')
   const [customEndpoint, setCustomEndpoint] = useState('')
@@ -48,11 +50,14 @@ const SchwabRawData = () => {
     }
   ]
 
+  // Protected route - redirect to login if not authenticated
   useEffect(() => {
-    if (!schwabApi.isAuthenticated()) {
-      navigate('/admin/schwab')
+    if (!memberLoading && !member) {
+      navigate('/login', { replace: true });
     }
-    
+  }, [memberLoading, member, navigate]);
+
+  useEffect(() => {
     // Load history from localStorage
     const savedHistory = localStorage.getItem('schwab_api_history')
     if (savedHistory) {
@@ -62,7 +67,7 @@ const SchwabRawData = () => {
         console.error('Failed to parse API history:', e)
       }
     }
-  }, [navigate])
+  }, [])
 
   const handleApiCall = async () => {
     let endpoint = selectedEndpoint || customEndpoint
@@ -243,6 +248,15 @@ const SchwabRawData = () => {
     
     // Auto-run the API call
     setTimeout(() => handleApiCall(), 100)
+  }
+
+  // Protected route checks
+  if (memberLoading) {
+    return <div className="app-card">Loading...</div>;
+  }
+
+  if (!member) {
+    return null;
   }
 
   return (
