@@ -151,26 +151,27 @@ const SchwabRawData = () => {
     URL.revokeObjectURL(url)
   }
 
-  const formatJson = (obj) => {
   // Helper to extract account list from Schwab API response
-  function extractAccountList(data) {
+  const extractAccountList = (data) => {
     if (!data) return [];
-    // Schwab returns {accounts: [{securitiesAccount: {...}}]}
-    if (Array.isArray(data.accounts)) {
-      return data.accounts.map(acc => {
-        const sa = acc.securitiesAccount || {};
-        return {
-          accountNumber: sa.accountNumber || acc.accountNumber || acc.accountId || '',
-          accountType: sa.accountType || acc.accountType || '',
-          accountId: acc.accountId || '',
-          displayName: sa.displayName || sa.accountName || '',
-          status: sa.status || '',
-          raw: acc
-        };
-      });
-    }
-    return [];
+    // Schwab returns array directly or {accounts: [...]}
+    const accountsArray = Array.isArray(data) ? data : data.accounts;
+    if (!Array.isArray(accountsArray)) return [];
+    
+    return accountsArray.map(acc => {
+      const sa = acc.securitiesAccount || {};
+      return {
+        accountNumber: sa.accountNumber || acc.accountNumber || acc.accountId || '',
+        accountType: sa.accountType || acc.accountType || '',
+        accountId: acc.accountId || '',
+        displayName: sa.displayName || sa.accountName || '',
+        status: sa.status || '',
+        raw: acc
+      };
+    });
   }
+
+  const formatJson = (obj) => {
     try {
       return JSON.stringify(obj, null, 2)
     } catch (e) {
