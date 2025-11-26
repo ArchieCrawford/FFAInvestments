@@ -35,13 +35,21 @@ const SchwabInsights = () => {
       // For each account, get details and positions
       const details = await Promise.all(accounts.map(acc => {
         const accountNumber = acc.securitiesAccount?.accountNumber ?? acc.accountNumber ?? acc.accountId;
+        const accountHash = acc.hashValue;
+        
         if (!accountNumber) {
           console.warn('⚠️ [SchwabInsights/loadLiveData] Account missing accountNumber:', acc);
           return null;
         }
-        console.log('📞 [SchwabInsights/loadLiveData] Calling getAccountDetails for accountNumber:', accountNumber);
-        console.log('📞 [SchwabInsights/loadLiveData] Endpoint: /trader/v1/accounts/' + accountNumber + '?fields=positions');
-        return schwabApi.getAccountDetails(accountNumber);
+        
+        // Use account_hash for Trader API calls (Schwab requires this)
+        const traderAccountId = accountHash || accountNumber;
+        console.log('📞 [SchwabInsights/loadLiveData] Calling getAccountDetails');
+        console.log('📞 [SchwabInsights/loadLiveData]   - Display account_number:', accountNumber);
+        console.log('📞 [SchwabInsights/loadLiveData]   - Trader account_hash:', accountHash);
+        console.log('📞 [SchwabInsights/loadLiveData]   - Using for API:', traderAccountId);
+        console.log('📞 [SchwabInsights/loadLiveData] Endpoint: /trader/v1/accounts/' + traderAccountId + '?fields=positions');
+        return schwabApi.getAccountDetails(traderAccountId);
       }));
       console.log('✅ [SchwabInsights/loadLiveData] Received account details for', details.length, 'accounts');
       

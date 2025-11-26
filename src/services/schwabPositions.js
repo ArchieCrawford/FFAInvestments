@@ -22,20 +22,25 @@ export async function syncSchwabPositionsForToday() {
   const first = accounts[0]
   const sa = first.securitiesAccount
   const accountNumber = sa?.accountNumber
+  const accountHash = first.hashValue
   
-  console.log('🔁 [syncSchwabPositionsForToday] Resolved accountNumber:', accountNumber)
+  console.log('🔁 [syncSchwabPositionsForToday] Resolved account identifiers:')
+  console.log('🔁 [syncSchwabPositionsForToday]   - Display account_number:', accountNumber)
+  console.log('🔁 [syncSchwabPositionsForToday]   - Trader account_hash:', accountHash)
   
   if (!accountNumber) {
     throw new Error('Missing accountNumber in Schwab account payload')
   }
 
-  // 2) Call getAccountDetails(accountNumber) to get positions
-  console.log('� [syncSchwabPositionsForToday] Calling getAccountDetails with accountNumber:', accountNumber)
-  console.log('📞 [syncSchwabPositionsForToday] Endpoint will be: /trader/v1/accounts/' + accountNumber + '?fields=positions')
-  const details = await schwabApi.getAccountDetails(accountNumber)
+  // 2) Call getAccountDetails using account_hash (Trader API requires this)
+  const traderAccountId = accountHash || accountNumber
+  console.log('📞 [syncSchwabPositionsForToday] Calling getAccountDetails')
+  console.log('📞 [syncSchwabPositionsForToday]   - Using Trader ID:', traderAccountId)
+  console.log('📞 [syncSchwabPositionsForToday] Endpoint: /trader/v1/accounts/' + traderAccountId + '?fields=positions')
+  const details = await schwabApi.getAccountDetails(traderAccountId)
   const positions = details?.securitiesAccount?.positions || []
   
-  console.log('✅ [syncSchwabPositionsForToday] Received', positions.length, 'positions from API')
+  console.log('✅ [syncSchwabPositionsForToday] Received', positions.length, 'positions from API for account', accountNumber)
 
   // 3) Map Schwab positions → rows for schwab_positions
   const rows = positions.map(pos => {

@@ -93,11 +93,15 @@ export async function captureSchwabSnapshot() {
       
       console.log(`✅ Account ${accountNumber} registered (ID: ${accountRecord.id})`)
       
-      // 2b. Fetch detailed account data
-      console.log(`📞 [captureSchwabSnapshot] Calling getAccountDetails for accountNumber: ${accountNumber}`)
-      console.log(`📞 [captureSchwabSnapshot] Endpoint: /trader/v1/accounts/${accountNumber}`)
-      const accountDetails = await schwabApi.getAccountDetails(accountNumber)
-      console.log(`✅ [captureSchwabSnapshot] Received account details for ${accountNumber}`)
+      // 2b. Fetch detailed account data using account_hash (Trader API requires this)
+      const traderAccountId = accountHash || accountNumber
+      console.log(`📞 [captureSchwabSnapshot] Calling getAccountDetails`)
+      console.log(`📞 [captureSchwabSnapshot]   - Display account_number: ${accountNumber}`)
+      console.log(`📞 [captureSchwabSnapshot]   - Trader account_hash: ${accountHash}`)
+      console.log(`📞 [captureSchwabSnapshot]   - Using for API call: ${traderAccountId}`)
+      console.log(`📞 [captureSchwabSnapshot] Endpoint: /trader/v1/accounts/${traderAccountId}`)
+      const accountDetails = await schwabApi.getAccountDetails(traderAccountId)
+      console.log(`✅ [captureSchwabSnapshot] Received account details for ${accountNumber} (hash: ${accountHash})`)
       
       // Extract balance fields from Schwab API response
       const currentBalances = accountDetails.securitiesAccount?.currentBalances ?? {}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +11,12 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Wallet, CreditCard, DollarSign, CheckCircle, AlertCircle } from "lucide-react";
+import { useCurrentMember } from "@/lib/authHooks";
 
 export default function MemberContribute() {
+  const navigate = useNavigate();
+  const { member, loading: memberLoading } = useCurrentMember();
+  
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     account_id: "",
@@ -24,9 +29,18 @@ export default function MemberContribute() {
 
   const queryClient = useQueryClient();
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    loadUser();
-  }, []);
+    if (!memberLoading && !member) {
+      navigate('/login', { replace: true });
+    }
+  }, [memberLoading, member, navigate]);
+
+  useEffect(() => {
+    if (member) {
+      loadUser();
+    }
+  }, [member]);
 
   const loadUser = async () => {
     const currentUser = await base44.auth.me();
@@ -116,6 +130,23 @@ export default function MemberContribute() {
   const estimatedUnits = formData.amount && unitPrice?.price 
     ? parseFloat(formData.amount) / unitPrice.price 
     : 0;
+
+  // Show loading state while checking authentication
+  if (memberLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect will happen)
+  if (!member) {
+    return null;
+  }
 
   return (
     <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">

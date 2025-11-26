@@ -75,14 +75,16 @@ const SchwabRawData = () => {
       setIsLoading(true)
       setError('')
 
-      // If endpoint contains {accountNumber}, replace with selected account number
+      // If endpoint contains {accountNumber}, replace with account_hash for Trader API
       if (endpoint.includes('{accountNumber}')) {
         let acctNum = selectedAccountNumber
+        let acctHash = ''
         
         // If no account selected yet, try to load from accountList or fetch accounts
         if (!acctNum) {
           if (accountList.length > 0) {
             acctNum = accountList[0].accountNumber
+            acctHash = accountList[0].accountHash
             setSelectedAccountNumber(acctNum)
           } else {
             // Fetch accounts if not loaded
@@ -91,10 +93,15 @@ const SchwabRawData = () => {
             const accounts = extractAccountList(accountsResp.data)
             setAccountList(accounts)
             acctNum = accounts.length > 0 ? accounts[0].accountNumber : ''
+            acctHash = accounts.length > 0 ? accounts[0].accountHash : ''
             if (acctNum) {
               setSelectedAccountNumber(acctNum)
             }
           }
+        } else {
+          // Find the account hash for the selected account number
+          const selectedAccount = accountList.find(a => a.accountNumber === acctNum)
+          acctHash = selectedAccount?.accountHash || ''
         }
         
         if (!acctNum) {
@@ -103,8 +110,14 @@ const SchwabRawData = () => {
           return
         }
         
-        endpoint = endpoint.replace('{accountNumber}', encodeURIComponent(acctNum))
-        console.log(`📞 [SchwabRawData] Calling endpoint with account number ${acctNum}:`, endpoint)
+        // Use account_hash for Trader API endpoints (it's what Schwab expects)
+        const traderAccountId = acctHash || acctNum
+        endpoint = endpoint.replace('{accountNumber}', encodeURIComponent(traderAccountId))
+        console.log(`📞 [SchwabRawData] Calling endpoint with Trader account ID`)
+        console.log(`📞 [SchwabRawData]   - Display account_number: ${acctNum}`)
+        console.log(`📞 [SchwabRawData]   - Trader account_hash: ${acctHash}`)
+        console.log(`📞 [SchwabRawData]   - Using in URL: ${traderAccountId}`)
+        console.log(`📞 [SchwabRawData] Final endpoint:`, endpoint)
       } else {
         console.log(`📞 [SchwabRawData] Calling endpoint:`, endpoint)
       }
@@ -192,6 +205,7 @@ const SchwabRawData = () => {
       const sa = acc.securitiesAccount || {};
       return {
         accountNumber: sa.accountNumber || acc.accountNumber || acc.accountId || '',
+        accountHash: acc.hashValue || '',
         accountType: sa.accountType || acc.accountType || '',
         accountId: acc.accountId || '',
         displayName: sa.displayName || sa.accountName || '',
