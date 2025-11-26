@@ -30,11 +30,12 @@ export async function syncSchwabPositionsForToday() {
   }
 
   // 2) Call getAccountDetails(accountNumber) to get positions
-  console.log('🔁 [syncSchwabPositionsForToday] Fetching account details for:', accountNumber)
+  console.log('� [syncSchwabPositionsForToday] Calling getAccountDetails with accountNumber:', accountNumber)
+  console.log('📞 [syncSchwabPositionsForToday] Endpoint will be: /trader/v1/accounts/' + accountNumber + '?fields=positions')
   const details = await schwabApi.getAccountDetails(accountNumber)
   const positions = details?.securitiesAccount?.positions || []
   
-  console.log('🔁 [syncSchwabPositionsForToday] Found', positions.length, 'positions')
+  console.log('✅ [syncSchwabPositionsForToday] Received', positions.length, 'positions from API')
 
   // 3) Map Schwab positions → rows for schwab_positions
   const rows = positions.map(pos => {
@@ -60,28 +61,28 @@ export async function syncSchwabPositionsForToday() {
 
   // 4) Optional: delete existing rows for today before inserting (idempotent sync)
   console.log('🔁 [syncSchwabPositionsForToday] Deleting existing positions for', accountNumber, 'on', today)
-  await supabase
+  const { error: deleteError } = await supabase
     .from('schwab_positions')
     .delete()
     .eq('account_number', accountNumber)
     .eq('as_of_date', today)
+  
+  console.log('🔁 [syncSchwabPositionsForToday] Delete result:', { deleteError })
 
   if (rows.length === 0) {
-    console.warn('Schwab positions sync: no positions found for account', accountNumber)
+    console.warn('⚠️ [syncSchwabPositionsForToday] No positions found for account', accountNumber)
     return { accountNumber, as_of_date: today, positions_count: 0 }
-
-  console.log('🔁 [syncSchwabPositionsForToday] Inserting', rows.length, 'positions into schwab_positions...')
   }
 
+  console.log('🔁 [syncSchwabPositionsForToday] Inserting', rows.length, 'positions into schwab_positions...')
   const { error } = await supabase.from('schwab_positions').insert(rows)
   console.log('🔁 [syncSchwabPositionsForToday] Insert result:', { error, rowCount: rows.length })
   
   if (error) {
     throw new Error(`Failed to insert Schwab positions: ${error.message}`)
-
-  console.log('✅ [syncSchwabPositionsForToday] Successfully synced', rows.length, 'positions')
   }
 
+  console.log('✅ [syncSchwabPositionsForToday] Successfully synced', rows.length, 'positions')
   return { accountNumber, as_of_date: today, positions_count: rows.length }
 }
 

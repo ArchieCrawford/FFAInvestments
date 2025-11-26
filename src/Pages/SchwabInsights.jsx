@@ -27,24 +27,32 @@ const SchwabInsights = () => {
 
     const loadLiveData = async () => {
       // Get all accounts
+      console.log('📋 [SchwabInsights/loadLiveData] Fetching accounts...');
       const accounts = await schwabApi.getAccounts();
+      console.log('📋 [SchwabInsights/loadLiveData] Received', accounts.length, 'accounts');
       if (!isMounted) return;
 
       // For each account, get details and positions
       const details = await Promise.all(accounts.map(acc => {
         const accountNumber = acc.securitiesAccount?.accountNumber ?? acc.accountNumber ?? acc.accountId;
         if (!accountNumber) {
-          console.warn('SchwabInsights: account missing accountNumber:', acc);
+          console.warn('⚠️ [SchwabInsights/loadLiveData] Account missing accountNumber:', acc);
           return null;
         }
+        console.log('📞 [SchwabInsights/loadLiveData] Calling getAccountDetails for accountNumber:', accountNumber);
+        console.log('📞 [SchwabInsights/loadLiveData] Endpoint: /trader/v1/accounts/' + accountNumber + '?fields=positions');
         return schwabApi.getAccountDetails(accountNumber);
       }));
+      console.log('✅ [SchwabInsights/loadLiveData] Received account details for', details.length, 'accounts');
+      
       // Filter out null responses
       const validDetails = details.filter(d => d !== null);
+      console.log('✅ [SchwabInsights/loadLiveData] Valid details:', validDetails.length);
       if (!isMounted) return;
 
       // Get all positions
       const allPositions = validDetails.flatMap(d => d.securitiesAccount?.positions || d.positions || []);
+      console.log('✅ [SchwabInsights/loadLiveData] Total positions extracted:', allPositions.length);
       
       // Set live data
       if (!isMounted) return;

@@ -94,7 +94,10 @@ export async function captureSchwabSnapshot() {
       console.log(`✅ Account ${accountNumber} registered (ID: ${accountRecord.id})`)
       
       // 2b. Fetch detailed account data
+      console.log(`📞 [captureSchwabSnapshot] Calling getAccountDetails for accountNumber: ${accountNumber}`)
+      console.log(`📞 [captureSchwabSnapshot] Endpoint: /trader/v1/accounts/${accountNumber}`)
       const accountDetails = await schwabApi.getAccountDetails(accountNumber)
+      console.log(`✅ [captureSchwabSnapshot] Received account details for ${accountNumber}`)
       
       // Extract balance fields from Schwab API response
       const currentBalances = accountDetails.securitiesAccount?.currentBalances ?? {}
@@ -118,10 +121,10 @@ export async function captureSchwabSnapshot() {
           aggregated_balance: aggregatedBalance,
           raw_snapshot_data: accountDetails
         })
-      
-  console.log(`📊 [captureSchwabSnapshot] Insert snapshot result for ${accountNumber}:`, { data: snapshotRecord, error: snapshotError })
         .select()
         .single()
+      
+      console.log(`📊 [captureSchwabSnapshot] Insert snapshot result for ${accountNumber}:`, { data: snapshotRecord, error: snapshotError })
       
       if (snapshotError) {
         // If unique constraint violation (duplicate snapshot for same account/date), log and continue
