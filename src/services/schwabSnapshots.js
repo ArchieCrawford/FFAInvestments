@@ -72,7 +72,6 @@ export async function captureSchwabSnapshot() {
             account_number: accountNumber,
             account_type: accountType,
             account_hash: accountHash,
-            is_active: true,
             last_updated_at: new Date().toISOString(),
             raw_account_data: account
           },
@@ -220,7 +219,6 @@ export async function getRegisteredAccounts() {
     const { data: accounts, error } = await supabase
       .from('schwab_accounts')
       .select('*')
-      .eq('is_active', true)
       .order('last_updated_at', { ascending: false })
     
     if (error) {

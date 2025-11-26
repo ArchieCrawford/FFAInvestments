@@ -262,9 +262,7 @@ const SchwabInsights = () => {
     }
   };
 
-  async function pushToOrgBalance() {
-  
-  async function manualCaptureSnapshot() {
+  const manualCaptureSnapshot = async () => {
     if (!selectedAccountNumber) {
       setSnapshotError('No account selected yet. Please wait for accounts to load.');
       return;
@@ -278,8 +276,10 @@ const SchwabInsights = () => {
       const result = await captureSchwabSnapshot();
       console.log('✅ [SchwabInsights] Manual snapshot captured:', result);
       
-      // Reload snapshots
-      await loadHistoricalSnapshots();
+      // Reload historical snapshots from database
+      const snapshots = await getLatestSnapshots();
+      setHistoricalSnapshots(snapshots);
+      setSnapshotCount(snapshots.length);
       
       // Update last snapshot date
       const today = new Date().toISOString().slice(0, 10);
@@ -295,8 +295,9 @@ const SchwabInsights = () => {
     } finally {
       setCapturingSnapshot(false);
     }
-  }
-  
+  };
+
+  async function pushToOrgBalance() {
     try {
       const today = new Date().toISOString().slice(0, 10);
       const { error } = await supabase.rpc('api_roll_schwab_into_org_balance', {
