@@ -11,6 +11,7 @@ const SchwabRawData = () => {
   const [error, setError] = useState('')
   const [history, setHistory] = useState([])
   const [accountList, setAccountList] = useState([])
+  const [selectedAccountNumber, setSelectedAccountNumber] = useState('')
   
   const navigate = useNavigate()
 
@@ -74,29 +75,58 @@ const SchwabRawData = () => {
       setIsLoading(true)
       setError('')
 
-      // If endpoint contains {accountNumber}, replace with first account number from accountList or fetch it
+      // If endpoint contains {accountNumber}, replace with selected account number
       if (endpoint.includes('{accountNumber}')) {
-        let acctNum = ''
-        // Try to use already loaded accountList
-        if (accountList.length > 0) {
-          acctNum = accountList[0].accountNumber
-        } else {
-          // Fetch accounts if not loaded
-          const accountsResp = await schwabApi.getRawApiData('/trader/v1/accounts')
-          const accounts = extractAccountList(accountsResp.data)
-          setAccountList(accounts)
-          acctNum = accounts.length > 0 ? accounts[0].accountNumber : ''
+        let acctNum = selectedAccountNumber
+        
+        // If no account selected yet, try to load from accountList or fetch accounts
+        if (!acctNum) {
+          if (accountList.length > 0) {
+            acctNum = accountList[0].accountNumber
+            setSelectedAccountNumber(acctNum)
+          } else {
+            // Fetch accounts if not loaded
+            console.log('🔍 [SchwabRawData] No account number available, fetching accounts...')
+            const accountsResp = await schwabApi.getRawApiData('/trader/v1/accounts')
+            const accounts = extractAccountList(accountsResp.data)
+            setAccountList(accounts)
+            acctNum = accounts.length > 0 ? accounts[0].accountNumber : ''
+            if (acctNum) {
+              setSelectedAccountNumber(acctNum)
+            }
+          }
         }
-        endpoint = endpoint.replace('{accountNumber}', acctNum)
+        
+        if (!acctNum) {
+          setError('No account number available. Please fetch Account List first.')
+          setIsLoading(false)
+          return
+        }
+        
+        endpoint = endpoint.replace('{accountNumber}', encodeURIComponent(acctNum))
+        console.log(`📞 [SchwabRawData] Calling endpoint with account number ${acctNum}:`, endpoint)
+      } else {
+        console.log(`📞 [SchwabRawData] Calling endpoint:`, endpoint)
       }
 
       const response = await schwabApi.getRawApiData(endpoint)
+      console.log('✅ [SchwabRawData] API response received:', {
+        status: response.status,
+        endpoint: response.endpoint,
+        dataSize: JSON.stringify(response.data).length
+      })
       setApiResponse(response)
 
       // If Account List endpoint, extract and save account numbers
-      if (endpoint.startsWith('/trader/v1/accounts')) {
+      if (endpoint.includes('/trader/v1/accounts') && !endpoint.includes('?fields=positions')) {
         const accounts = extractAccountList(response.data)
+        console.log(`📋 [SchwabRawData] Extracted ${accounts.length} accounts`)
         setAccountList(accounts)
+        // Auto-select first account if none selected
+        if (accounts.length > 0 && !selectedAccountNumber) {
+          setSelectedAccountNumber(accounts[0].accountNumber)
+          console.log(`🎯 [SchwabRawData] Auto-selected account: ${accounts[0].accountNumber}`)
+        }
       }
 
       // Add to history
@@ -227,6 +257,30 @@ const SchwabRawData = () => {
           
           {/* Left Panel - API Call Interface */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Account Selector */}
+            {accountList.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Selected Account</h3>
+                <select
+                  value={selectedAccountNumber}
+                  onChange={(e) => {
+                    setSelectedAccountNumber(e.target.value)
+                    console.log('🎯 [SchwabRawData] Account selected:', e.target.value)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {accountList.map((acc) => (
+                    <option key={acc.accountNumber} value={acc.accountNumber}>
+                      {acc.accountNumber} - {acc.accountType} {acc.displayName ? `(${acc.displayName})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-2">
+                  This account will be used for endpoints with {'{accountNumber}'}
+                </p>
+              </div>
+            )}
+            
             {/* Account List Export Section */}
             {accountList.length > 0 && (
               <div className="bg-white rounded-lg shadow-md p-6 mb-4">
@@ -351,7 +405,11 @@ const SchwabRawData = () => {
             {/* Execute Button */}
             <button
               onClick={handleApiCall}
-              disabled={isLoading || (!selectedEndpoint && !customEndpoint.trim())}
+              disabled={
+                isLoading || 
+                (!selectedEndpoint && !customEndpoint.trim()) ||
+                ((selectedEndpoint || customEndpoint).includes('{accountNumber}') && !selectedAccountNumber && accountList.length === 0)
+              }
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -363,6 +421,13 @@ const SchwabRawData = () => {
                 'Execute API Call'
               )}
             </button>
+            
+            {/* Warning when account number needed but not available */}
+            {((selectedEndpoint || customEndpoint).includes('{accountNumber}') && !selectedAccountNumber && accountList.length === 0) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+                ⚠️ Please fetch Account List first to get account numbers
+              </div>
+            )}
 
           </div>
 
