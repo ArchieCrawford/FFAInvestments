@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import schwabApi, { SchwabAPIError } from '../services/schwabApi';
+import { supabase } from '../lib/supabase';
 import { captureSchwabSnapshot, getLatestSnapshots } from '../services/schwabSnapshots';
+import { syncSchwabPositionsForToday, getPositionsForAccountDate } from '../services/schwabPositions';
 
 const SchwabInsights = () => {
   const [historicalSnapshots, setHistoricalSnapshots] = useState([]);
@@ -15,6 +17,8 @@ const SchwabInsights = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [snapshotCount, setSnapshotCount] = useState(0);
   const [capturingSnapshot, setCapturingSnapshot] = useState(false);
+  const [syncingPositions, setSyncingPositions] = useState(false);
+  const [selectedAccountNumber, setSelectedAccountNumber] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,15 +49,17 @@ const SchwabInsights = () => {
       if (!isMounted) return;
       setPositions(allPositions);
       
-      // Extract latest balances for display
+      // Extract latest balances for display & capture selected account number
       if (validDetails.length > 0) {
         const firstAccount = validDetails[0];
         const balances = firstAccount.securitiesAccount?.currentBalances || {};
+        const acctNum = firstAccount.securitiesAccount?.accountNumber;
+        if (acctNum) setSelectedAccountNumber(acctNum);
         setLatest({
           liquidationValue: balances.liquidationValue,
           cashBalance: balances.cashBalance,
           longMarketValue: balances.longMarketValue,
-          accountNumber: firstAccount.securitiesAccount?.accountNumber,
+          accountNumber: acctNum,
           timestamp: new Date().toISOString()
         });
       }
@@ -84,6 +90,25 @@ const SchwabInsights = () => {
       }
     };
 
+    const syncPositions = async (acctNum) => {
+      try {
+        if (!acctNum) return;
+        setSyncingPositions(true);
+        console.log('🔁 Syncing Schwab positions for', acctNum);
+        const res = await syncSchwabPositionsForToday();
+        console.log('✅ Positions sync result:', res);
+        const today = new Date().toISOString().slice(0, 10);
+        const rows = await getPositionsForAccountDate(acctNum, today);
+        if (!isMounted) return;
+        setPositions(rows);
+      } catch (err) {
+        console.error('❌ Failed to sync positions:', err);
+        // Keep existing positions if live data already populated
+      } finally {
+        if (isMounted) setSyncingPositions(false);
+      }
+    };
+
     const initialize = async () => {
       setLoading(true);
       setError('');
@@ -109,9 +134,18 @@ const SchwabInsights = () => {
           loadLiveData(),
           loadHistoricalSnapshots()
         ]);
-        
+
         // Capture a new snapshot
         await captureSnapshot();
+
+        // Sync positions to database once we have the account number
+        if (selectedAccountNumber) {
+          await syncPositions(selectedAccountNumber);
+        } else {
+          // If not yet set, attempt to read from latest after capture
+          const acctNum = latest?.accountNumber;
+          if (acctNum) await syncPositions(acctNum);
+        }
       } catch (err) {
         if (!isMounted) return;
         if (err instanceof SchwabAPIError && err.message?.includes('No access token')) {
@@ -146,6 +180,24 @@ const SchwabInsights = () => {
       setIsConnecting(false);
     }
   };
+
+  async function pushToOrgBalance() {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { error } = await supabase.rpc('api_roll_schwab_into_org_balance', {
+        p_date: today
+      });
+      if (error) {
+        console.error('Failed to roll Schwab into org_balance_history', error);
+        setError('Failed to save to org balance history: ' + (error.message || 'unknown error'));
+      } else {
+        console.log('Rolled Schwab balances into org_balance_history for', today);
+      }
+    } catch (err) {
+      console.error('RPC call failed:', err);
+      setError('RPC call failed: ' + (err.message || 'unknown error'));
+    }
+  }
 
   return (
     <AppLayout>
@@ -197,6 +249,24 @@ const SchwabInsights = () => {
                   {snapshotCount} historical snapshot{snapshotCount !== 1 ? 's' : ''} saved
                 </p>
               )}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  className="app-btn app-btn-outline"
+                  onClick={() => selectedAccountNumber && syncSchwabPositionsForToday().then(() => {
+                    const today = new Date().toISOString().slice(0, 10);
+                    getPositionsForAccountDate(selectedAccountNumber, today).then(setPositions);
+                  })}
+                  disabled={syncingPositions || !selectedAccountNumber}
+                >
+                  {syncingPositions ? 'Syncing positions…' : 'Refresh positions'}
+                </button>
+                <button
+                  className="app-btn app-btn-primary"
+                  onClick={pushToOrgBalance}
+                >
+                  Save snapshot to org history
+                </button>
+              </div>
             </div>
             <div className="insights-card mt-4">
               <h5>Positions ({positions.length})</h5>
