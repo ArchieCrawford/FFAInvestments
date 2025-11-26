@@ -10,6 +10,7 @@ const SchwabRawData = () => {
   const [apiResponse, setApiResponse] = useState(null)
   const [error, setError] = useState('')
   const [history, setHistory] = useState([])
+  const [accountList, setAccountList] = useState([])
   
   const navigate = useNavigate()
 
@@ -63,7 +64,7 @@ const SchwabRawData = () => {
   }, [navigate])
 
   const handleApiCall = async () => {
-    const endpoint = selectedEndpoint || customEndpoint
+    let endpoint = selectedEndpoint || customEndpoint
     if (!endpoint.trim()) {
       setError('Please select or enter an API endpoint')
       return
@@ -72,10 +73,32 @@ const SchwabRawData = () => {
     try {
       setIsLoading(true)
       setError('')
-      
+
+      // If endpoint contains {accountNumber}, replace with first account number from accountList or fetch it
+      if (endpoint.includes('{accountNumber}')) {
+        let acctNum = ''
+        // Try to use already loaded accountList
+        if (accountList.length > 0) {
+          acctNum = accountList[0].accountNumber
+        } else {
+          // Fetch accounts if not loaded
+          const accountsResp = await schwabApi.getRawApiData('/trader/v1/accounts')
+          const accounts = extractAccountList(accountsResp.data)
+          setAccountList(accounts)
+          acctNum = accounts.length > 0 ? accounts[0].accountNumber : ''
+        }
+        endpoint = endpoint.replace('{accountNumber}', acctNum)
+      }
+
       const response = await schwabApi.getRawApiData(endpoint)
       setApiResponse(response)
-      
+
+      // If Account List endpoint, extract and save account numbers
+      if (endpoint.startsWith('/trader/v1/accounts')) {
+        const accounts = extractAccountList(response.data)
+        setAccountList(accounts)
+      }
+
       // Add to history
       const newHistoryItem = {
         id: Date.now(),
@@ -84,15 +107,15 @@ const SchwabRawData = () => {
         status: response.status,
         success: true
       }
-      
+
       const updatedHistory = [newHistoryItem, ...history.slice(0, 9)] // Keep last 10
       setHistory(updatedHistory)
       localStorage.setItem('schwab_api_history', JSON.stringify(updatedHistory))
-      
+
     } catch (error) {
       console.error('❌ API call failed:', error)
       setError(error.message || 'API call failed')
-      
+
       // Add failed call to history
       const newHistoryItem = {
         id: Date.now(),
@@ -102,11 +125,11 @@ const SchwabRawData = () => {
         success: false,
         error: error.message
       }
-      
+
       const updatedHistory = [newHistoryItem, ...history.slice(0, 9)]
       setHistory(updatedHistory)
       localStorage.setItem('schwab_api_history', JSON.stringify(updatedHistory))
-      
+
     } finally {
       setIsLoading(false)
     }
@@ -129,6 +152,25 @@ const SchwabRawData = () => {
   }
 
   const formatJson = (obj) => {
+  // Helper to extract account list from Schwab API response
+  function extractAccountList(data) {
+    if (!data) return [];
+    // Schwab returns {accounts: [{securitiesAccount: {...}}]}
+    if (Array.isArray(data.accounts)) {
+      return data.accounts.map(acc => {
+        const sa = acc.securitiesAccount || {};
+        return {
+          accountNumber: sa.accountNumber || acc.accountNumber || acc.accountId || '',
+          accountType: sa.accountType || acc.accountType || '',
+          accountId: acc.accountId || '',
+          displayName: sa.displayName || sa.accountName || '',
+          status: sa.status || '',
+          raw: acc
+        };
+      });
+    }
+    return [];
+  }
     try {
       return JSON.stringify(obj, null, 2)
     } catch (e) {
@@ -159,7 +201,7 @@ const SchwabRawData = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+  <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
@@ -180,10 +222,76 @@ const SchwabRawData = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Left Panel - API Call Interface */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Account List Export Section */}
+            {accountList.length > 0 && (
+              <div className="bg-white rounded-lg shadow-md p-6 mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Account List</h3>
+                <div className="mb-2 text-xs text-gray-600">{accountList.length} account(s) loaded</div>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    onClick={() => {
+                      const dataStr = JSON.stringify(accountList, null, 2);
+                      const blob = new Blob([dataStr], { type: 'application/json' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `schwab-accounts-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.json`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }}
+                  >💾 Export JSON</button>
+                  <button
+                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    onClick={() => {
+                      // Convert to CSV
+                      const header = ['accountNumber','accountType','accountId','displayName','status'];
+                      const rows = accountList.map(acc => header.map(h => `"${(acc[h]||'').toString().replace(/"/g,'""')}"`).join(','));
+                      const csv = [header.join(','), ...rows].join('\r\n');
+                      const blob = new Blob([csv], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `schwab-accounts-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.csv`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    }}
+                  >📤 Export CSV</button>
+                </div>
+                <div className="overflow-x-auto text-xs">
+                  <table className="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th>Account #</th>
+                        <th>Type</th>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {accountList.map((acc, idx) => (
+                        <tr key={idx}>
+                          <td>{acc.accountNumber}</td>
+                          <td>{acc.accountType}</td>
+                          <td>{acc.accountId}</td>
+                          <td>{acc.displayName}</td>
+                          <td>{acc.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             
             {/* Predefined Endpoints */}
             <div className="bg-white rounded-lg shadow-md p-6">
