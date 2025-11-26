@@ -187,18 +187,33 @@ class SchwabApiService {
    * Get detailed account information by account number
    */
   async getAccountDetails(accountNumber) {
+    if (!accountNumber) {
+      throw new SchwabAPIError('Account number is required')
+    }
+    
     console.log('📋 Fetching account details for:', accountNumber)
+    console.log('📋 Building endpoint: /trader/v1/accounts/' + encodeURIComponent(accountNumber) + '?fields=positions')
     await this._enforceRateLimit()
     
     try {
-      const response = await this._makeAuthenticatedRequest(
-        `/trader/v1/accounts/${accountNumber}?fields=positions`
-      )
+      const path = `/trader/v1/accounts/${encodeURIComponent(accountNumber)}?fields=positions`
+      const response = await this._makeAuthenticatedRequest(path)
       console.log('✅ Account details retrieved for:', accountNumber)
       return response.data
     } catch (error) {
-      console.error('❌ Failed to fetch account details:', error)
-      throw new SchwabAPIError(`Failed to fetch account details: ${error.message}`)
+      const status = error.response?.status || error.status || null
+      const errorData = error.response?.data || null
+      console.error('❌ Failed to fetch account details:', {
+        accountNumber,
+        status,
+        message: error.message,
+        responseData: errorData
+      })
+      throw new SchwabAPIError(
+        `Failed to fetch account details for ${accountNumber}: ${error.message}`,
+        status,
+        error.response
+      )
     }
   }
 
@@ -478,9 +493,22 @@ class SchwabApiService {
         return response
       }
       
-      // Wrap other errors so caller gets consistent SchwabAPIError
+      // Log detailed error information for debugging
       const status = error.response?.status || null
-      throw new SchwabAPIError(error.message || 'Schwab request failed', status, error.response)
+      const errorData = error.response?.data || null
+      if (status === 400) {
+        console.error('🚫 HTTP 400 Bad Request:', {
+          url,
+          status,
+          statusText: error.response?.statusText,
+          errorData,
+          headers: error.response?.headers
+        })
+      }
+      
+      // Wrap other errors so caller gets consistent SchwabAPIError with full error context
+      const errorMessage = errorData?.message || error.message || 'Schwab request failed'
+      throw new SchwabAPIError(errorMessage, status, error.response)
     }
   }
 
