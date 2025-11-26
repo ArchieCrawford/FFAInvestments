@@ -37,9 +37,9 @@ const AdminSchwab = () => {
       setError('')
       const raw = localStorage.getItem('schwab_tokens')
       console.log('AdminSchwab: stored schwab_tokens:', raw)
-      const status = schwabApi.getAuthStatus?.() || { authenticated: false }
+      const status = schwabApi.getAuthStatus?.()
       console.log('AdminSchwab: auth status snapshot:', status)
-      const authed = status.authenticated
+      const authed = status?.authenticated || !!raw
       if (!mounted.current) return
       setIsAuthenticated(authed)
       if (authed) {

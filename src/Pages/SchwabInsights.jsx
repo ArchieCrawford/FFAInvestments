@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AppLayout from '../components/AppLayout';
 import schwabApi, { SchwabAPIError } from '../services/schwabApi';
 import { supabase } from '../lib/supabase';
 import { captureSchwabSnapshot, getLatestSnapshots } from '../services/schwabSnapshots';
@@ -114,10 +113,11 @@ const SchwabInsights = () => {
       setError('');
 
       try {
-        const status = schwabApi.getAuthStatus?.() || { authenticated: false };
+        const tokenRaw = localStorage.getItem('schwab_tokens');
+        const status = schwabApi.getAuthStatus?.();
         if (!isMounted) return;
 
-        const authed = !!status.authenticated;
+        const authed = !!(status?.authenticated || tokenRaw);
         setIsAuthenticated(authed);
         setAuthChecked(true);
 
@@ -137,15 +137,6 @@ const SchwabInsights = () => {
 
         // Capture a new snapshot
         await captureSnapshot();
-
-        // Sync positions to database once we have the account number
-        if (selectedAccountNumber) {
-          await syncPositions(selectedAccountNumber);
-        } else {
-          // If not yet set, attempt to read from latest after capture
-          const acctNum = latest?.accountNumber;
-          if (acctNum) await syncPositions(acctNum);
-        }
       } catch (err) {
         if (!isMounted) return;
         if (err instanceof SchwabAPIError && err.message?.includes('No access token')) {
@@ -167,6 +158,34 @@ const SchwabInsights = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated || !selectedAccountNumber) return;
+
+    let isMounted = true;
+
+    const run = async () => {
+      try {
+        setSyncingPositions(true);
+        const today = new Date().toISOString().slice(0, 10);
+        await syncSchwabPositionsForToday();
+        if (!isMounted) return;
+        const rows = await getPositionsForAccountDate(selectedAccountNumber, today);
+        if (!isMounted) return;
+        setPositions(rows);
+      } catch (err) {
+        console.error('Failed to sync positions in effect:', err);
+      } finally {
+        if (isMounted) setSyncingPositions(false);
+      }
+    };
+
+    run();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, selectedAccountNumber]);
 
   const handleConnect = async () => {
     try {
@@ -200,10 +219,9 @@ const SchwabInsights = () => {
   }
 
   return (
-    <AppLayout>
-      <div className="app-page">
-        <h1>Schwab Account Insights</h1>
-        <p>Snapshots are captured each time you visit this page. Historical pulls are saved automatically so you can track value trends over time.</p>
+    <div>
+      <h1>Schwab Account Insights</h1>
+      <p>Snapshots are captured each time you visit this page. Historical pulls are saved automatically so you can track value trends over time.</p>
         {authChecked && !isAuthenticated && (
           <div className="app-card mt-4">
             <div className="app-card-content">
@@ -332,8 +350,7 @@ const SchwabInsights = () => {
             </div>
           </div>
         )}
-      </div>
-    </AppLayout>
+    </div>
   );
 };
 

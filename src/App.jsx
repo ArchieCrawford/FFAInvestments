@@ -34,7 +34,7 @@ import InviteAccept from './components/InviteAccept.jsx'
 // Schwab Integration Components
 import AdminSchwab from './Pages/AdminSchwab.jsx'
 import AdminPanel from './Pages/AdminPanel.jsx'
-import SchwabInsights from './Pages/SchwabInsights.jsx'
+import SchwabInsightsPage from './Pages/SchwabInsightsPage.jsx'
 import SchwabRawData from './Pages/SchwabRawData.jsx'
 import SchwabCallback from './Pages/SchwabCallback.jsx'
 
@@ -192,7 +192,7 @@ function App() {
           <Route path="/admin/schwab/insights" element={
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="SchwabInsights">
-                <SchwabInsights />
+                <SchwabInsightsPage />
               </Layout>
             </ProtectedRoute>
           } />
