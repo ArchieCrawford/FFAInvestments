@@ -61,9 +61,9 @@ const AdminSchwab = () => {
       const res = await schwabApi.getAccounts()
       const list = Array.isArray(res) ? res : Array.isArray(res?.accounts) ? res.accounts : []
       const normalized = list.map(a => ({
-        id: a.accountId ?? a.account_id ?? a.accountNumber ?? a.account_number ?? a.hashValue ?? a.id ?? 'unknown',
-        type: a.type ?? a.accountType ?? 'Investment Account',
-        isActive: a.isActive ?? a.active ?? true,
+        id: a.securitiesAccount?.accountNumber ?? a.accountNumber ?? a.accountId ?? a.account_id ?? a.account_number ?? a.hashValue ?? a.id ?? 'unknown',
+        type: a.securitiesAccount?.type ?? a.type ?? a.accountType ?? 'Investment Account',
+        isActive: a.securitiesAccount?.isActive ?? a.isActive ?? a.active ?? true,
         raw: a
       }))
       if (!mounted.current) return

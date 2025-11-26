@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import schwabApi, { SchwabAPIError } from '../services/schwabApi';
+import { captureSchwabSnapshot, getLatestSnapshots } from '../services/schwabSnapshots';
 
 const SchwabInsights = () => {
-  const [snapshots, setSnapshots] = useState([]);
+  const [historicalSnapshots, setHistoricalSnapshots] = useState([]);
   const [latest, setLatest] = useState(null);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,39 +13,75 @@ const SchwabInsights = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [snapshotCount, setSnapshotCount] = useState(0);
+  const [capturingSnapshot, setCapturingSnapshot] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadSnapshot = async () => {
+    const loadLiveData = async () => {
       // Get all accounts
       const accounts = await schwabApi.getAccounts();
       if (!isMounted) return;
 
       // For each account, get details and positions
-      const details = await Promise.all(accounts.map(acc => schwabApi.getAccountDetails(acc.accountNumber)));
+      const details = await Promise.all(accounts.map(acc => {
+        const accountNumber = acc.securitiesAccount?.accountNumber ?? acc.accountNumber ?? acc.accountId;
+        if (!accountNumber) {
+          console.warn('SchwabInsights: account missing accountNumber:', acc);
+          return null;
+        }
+        return schwabApi.getAccountDetails(accountNumber);
+      }));
+      // Filter out null responses
+      const validDetails = details.filter(d => d !== null);
       if (!isMounted) return;
 
       // Get all positions
-      const allPositions = details.flatMap(d => d.positions || []);
-      // Get market data for all symbols
-      const symbols = allPositions.map(p => p.symbol).filter(Boolean);
-      const marketData = symbols.length ? await schwabApi.getQuotes(symbols) : {};
+      const allPositions = validDetails.flatMap(d => d.securitiesAccount?.positions || d.positions || []);
+      
+      // Set live data
       if (!isMounted) return;
-
-      // Build snapshot
-      const snapshot = {
-        timestamp: new Date().toISOString(),
-        accounts,
-        details,
-        positions: allPositions,
-        marketData,
-      };
-
-      setSnapshots(prev => [...prev, snapshot]);
-      setLatest(snapshot);
       setPositions(allPositions);
+      
+      // Extract latest balances for display
+      if (validDetails.length > 0) {
+        const firstAccount = validDetails[0];
+        const balances = firstAccount.securitiesAccount?.currentBalances || {};
+        setLatest({
+          liquidationValue: balances.liquidationValue,
+          cashBalance: balances.cashBalance,
+          longMarketValue: balances.longMarketValue,
+          accountNumber: firstAccount.securitiesAccount?.accountNumber,
+          timestamp: new Date().toISOString()
+        });
+      }
+    };
+
+    const loadHistoricalSnapshots = async () => {
+      // Fetch historical snapshots from Supabase
+      const snapshots = await getLatestSnapshots();
+      if (!isMounted) return;
+      setHistoricalSnapshots(snapshots);
+      setSnapshotCount(snapshots.length);
+    };
+
+    const captureSnapshot = async () => {
+      try {
+        setCapturingSnapshot(true);
+        console.log('📸 Capturing Schwab snapshot...');
+        const result = await captureSchwabSnapshot();
+        console.log('✅ Snapshot captured:', result);
+        
+        // Reload historical data after capturing
+        await loadHistoricalSnapshots();
+      } catch (err) {
+        console.error('❌ Failed to capture snapshot:', err);
+        // Don't throw - just log the error
+      } finally {
+        if (isMounted) setCapturingSnapshot(false);
+      }
     };
 
     const initialize = async () => {
@@ -60,14 +97,21 @@ const SchwabInsights = () => {
         setAuthChecked(true);
 
         if (!authed) {
-          setSnapshots([]);
+          setHistoricalSnapshots([]);
           setPositions([]);
           setLatest(null);
           setError('You need to connect to Charles Schwab before viewing insights.');
           return;
         }
 
-        await loadSnapshot();
+        // Load live data and historical snapshots in parallel
+        await Promise.all([
+          loadLiveData(),
+          loadHistoricalSnapshots()
+        ]);
+        
+        // Capture a new snapshot
+        await captureSnapshot();
       } catch (err) {
         if (!isMounted) return;
         if (err instanceof SchwabAPIError && err.message?.includes('No access token')) {
@@ -140,7 +184,19 @@ const SchwabInsights = () => {
             <div className="insights-hero mb-4">
               <h2>Latest Pull</h2>
               <p>Captured {new Date(latest.timestamp).toLocaleString()}</p>
-              <div className="metric-value mb-3">${latest.details[0]?.totals?.liquidation_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</div>
+              <div className="metric-value mb-3">${latest.liquidationValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</div>
+              {capturingSnapshot && (
+                <p className="app-text-muted">
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.5rem' }}></i>
+                  Saving snapshot to database...
+                </p>
+              )}
+              {snapshotCount > 0 && (
+                <p className="app-text-muted">
+                  <i className="fas fa-database" style={{ marginRight: '0.5rem' }}></i>
+                  {snapshotCount} historical snapshot{snapshotCount !== 1 ? 's' : ''} saved
+                </p>
+              )}
             </div>
             <div className="insights-card mt-4">
               <h5>Positions ({positions.length})</h5>
@@ -183,15 +239,23 @@ const SchwabInsights = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {snapshots.map((entry, idx) => (
-                      <tr key={idx}>
-                        <td>{new Date(entry.timestamp).toLocaleString()}</td>
-                        <td>{entry.details[0]?.account_number || '—'}</td>
-                        <td className="text-end">${entry.details[0]?.totals?.liquidation_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
-                        <td className="text-end">${entry.details[0]?.totals?.long_market_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
-                        <td className="text-end">${entry.details[0]?.totals?.cash_balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
+                    {historicalSnapshots.length > 0 ? (
+                      historicalSnapshots.map((snapshot, idx) => (
+                        <tr key={idx}>
+                          <td>{new Date(snapshot.snapshot_date).toLocaleString()}</td>
+                          <td>{snapshot.schwab_accounts?.account_number || '—'}</td>
+                          <td className="text-end">${snapshot.liquidation_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
+                          <td className="text-end">${snapshot.long_market_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
+                          <td className="text-end">${snapshot.cash_balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="text-center app-text-muted">
+                          No historical snapshots available yet. Snapshots are captured automatically when you visit this page.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
