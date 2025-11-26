@@ -22,23 +22,23 @@ export async function syncSchwabPositionsForToday() {
   const first = accounts[0]
   const sa = first.securitiesAccount
   const accountNumber = sa?.accountNumber
-  const accountHash = first.hashValue
   
-  console.log('🔁 [syncSchwabPositionsForToday] Resolved account identifiers:')
-  console.log('🔁 [syncSchwabPositionsForToday]   - Display account_number:', accountNumber)
-  console.log('🔁 [syncSchwabPositionsForToday]   - Trader account_hash:', accountHash)
+  console.log('🔁 [syncSchwabPositionsForToday] Resolved account number:', accountNumber)
   
   if (!accountNumber) {
     throw new Error('Missing accountNumber in Schwab account payload')
   }
 
-  // 2) Call getAccountDetails using account_hash (Trader API requires this)
-  const traderAccountId = accountHash || accountNumber
-  console.log('📞 [syncSchwabPositionsForToday] Calling getAccountDetails')
-  console.log('📞 [syncSchwabPositionsForToday]   - Using Trader ID:', traderAccountId)
-  console.log('📞 [syncSchwabPositionsForToday] Endpoint: /trader/v1/accounts/' + traderAccountId + '?fields=positions')
-  const details = await schwabApi.getAccountDetails(traderAccountId)
-  const positions = details?.securitiesAccount?.positions || []
+  // 2) Use new API to fetch positions (avoids 400 errors)
+  console.log('📞 [syncSchwabPositionsForToday] Calling getPositionsForAccount')
+  console.log('📞 [syncSchwabPositionsForToday]   - Account number:', accountNumber)
+  const accountData = await schwabApi.getPositionsForAccount(accountNumber)
+  
+  if (!accountData) {
+    throw new Error(`Account ${accountNumber} not found when fetching positions`)
+  }
+  
+  const positions = accountData?.securitiesAccount?.positions || []
   
   console.log('✅ [syncSchwabPositionsForToday] Received', positions.length, 'positions from API for account', accountNumber)
 

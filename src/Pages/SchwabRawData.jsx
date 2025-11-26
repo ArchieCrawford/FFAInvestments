@@ -24,9 +24,14 @@ const SchwabRawData = () => {
       description: 'Get all account numbers and basic info'
     },
     {
-      label: 'Account Details (with positions)',
+      label: 'All Accounts with Positions',
+      value: '/trader/v1/accounts?fields=positions',
+      description: 'Get all accounts with detailed positions (RECOMMENDED)'
+    },
+    {
+      label: 'Account Details (with positions) - Legacy',
       value: '/trader/v1/accounts/{accountNumber}?fields=positions',
-      description: 'Get detailed account info including positions'
+      description: '⚠️ May return 400 error - use "All Accounts with Positions" instead'
     },
     {
       label: 'Market Hours',

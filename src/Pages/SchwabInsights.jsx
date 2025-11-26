@@ -11,6 +11,7 @@ const SchwabInsights = () => {
   const [historicalSnapshots, setHistoricalSnapshots] = useState([]);
   const [latest, setLatest] = useState(null);
   const [positions, setPositions] = useState([]);
+  const [positionsJson, setPositionsJson] = useState(null); // Store full raw JSON
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,59 +29,68 @@ const SchwabInsights = () => {
     let isMounted = true;
 
     const loadLiveData = async () => {
-      // Get all accounts
-      console.log('📋 [SchwabInsights/loadLiveData] Fetching accounts...');
-      const accounts = await schwabApi.getAccounts();
-      console.log('📋 [SchwabInsights/loadLiveData] Received', accounts.length, 'accounts');
-      if (!isMounted) return;
+      try {
+        // Get all accounts
+        console.log('📋 [SchwabInsights/loadLiveData] Fetching accounts...');
+        const accounts = await schwabApi.getAccounts();
+        console.log('📋 [SchwabInsights/loadLiveData] Received', accounts.length, 'accounts');
+        if (!isMounted) return;
 
-      // For each account, get details and positions
-      const details = await Promise.all(accounts.map(acc => {
-        const accountNumber = acc.securitiesAccount?.accountNumber ?? acc.accountNumber ?? acc.accountId;
-        const accountHash = acc.hashValue;
+        if (!accounts || accounts.length === 0) {
+          setError('No Schwab accounts found');
+          return;
+        }
+
+        // Get the first account number
+        const firstAccount = accounts[0];
+        const accountNumber = firstAccount.securitiesAccount?.accountNumber ?? firstAccount.accountNumber ?? firstAccount.accountId;
         
         if (!accountNumber) {
-          console.warn('⚠️ [SchwabInsights/loadLiveData] Account missing accountNumber:', acc);
-          return null;
+          console.error('❌ [SchwabInsights/loadLiveData] No account number found in first account:', firstAccount);
+          setError('Unable to determine account number from Schwab response');
+          return;
         }
-        
-        // Use account_hash for Trader API calls (Schwab requires this)
-        const traderAccountId = accountHash || accountNumber;
-        console.log('📞 [SchwabInsights/loadLiveData] Calling getAccountDetails');
-        console.log('📞 [SchwabInsights/loadLiveData]   - Display account_number:', accountNumber);
-        console.log('📞 [SchwabInsights/loadLiveData]   - Trader account_hash:', accountHash);
-        console.log('📞 [SchwabInsights/loadLiveData]   - Using for API:', traderAccountId);
-        console.log('📞 [SchwabInsights/loadLiveData] Endpoint: /trader/v1/accounts/' + traderAccountId + '?fields=positions');
-        return schwabApi.getAccountDetails(traderAccountId);
-      }));
-      console.log('✅ [SchwabInsights/loadLiveData] Received account details for', details.length, 'accounts');
-      
-      // Filter out null responses
-      const validDetails = details.filter(d => d !== null);
-      console.log('✅ [SchwabInsights/loadLiveData] Valid details:', validDetails.length);
-      if (!isMounted) return;
 
-      // Get all positions
-      const allPositions = validDetails.flatMap(d => d.securitiesAccount?.positions || d.positions || []);
-      console.log('✅ [SchwabInsights/loadLiveData] Total positions extracted:', allPositions.length);
-      
-      // Set live data
-      if (!isMounted) return;
-      setPositions(allPositions);
-      
-      // Extract latest balances for display & capture selected account number
-      if (validDetails.length > 0) {
-        const firstAccount = validDetails[0];
-        const balances = firstAccount.securitiesAccount?.currentBalances || {};
-        const acctNum = firstAccount.securitiesAccount?.accountNumber;
-        if (acctNum) setSelectedAccountNumber(acctNum);
+        console.log('� [SchwabInsights/loadLiveData] Using account:', accountNumber);
+        setSelectedAccountNumber(accountNumber);
+
+        // Fetch positions using the new API that works reliably
+        console.log('📞 [SchwabInsights/loadLiveData] Calling getPositionsForAccount');
+        const accountData = await schwabApi.getPositionsForAccount(accountNumber);
+        
+        if (!accountData) {
+          console.error('❌ [SchwabInsights/loadLiveData] Account not found:', accountNumber);
+          setError(`Account ${accountNumber} not found in Schwab response`);
+          return;
+        }
+
+        if (!isMounted) return;
+
+        // Extract positions
+        const positions = accountData.securitiesAccount?.positions || [];
+        console.log('✅ [SchwabInsights/loadLiveData] Loaded', positions.length, 'positions');
+        setPositions(positions);
+        
+        // Store full raw JSON for debugging/export/database
+        setPositionsJson(accountData);
+        
+        // Extract balances
+        const balances = accountData.securitiesAccount?.currentBalances || {};
         setLatest({
           liquidationValue: balances.liquidationValue,
           cashBalance: balances.cashBalance,
           longMarketValue: balances.longMarketValue,
-          accountNumber: acctNum,
+          accountNumber: accountNumber,
           timestamp: new Date().toISOString()
         });
+
+        // Clear any previous errors
+        setError('');
+      } catch (err) {
+        console.error('❌ [SchwabInsights/loadLiveData] Error loading data:', err);
+        if (isMounted) {
+          setError(`Failed to load Schwab data: ${err.message || 'Unknown error'}`);
+        }
       }
     };
 
@@ -430,15 +440,33 @@ const SchwabInsights = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {positions.map((pos, idx) => (
-                      <tr key={idx}>
-                        <td>{pos.symbol}</td>
-                        <td>{pos.description || '—'}</td>
-                        <td className="text-end">{pos.quantity?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="text-end">${pos.market_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="text-end">${pos.current_day_pl?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    {positions.map((pos, idx) => {
+                      // Handle both API format (nested) and DB format (flattened)
+                      const symbol = pos.symbol || pos.instrument?.symbol || '—';
+                      const description = pos.description || pos.instrument?.description || '—';
+                      const quantity = pos.quantity ?? pos.longQuantity ?? pos.shortQuantity ?? 0;
+                      const marketValue = pos.market_value ?? pos.marketValue ?? 0;
+                      const dayPL = pos.current_day_pl ?? pos.currentDayProfitLoss ?? 0;
+                      
+                      return (
+                        <tr key={idx}>
+                          <td><strong>{symbol}</strong></td>
+                          <td className="text-muted">{description}</td>
+                          <td className="text-end">{quantity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className="text-end">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td className={`text-end ${dayPL >= 0 ? 'text-success' : 'text-danger'}`}>
+                            ${dayPL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {positions.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="text-center app-text-muted">
+                          No positions found. Click "Refresh positions" to sync from Schwab.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -478,6 +506,22 @@ const SchwabInsights = () => {
                 </table>
               </div>
             </div>
+            {positionsJson && (
+              <div className="insights-card mt-4">
+                <h5>Raw Positions JSON</h5>
+                <p className="text-muted small mb-3">
+                  Full API response for debugging and database storage
+                </p>
+                <details>
+                  <summary className="cursor-pointer text-primary mb-2">
+                    <strong>Show/Hide Raw JSON</strong>
+                  </summary>
+                  <pre className="bg-dark text-light p-3 rounded" style={{ maxHeight: '400px', overflow: 'auto', fontSize: '0.75rem' }}>
+                    {JSON.stringify(positionsJson, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
           </div>
         )}
     </div>

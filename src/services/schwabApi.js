@@ -185,12 +185,14 @@ class SchwabApiService {
 
   /**
    * Get detailed account information by account number
+   * @deprecated Use getPositionsForAccount() instead to avoid 400 errors with account-specific endpoints
    */
   async getAccountDetails(accountNumber) {
     if (!accountNumber) {
       throw new SchwabAPIError('Account number is required')
     }
     
+    console.log('⚠️ [DEPRECATED] Using getAccountDetails - consider using getPositionsForAccount() instead')
     console.log('📋 Fetching account details for:', accountNumber)
     console.log('📋 Building endpoint: /trader/v1/accounts/' + encodeURIComponent(accountNumber) + '?fields=positions')
     await this._enforceRateLimit()
@@ -203,14 +205,76 @@ class SchwabApiService {
     } catch (error) {
       const status = error.response?.status || error.status || null
       const errorData = error.response?.data || null
-      console.error('❌ Failed to fetch account details:', {
+      console.error('❌ Failed to fetch account details with account-specific endpoint:', {
         accountNumber,
+        endpoint: `/trader/v1/accounts/${encodeURIComponent(accountNumber)}?fields=positions`,
+        status,
+        message: error.message,
+        responseData: errorData,
+        hint: 'Try using getPositionsForAccount() instead'
+      })
+      throw new SchwabAPIError(
+        `Failed to fetch account details for ${accountNumber}: ${error.message}`,
+        status,
+        error.response
+      )
+    }
+  }
+
+  /**
+   * Get positions for a specific account by fetching all accounts and filtering
+   * This avoids 400 errors from the /accounts/{accountNumber} endpoint
+   * 
+   * @param {string} accountNumber - The account number to get positions for
+   * @returns {Promise<Object|null>} Account object with positions, or null if not found
+   */
+  async getPositionsForAccount(accountNumber) {
+    if (!accountNumber) {
+      throw new SchwabAPIError('Account number is required')
+    }
+    
+    console.log('🔍 Fetching positions for account:', accountNumber)
+    await this._enforceRateLimit()
+    
+    try {
+      // Fetch all accounts with positions field
+      const path = '/trader/v1/accounts?fields=positions'
+      console.log('📞 Calling:', path)
+      const response = await this._makeAuthenticatedRequest(path)
+      
+      // Handle different response formats
+      const payload = response.data
+      const accounts = Array.isArray(payload) ? payload : Array.isArray(payload?.accounts) ? payload.accounts : []
+      
+      console.log(`✅ Retrieved ${accounts.length} accounts, searching for account ${accountNumber}`)
+      
+      // Find the matching account by accountNumber
+      const targetAccount = accounts.find(acc => {
+        const accNum = acc.securitiesAccount?.accountNumber ?? acc.accountNumber ?? acc.accountId
+        return accNum === accountNumber || String(accNum) === String(accountNumber)
+      })
+      
+      if (targetAccount) {
+        const positions = targetAccount.securitiesAccount?.positions || []
+        console.log(`✅ Found account ${accountNumber} with ${positions.length} positions`)
+        return targetAccount
+      } else {
+        console.warn(`⚠️ Account ${accountNumber} not found in response. Available accounts:`, 
+          accounts.map(a => a.securitiesAccount?.accountNumber ?? a.accountNumber ?? 'unknown'))
+        return null
+      }
+    } catch (error) {
+      const status = error.response?.status || error.status || null
+      const errorData = error.response?.data || null
+      console.error('❌ Failed to fetch positions for account:', {
+        accountNumber,
+        endpoint: '/trader/v1/accounts?fields=positions',
         status,
         message: error.message,
         responseData: errorData
       })
       throw new SchwabAPIError(
-        `Failed to fetch account details for ${accountNumber}: ${error.message}`,
+        `Failed to fetch positions for account ${accountNumber}: ${error.message}`,
         status,
         error.response
       )
