@@ -27,17 +27,21 @@ import schwabApi from './schwabApi'
  */
 export async function captureSchwabSnapshot() {
   try {
-    console.log('📸 Starting Schwab snapshot capture...')
+    console.log('📸 [captureSchwabSnapshot] Starting Schwab snapshot capture...')
     
     // 1. Fetch all accounts from Schwab
+    console.log('📸 [captureSchwabSnapshot] Calling schwabApi.getAccounts()...')
     const accounts = await schwabApi.getAccounts()
+    console.log('📸 [captureSchwabSnapshot] Accounts fetched:', accounts)
+    
     if (!accounts || accounts.length === 0) {
       throw new Error('No Schwab accounts found')
     }
     
-    console.log(`✅ Found ${accounts.length} Schwab account(s)`)
+    console.log(`✅ [captureSchwabSnapshot] Found ${accounts.length} Schwab account(s)`)
     
     const snapshots = []
+    const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD format for date column
     
     // 2. Process each account
     for (const account of accounts) {
@@ -45,14 +49,22 @@ export async function captureSchwabSnapshot() {
       const accountType = account.securitiesAccount?.type ?? account.type
       const accountHash = account.hashValue ?? null
       
+      console.log('📸 [captureSchwabSnapshot] Resolving accountNumber from account:', { 
+        securitiesAccount: account.securitiesAccount?.accountNumber,
+        accountNumber: account.accountNumber,
+        accountId: account.accountId,
+        resolved: accountNumber
+      })
+      
       if (!accountNumber) {
-        console.warn('⚠️ Skipping account with missing accountNumber:', account)
+        console.warn('⚠️ [captureSchwabSnapshot] Skipping account with missing accountNumber:', account)
         continue
       }
       
-      console.log(`📊 Processing account: ${accountNumber}`)
+      console.log(`📊 [captureSchwabSnapshot] Processing account: ${accountNumber}`)
       
       // 2a. Upsert into schwab_accounts (update registry)
+  console.log(`📊 [captureSchwabSnapshot] Upserting account ${accountNumber} into schwab_accounts...`)
       const { data: accountRecord, error: upsertError } = await supabase
         .from('schwab_accounts')
         .upsert(
@@ -71,6 +83,8 @@ export async function captureSchwabSnapshot() {
         )
         .select()
         .single()
+      
+  console.log(`📊 [captureSchwabSnapshot] Upsert result for ${accountNumber}:`, { data: accountRecord, error: upsertError })
       
       if (upsertError) {
         console.error(`❌ Failed to upsert account ${accountNumber}:`, upsertError)
@@ -91,7 +105,7 @@ export async function captureSchwabSnapshot() {
         .from('schwab_account_snapshots')
         .insert({
           account_id: accountRecord.id,
-          snapshot_date: new Date().toISOString(),
+          snapshot_date: today,
           liquidation_value: currentBalances.liquidationValue ?? null,
           cash_balance: currentBalances.cashBalance ?? null,
           cash_available_for_trading: currentBalances.cashAvailableForTrading ?? null,
@@ -104,6 +118,8 @@ export async function captureSchwabSnapshot() {
           aggregated_balance: aggregatedBalance,
           raw_snapshot_data: accountDetails
         })
+      
+  console.log(`📊 [captureSchwabSnapshot] Insert snapshot result for ${accountNumber}:`, { data: snapshotRecord, error: snapshotError })
         .select()
         .single()
       

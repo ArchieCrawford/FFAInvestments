@@ -18,6 +18,8 @@ const SchwabInsights = () => {
   const [capturingSnapshot, setCapturingSnapshot] = useState(false);
   const [syncingPositions, setSyncingPositions] = useState(false);
   const [selectedAccountNumber, setSelectedAccountNumber] = useState('');
+  const [lastSnapshotDate, setLastSnapshotDate] = useState(null);
+  const [snapshotError, setSnapshotError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,24 +67,42 @@ const SchwabInsights = () => {
     };
 
     const loadHistoricalSnapshots = async () => {
+  console.log('📊 [SchwabInsights] Loading historical snapshots...')
       // Fetch historical snapshots from Supabase
       const snapshots = await getLatestSnapshots();
+  console.log('📊 [SchwabInsights] Historical snapshots fetched:', snapshots)
       if (!isMounted) return;
       setHistoricalSnapshots(snapshots);
       setSnapshotCount(snapshots.length);
+      
+      // Set last snapshot date from most recent snapshot
+      if (snapshots && snapshots.length > 0) {
+        const mostRecent = snapshots[0];
+        const dateStr = mostRecent.snapshot_date;
+        setLastSnapshotDate(dateStr);
+        console.log('📊 [SchwabInsights] Last snapshot date:', dateStr);
+      }
     };
 
     const captureSnapshot = async () => {
       try {
+  setSnapshotError('');
         setCapturingSnapshot(true);
-        console.log('📸 Capturing Schwab snapshot...');
+  console.log('📸 [SchwabInsights] Calling captureSchwabSnapshot...');
         const result = await captureSchwabSnapshot();
-        console.log('✅ Snapshot captured:', result);
+  console.log('✅ [SchwabInsights] Snapshot captured successfully:', result);
         
         // Reload historical data after capturing
         await loadHistoricalSnapshots();
+        
+        // Update last snapshot date
+        if (result.snapshots && result.snapshots.length > 0) {
+          const latest = result.snapshots[0];
+          setLastSnapshotDate(latest.timestamp);
+        }
       } catch (err) {
-        console.error('❌ Failed to capture snapshot:', err);
+  console.error('❌ [SchwabInsights] Failed to capture snapshot:', err);
+  setSnapshotError(err.message || 'Failed to capture snapshot');
         // Don't throw - just log the error
       } finally {
         if (isMounted) setCapturingSnapshot(false);
@@ -111,13 +131,18 @@ const SchwabInsights = () => {
     const initialize = async () => {
       setLoading(true);
       setError('');
+      
+  console.log('🚀 [SchwabInsights] Initializing...');
 
       try {
         const tokenRaw = localStorage.getItem('schwab_tokens');
+  console.log('🚀 [SchwabInsights] Checking auth - tokenRaw exists:', !!tokenRaw);
         const status = schwabApi.getAuthStatus?.();
+  console.log('🚀 [SchwabInsights] Auth status from API:', status);
         if (!isMounted) return;
 
         const authed = !!(status?.authenticated || tokenRaw);
+  console.log('🚀 [SchwabInsights] Final auth decision:', authed);
         setIsAuthenticated(authed);
         setAuthChecked(true);
 
@@ -136,7 +161,9 @@ const SchwabInsights = () => {
         ]);
 
         // Capture a new snapshot
+  console.log('📸 [SchwabInsights] About to capture snapshot...');
         await captureSnapshot();
+  console.log('✅ [SchwabInsights] Snapshot capture completed');
       } catch (err) {
         if (!isMounted) return;
         if (err instanceof SchwabAPIError && err.message?.includes('No access token')) {
@@ -201,6 +228,40 @@ const SchwabInsights = () => {
   };
 
   async function pushToOrgBalance() {
+  
+  async function manualCaptureSnapshot() {
+    if (!selectedAccountNumber) {
+      setSnapshotError('No account selected yet. Please wait for accounts to load.');
+      return;
+    }
+    
+    setSnapshotError('');
+    setCapturingSnapshot(true);
+    
+    try {
+      console.log('📸 [SchwabInsights] Manual snapshot capture initiated...');
+      const result = await captureSchwabSnapshot();
+      console.log('✅ [SchwabInsights] Manual snapshot captured:', result);
+      
+      // Reload snapshots
+      await loadHistoricalSnapshots();
+      
+      // Update last snapshot date
+      const today = new Date().toISOString().slice(0, 10);
+      setLastSnapshotDate(today);
+      
+      // Also sync positions after snapshot
+      await syncSchwabPositionsForToday();
+      const rows = await getPositionsForAccountDate(selectedAccountNumber, today);
+      setPositions(rows);
+    } catch (err) {
+      console.error('❌ [SchwabInsights] Manual snapshot failed:', err);
+      setSnapshotError(err.message || 'Failed to capture snapshot');
+    } finally {
+      setCapturingSnapshot(false);
+    }
+  }
+  
     try {
       const today = new Date().toISOString().slice(0, 10);
       const { error } = await supabase.rpc('api_roll_schwab_into_org_balance', {
@@ -265,9 +326,44 @@ const SchwabInsights = () => {
                 <p className="app-text-muted">
                   <i className="fas fa-database" style={{ marginRight: '0.5rem' }}></i>
                   {snapshotCount} historical snapshot{snapshotCount !== 1 ? 's' : ''} saved
+              {lastSnapshotDate && (
+                <p className="app-text-muted">
+                  <i className="fas fa-clock" style={{ marginRight: '0.5rem' }}></i>
+                  Last snapshot: {lastSnapshotDate}
+                </p>
+              )}
+              {!lastSnapshotDate && authChecked && isAuthenticated && (
+                <p className="app-text-muted">
+                  <i className="fas fa-info-circle" style={{ marginRight: '0.5rem' }}></i>
+                  No snapshots yet
+                </p>
+              )}
+              {snapshotError && (
+                <div className="app-alert app-alert-destructive mt-2" style={{ padding: '0.75rem' }}>
+                  <i className="fas fa-exclamation-triangle" style={{ marginRight: '0.5rem' }}></i>
+                  {snapshotError}
+                </div>
+              )}
                 </p>
               )}
               <div className="flex flex-wrap gap-2 mt-3">
+                <button
+                  className="app-btn app-btn-success"
+                  onClick={manualCaptureSnapshot}
+                  disabled={capturingSnapshot || !selectedAccountNumber}
+                >
+                  {capturingSnapshot ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.5rem' }}></i>
+                      Capturing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-camera" style={{ marginRight: '0.5rem' }}></i>
+                      Capture snapshot now
+                    </>
+                  )}
+                </button>
                 <button
                   className="app-btn app-btn-outline"
                   onClick={() => selectedAccountNumber && syncSchwabPositionsForToday().then(() => {
