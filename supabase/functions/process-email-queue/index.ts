@@ -1,4 +1,5 @@
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+/// <reference path="./types.d.ts" />
+import { serve } from "https://deno.land/std@0.224.0/http/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -59,7 +60,8 @@ async function sendWithSendgrid(item: any) {
   }
 }
 
-serve(async req => {
+// Explicitly type the request to avoid implicit any warnings in local TS analysis
+serve(async (req: EdgeFunctionRequest) => {
   const secret = req.headers.get("x-cron-secret");
   if (!secret || secret !== cronSecret) {
     return new Response("Unauthorized", { status: 401 });

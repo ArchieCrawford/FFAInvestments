@@ -96,10 +96,10 @@ foreach ($file in $files) {
     
     foreach ($replacement in $replacements) {
         $pattern = [regex]::Escape($replacement.Pattern)
-        $matches = ([regex]::Matches($content, $pattern)).Count
-        if ($matches -gt 0) {
+        $regexMatches = ([regex]::Matches($content, $pattern)).Count
+        if ($regexMatches -gt 0) {
             $content = $content -replace $pattern, $replacement.Replacement
-            $changesMade += $matches
+            $changesMade += $regexMatches
         }
     }
     
