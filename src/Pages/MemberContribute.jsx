@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Wallet, CreditCard, DollarSign, CheckCircle, AlertCircle } from "lucide-react";
 import { useCurrentMember } from "@/lib/authHooks";
+import { createMemberUnitTransaction, getLatestUnitValuation } from "@/lib/ffaApi";
 
 export default function MemberContribute() {
   const navigate = useNavigate();
@@ -84,6 +85,27 @@ export default function MemberContribute() {
         memo: `${contributionData.payment_method} contribution - Pending unit allocation`,
         created_by_email: user.email,
       });
+
+      // Also record to Supabase member_unit_transactions for canonical ledger
+      // Use latest unit valuation for unit_value_at_tx; units_delta remains 0 until allocation
+      try {
+        const latest = await getLatestUnitValuation();
+        const unitValue = latest?.unit_value ?? null;
+        if (member?.member_id) {
+          await createMemberUnitTransaction({
+            member_id: member.member_id,
+            tx_date: new Date().toISOString().split('T')[0],
+            tx_type: 'contribution',
+            cash_amount: Number(contributionData.amount),
+            unit_value_at_tx: unitValue,
+            units_delta: 0,
+            notes: `${contributionData.payment_method} contribution - Pending unit allocation`
+          });
+        }
+      } catch (e) {
+        // Non-fatal for UI; log and continue
+        console.warn('Failed to write member_unit_transactions row', e);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });

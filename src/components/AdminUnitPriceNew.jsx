@@ -38,28 +38,10 @@ const AdminUnitPriceNew = () => {
   const fetchUnitPrices = async () => {
     setLoading(true)
     try {
-      const rows = await getUnitPriceHistory()
-
-      // Aggregate by report_date to compute unit price = sum(portfolio_value)/sum(total_units)
-      const map = new Map()
-      ;(rows || []).forEach(r => {
-        const d = r.report_date
-        const pv = parseFloat(r.portfolio_value) || 0
-        const tu = parseFloat(r.total_units) || 0
-        if (!map.has(d)) map.set(d, { report_date: d, portfolio_value: 0, total_units: 0 })
-        const cur = map.get(d)
-        cur.portfolio_value += pv
-        cur.total_units += tu
-      })
-
-      const aggregated = Array.from(map.values()).map(item => ({
-        id: item.report_date,
-        price_date: item.report_date,
-        unit_price: item.total_units ? item.portfolio_value / item.total_units : 0,
-        notes: null
-      })).sort((a, b) => new Date(b.price_date) - new Date(a.price_date))
-
-      setUnitPrices(aggregated)
+      const data = await getUnitPriceHistory()
+      // getUnitPriceHistory now returns normalized objects from club_unit_valuations
+      const sorted = (data || []).sort((a, b) => new Date(b.price_date) - new Date(a.price_date))
+      setUnitPrices(sorted)
     } catch (err) {
       setMessage({ type: 'error', text: 'Unable to load unit prices.' })
     }

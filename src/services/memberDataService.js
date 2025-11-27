@@ -294,65 +294,60 @@ export async function getAllPortfolioData() {
 // CLUB VALUES OPERATIONS
 // =============================================================================
 
-export async function saveClubValues(clubValuesData) {
+// =============================================================================
+// NEW: CLUB UNIT VALUATIONS (replaces club_values / valuations tables)
+// =============================================================================
+export async function upsertClubUnitValuation(valuation) {
   try {
     const { data, error } = await supabase
-      .from('club_values')
+      .from('club_unit_valuations')
       .upsert({
-        valuation_date: clubValuesData.valuation_date,
-        total_club_value: clubValuesData.total_club_value,
-        unit_value: clubValuesData.unit_value,
-        total_units_outstanding: clubValuesData.total_units_outstanding,
-        total_cash: clubValuesData.total_cash,
-        total_investments: clubValuesData.total_investments,
-        monthly_return_percent: clubValuesData.monthly_return_percent,
-        ytd_return_percent: clubValuesData.ytd_return_percent,
-        total_members: clubValuesData.total_members,
-        updated_at: new Date().toISOString()
-      }, { 
+        valuation_date: valuation.valuation_date,
+        total_value: valuation.total_value,
+        total_units_outstanding: valuation.total_units_outstanding,
+        unit_value: valuation.unit_value,
+        created_at: new Date().toISOString()
+      }, {
         onConflict: 'valuation_date',
-        ignoreDuplicates: false 
+        ignoreDuplicates: false
       })
       .select()
       .single();
-
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('Error saving club values:', error);
+    console.error('Error upserting club unit valuation:', error);
     return { success: false, error: error.message };
   }
 }
 
-export async function getClubValues(limit = 12) {
+export async function getClubUnitValuations(limit = 12) {
   try {
     const { data, error } = await supabase
-      .from('club_values')
-      .select('*')
+      .from('club_unit_valuations')
+      .select('valuation_date, total_value, total_units_outstanding, unit_value')
       .order('valuation_date', { ascending: false })
       .limit(limit);
-
     if (error) throw error;
     return { success: true, data };
   } catch (error) {
-    console.error('Error fetching club values:', error);
+    console.error('Error fetching club unit valuations:', error);
     return { success: false, error: error.message };
   }
 }
 
-export async function getLatestClubValues() {
+export async function getLatestClubUnitValuation() {
   try {
     const { data, error } = await supabase
-      .from('club_values')
-      .select('*')
+      .from('club_unit_valuations')
+      .select('valuation_date, total_value, total_units_outstanding, unit_value')
       .order('valuation_date', { ascending: false })
       .limit(1)
-      .single();
-
+      .maybeSingle();
     if (error && error.code !== 'PGRST116') throw error;
     return { success: true, data: data || null };
   } catch (error) {
-    console.error('Error fetching latest club values:', error);
+    console.error('Error fetching latest club unit valuation:', error);
     return { success: false, error: error.message };
   }
 }
@@ -497,21 +492,23 @@ export async function getMemberByName(memberName) {
 
 export async function getDashboardData() {
   try {
-    const [membersResult, duesResult, clubValuesResult] = await Promise.all([
+    const [membersResult, duesResult, latestValuationResult] = await Promise.all([
       getAllMembers(),
       getMemberDuesWithNames(),
-      getLatestClubValues()
+      getLatestClubUnitValuation()
     ]);
 
     if (!membersResult.success || !duesResult.success) {
       throw new Error('Failed to fetch dashboard data');
     }
 
+    const v = latestValuationResult.data || {};
     const dashboardData = {
       totalMembers: membersResult.data?.length || 0,
       activeMembers: membersResult.data?.filter(m => m.status === 'Active').length || 0,
-      totalClubValue: clubValuesResult.data?.total_club_value || 0,
-      currentUnitValue: clubValuesResult.data?.unit_value || 0,
+      totalClubValue: v.total_value || 0,
+      currentUnitValue: v.unit_value || 0,
+      totalUnitsOutstanding: v.total_units_outstanding || 0,
       membersWithCreditBalance: duesResult.data?.filter(d => d.payment_status === 'Credit Balance').length || 0,
       membersOwingMoney: duesResult.data?.filter(d => d.payment_status === 'Owes Money').length || 0,
       membersCurrent: duesResult.data?.filter(d => d.payment_status === 'Current').length || 0

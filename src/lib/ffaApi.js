@@ -76,13 +76,52 @@ export async function getOrgBalanceHistory() {
   return data
 }
 
+// Replaced unit_prices table usage with club_unit_valuations
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase
-    .from('unit_prices')
-    .select('id, price_date, unit_price')
-    .order('price_date', { ascending: true })
+    .from('club_unit_valuations')
+    .select('valuation_date, unit_value, total_units_outstanding, total_value')
+    .order('valuation_date', { ascending: true })
   if (error) throw error
-  return data || []
+  // Normalize shape to previous consumer expectation
+  return (data || []).map(r => ({
+    id: r.valuation_date,
+    price_date: r.valuation_date,
+    unit_price: r.unit_value,
+    total_units_outstanding: r.total_units_outstanding,
+    total_value: r.total_value
+  }))
+}
+
+export async function getLatestUnitValuation() {
+  const { data, error } = await supabase
+    .from('club_unit_valuations')
+    .select('valuation_date, unit_value, total_units_outstanding, total_value')
+    .order('valuation_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error && error.code !== 'PGRST116') throw error
+  return data || null
+}
+
+export async function createMemberUnitTransaction(params) {
+  const insertObj = {
+    member_id: params.member_id,
+    tx_date: params.tx_date,
+    tx_type: params.tx_type,
+    cash_amount: params.cash_amount,
+    unit_value_at_tx: params.unit_value_at_tx ?? null,
+    units_delta: params.units_delta ?? null,
+    notes: params.notes ?? null,
+    created_at: new Date().toISOString()
+  };
+  const { data, error } = await supabase
+    .from('member_unit_transactions')
+    .insert(insertObj)
+    .select('*')
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 export async function getMemberDues(memberId) {
