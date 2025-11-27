@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { createMemberUnitTransaction, getLatestUnitValuation } from "@/lib/ffaApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,10 +55,29 @@ export default function AdminLedger() {
 
   const createMutation = useMutation({
     mutationFn: async (entryData) => {
-      const user = await base44.auth.me();
-      return base44.entities.LedgerEntry.create({
-        ...entryData,
-        created_by_email: user.email
+      // Map AdminLedger form to canonical member_unit_transactions
+      const latest = await getLatestUnitValuation();
+      const unitValue = latest?.unit_value ?? null;
+      const txTypeMap = {
+        contribution: 'contribution',
+        withdrawal: 'withdrawal',
+        fee: 'adjustment',
+        distribution: 'distribution',
+        trade: 'adjustment',
+        unit_allocation: 'allocation',
+        adjustment: 'adjustment',
+      };
+      const tx_type = txTypeMap[entryData.entry_type] || 'adjustment';
+      const cash_amount = Number(entryData.amount) || 0;
+      const units_delta = Number(entryData.units_delta) || 0;
+      await createMemberUnitTransaction({
+        member_id: entryData.account_id, // NOTE: replace with actual member_id when account->member mapping exists
+        tx_date: entryData.entry_date,
+        tx_type,
+        cash_amount,
+        unit_value_at_tx: unitValue,
+        units_delta,
+        notes: entryData.memo || ''
       });
     },
     onSuccess: () => {

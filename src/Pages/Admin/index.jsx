@@ -51,7 +51,7 @@ const AdminIndex = () => {
 
         <div className="card">
           <div className="card-header">
-            <p className="heading-md">Member Positions</p>
+            <p className="heading-md">Member Accounts</p>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table className="table">
@@ -63,11 +63,11 @@ const AdminIndex = () => {
                 </tr>
               </thead>
               <tbody>
-                {dashboard?.member_positions?.map((p) => (
-                  <tr key={p.member_id}>
-                    <td>{p.member_name}</td>
-                    <td>{p.position_value}</td>
-                    <td>{p.units}</td>
+                {dashboard?.member_accounts?.map((a) => (
+                  <tr key={a.member_id}>
+                    <td>{a.member_name}</td>
+                    <td>{a.account_value}</td>
+                    <td>{a.units}</td>
                   </tr>
                 ))}
               </tbody>

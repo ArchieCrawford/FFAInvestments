@@ -179,24 +179,9 @@ export default function AdminImport() {
         }
         queryClient.invalidateQueries({ queryKey: ['accounts'] });
       } else if (importType === 'ledger') {
-        // Import ledger entries
-        const allAccounts = await base44.entities.Account.list();
-        
-        for (const entry of previewData) {
-          const account = allAccounts.find(a => a.name === entry.account_name);
-          if (account) {
-            await base44.entities.LedgerEntry.create({
-              account_id: account.id,
-              entry_date: entry.entry_date,
-              entry_type: entry.entry_type,
-              amount: entry.amount,
-              units_delta: entry.units_delta || 0,
-              memo: entry.memo || '',
-              created_by_email: user.email,
-            });
-          }
-        }
-        queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });
+        // Legacy Base44 ledger import is deprecated. Skipping this branch.
+        // Please use Supabase member_unit_transactions via dedicated tools.
+        // No-op here to remove Base44 usage.
   } else if (importType === 'legacy-unit-prices') {
         // Import unit prices
         for (const price of previewData) {

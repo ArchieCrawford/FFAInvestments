@@ -34,10 +34,8 @@ export default function AdminDashboard() {
     queryFn: () => base44.entities.UnitPrice.list('-price_date', 1),
   });
 
-  const { data: recentLedger = [] } = useQuery({
-    queryKey: ['recent-ledger'],
-    queryFn: () => base44.entities.LedgerEntry.list('-created_date', 10),
-  });
+  // Legacy Base44 recent ledger removed. Consider replacing with Supabase member_unit_transactions.
+  const recentLedger = [];
 
   const latestUnitPrice = unitPrices[0];
   const totalAUM = latestUnitPrice?.total_aum || 0;

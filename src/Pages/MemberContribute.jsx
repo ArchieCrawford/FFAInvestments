@@ -75,18 +75,7 @@ export default function MemberContribute() {
 
   const createContribution = useMutation({
     mutationFn: async (contributionData) => {
-      // Create ledger entry for the contribution
-      await base44.entities.LedgerEntry.create({
-        account_id: contributionData.account_id,
-        entry_date: new Date().toISOString().split('T')[0],
-        entry_type: 'contribution',
-        amount: contributionData.amount,
-        units_delta: 0, // Admin will allocate units later
-        memo: `${contributionData.payment_method} contribution - Pending unit allocation`,
-        created_by_email: user.email,
-      });
-
-      // Also record to Supabase member_unit_transactions for canonical ledger
+      // Canonical ledger: record contribution in Supabase member_unit_transactions
       // Use latest unit valuation for unit_value_at_tx; units_delta remains 0 until allocation
       try {
         const latest = await getLatestUnitValuation();
