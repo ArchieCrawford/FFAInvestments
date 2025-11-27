@@ -1,90 +1,79 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
 import { ThemeProvider } from "./ThemeProvider.jsx";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
-  </React.StrictMode>
-);
-
-// Error boundary component to catch rendering errors
+// Optional ErrorBoundary (if you want to keep it)
 class ErrorBoundary extends React.Component {
   constructor(props) {
-    super(props)
-    this.state = { hasError: false, error: null, errorInfo: null }
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true }
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
-    this.setState({
-      error: error,
-      errorInfo: errorInfo
-    })
-    console.error('Error Boundary caught an error:', error, errorInfo)
+    this.setState({ error, errorInfo });
+    console.error("Error Boundary caught an error:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
-      const { error, errorInfo } = this.state || {}
-      const stack = errorInfo && errorInfo.componentStack ? errorInfo.componentStack : null
+      const { error, errorInfo } = this.state || {};
+      const stack =
+        errorInfo && errorInfo.componentStack
+          ? errorInfo.componentStack
+          : null;
 
       return (
-        <div style={{ 
-          padding: '20px', 
-          background: '#ffe6e6', 
-          border: '2px solid red', 
-          margin: '20px',
-          fontFamily: 'Arial, sans-serif'
-        }}>
+        <div
+          style={{
+            padding: "20px",
+            background: "#ffe6e6",
+            border: "2px solid red",
+            margin: "20px",
+            fontFamily: "Arial, sans-serif",
+          }}
+        >
           <h2>🚨 Application Error</h2>
-          <details style={{ whiteSpace: 'pre-wrap' }}>
+          <details style={{ whiteSpace: "pre-wrap" }}>
             <summary>Error Details</summary>
-            <p><strong>Error:</strong> {error ? String(error) : 'Unknown error'}</p>
+            <p>
+              <strong>Error:</strong> {error ? String(error) : "Unknown error"}
+            </p>
             {stack ? (
               <>
-                <p><strong>Stack:</strong></p>
-                <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{stack}</pre>
+                <p>
+                  <strong>Stack:</strong>
+                </p>
+                <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+                  {stack}
+                </pre>
               </>
             ) : (
-              <p style={{ color: '#6b7280' }}>No stack trace available.</p>
+              <p style={{ color: "#6b7280" }}>No stack trace available.</p>
             )}
           </details>
-          <button onClick={() => window.location.reload()}>
-            🔄 Reload Page
-          </button>
+          <button onClick={() => window.location.reload()}>🔄 Reload Page</button>
         </div>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-console.log('🚀 Starting FFA Investments application...')
+console.log("🚀 Starting FFA Investments application...");
 
-// Ensure a default light theme is set on first load
-try {
-  if (typeof document !== 'undefined' && !document.documentElement.getAttribute('data-theme')) {
-    document.documentElement.setAttribute('data-theme', 'light')
-  }
-} catch (e) {
-  // ignore in non-browser environments
-}
-
-// Mount the application
-const root = ReactDOM.createRoot(document.getElementById('root'))
-root.render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </ThemeProvider>
   </React.StrictMode>
-)
+);
