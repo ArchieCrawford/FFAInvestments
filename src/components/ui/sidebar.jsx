@@ -1,7 +1,7 @@
 import React from 'react'
 
 export const Sidebar = ({ children, ...props }) => (
-  <div className="flex h-screen bg-gray-100" {...props}>
+  <div className="flex h-screen bg-bg" {...props}>
     {children}
   </div>
 )
@@ -13,13 +13,13 @@ export const SidebarProvider = ({ children, ...props }) => (
 )
 
 export const SidebarContent = ({ children, ...props }) => (
-  <div className="w-64 bg-white border-r border-gray-200 flex flex-col" {...props}>
+  <div className="w-64 bg-surface border-r border-border flex flex-col" {...props}>
     {children}
   </div>
 )
 
 export const SidebarHeader = ({ children, ...props }) => (
-  <div className="p-4 border-b border-gray-200" {...props}>
+  <div className="p-4 border-b border-border" {...props}>
     {children}
   </div>
 )
@@ -37,7 +37,7 @@ export const SidebarGroupContent = ({ children, ...props }) => (
 )
 
 export const SidebarGroupLabel = ({ children, ...props }) => (
-  <div className="px-4 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider" {...props}>
+  <div className="px-4 py-2 text-sm font-medium text-muted uppercase tracking-wider" {...props}>
     {children}
   </div>
 )
@@ -56,7 +56,7 @@ export const SidebarMenuItem = ({ children, ...props }) => (
 
 export const SidebarMenuButton = ({ children, className = "", ...props }) => (
   <button 
-    className={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md hover:bg-gray-50 ${className}`} 
+    className={`w-full flex items-center px-2 py-2 text-sm font-medium text-default rounded-md hover:bg-primary-soft transition-colors ${className}`} 
     {...props}
   >
     {children}
@@ -64,13 +64,13 @@ export const SidebarMenuButton = ({ children, className = "", ...props }) => (
 )
 
 export const SidebarFooter = ({ children, ...props }) => (
-  <div className="p-4 border-t border-gray-200" {...props}>
+  <div className="p-4 border-t border-border" {...props}>
     {children}
   </div>
 )
 
 export const SidebarTrigger = ({ ...props }) => (
-  <button className="p-2" {...props}>
+  <button className="p-2 text-default" {...props}>
     <span className="sr-only">Toggle sidebar</span>
     ☰
   </button>

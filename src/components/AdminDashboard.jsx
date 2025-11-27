@@ -38,64 +38,68 @@ export default function AdminDashboard() {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
-    <div className="app-page">
-      <div className="app-card">
-        <div className="app-card-header">
+    <div className="p-6 space-y-6">
+      <div className="card">
+        <div className="p-6 flex items-center justify-between">
           <div>
-            <p className="app-card-title">Admin Dashboard</p>
-            <p className="app-card-subtitle">Club overview and quick actions</p>
+            <h1 className="text-2xl font-bold text-default">Admin Dashboard</h1>
+            <p className="text-muted mt-1">Club overview and quick actions</p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button className="app-btn app-btn-primary app-btn-pill">+ Add Member</button>
-            <button className="app-btn app-btn-outline app-btn-pill">+ Record Transaction</button>
+          <div className="flex gap-2">
+            <button className="btn-primary rounded-full px-4 py-2">+ Add Member</button>
+            <button className="btn-primary-soft border border-border rounded-full px-4 py-2">+ Record Transaction</button>
           </div>
         </div>
       </div>
 
-      <div className="app-grid cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
           { label: 'Assets Under Management', value: formatCurrency(stats.totalAUM), icon: '💰', highlight: true },
           { label: 'Total Members', value: stats.totalMembers, icon: '👥' },
           { label: 'Active Accounts', value: stats.activeAccounts, icon: '📊' },
           { label: 'Unit Price', value: formatCurrency(stats.unitPrice), icon: '📈', badge: 'Current' }
         ].map((item) => (
-          <div key={item.label} className={`app-card app-card-stat ${item.highlight ? 'blue' : ''}`}>
-            <div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{item.label}</p>
-              <p style={{ fontSize: '1.6rem', fontWeight: 700 }}>
-                {item.value}
-                {item.badge && <span className="app-pill" style={{ marginLeft: '0.6rem' }}>{item.badge}</span>}
-              </p>
+          <div key={item.label} className={`card p-6 ${item.highlight ? 'bg-primary-soft' : ''}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted">{item.label}</p>
+                <p className="text-3xl font-bold text-default mt-2">
+                  {item.value}
+                  {item.badge && <span className="badge ml-2">{item.badge}</span>}
+                </p>
+              </div>
+              <div className="text-3xl">{item.icon}</div>
             </div>
-            <div className="app-pill">{item.icon}</div>
           </div>
         ))}
       </div>
 
-      <div className="app-card">
-        <div className="app-card-header">
+      <div className="card">
+        <div className="p-6 flex items-center justify-between border-b border-border">
           <div>
-            <p className="app-card-title">Today's Tasks</p>
-            <p className="app-card-subtitle">Unit price not finalized for current period</p>
+            <h2 className="text-xl font-semibold text-default">Today's Tasks</h2>
+            <p className="text-muted mt-1">Unit price not finalized for current period</p>
           </div>
-          <button className="app-btn app-btn-outline app-btn-pill">Finalize Now</button>
+          <button className="btn-primary-soft border border-border rounded-full px-4 py-2">Finalize Now</button>
         </div>
       </div>
 
-      <div className="app-grid cols-2">
-        <div className="app-card">
-          <div className="app-card-header">
-            <p className="app-card-title">Recent Transactions</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="card">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-xl font-semibold text-default">Recent Transactions</h2>
           </div>
-          <p>No recent transactions.</p>
+          <div className="p-6">
+            <p className="text-muted">No recent transactions.</p>
+          </div>
         </div>
-        <div className="app-card">
-          <div className="app-card-header">
-            <p className="app-card-title">Quick Actions</p>
+        <div className="card">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-xl font-semibold text-default">Quick Actions</h2>
           </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button className="app-btn app-btn-outline" style={{ flex: 1 }}>Manage Members</button>
-            <button className="app-btn app-btn-outline" style={{ flex: 1 }}>Manage Accounts</button>
+          <div className="p-6 flex gap-3">
+            <button className="btn-primary-soft border border-border flex-1">Manage Members</button>
+            <button className="btn-primary-soft border border-border flex-1">Manage Accounts</button>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@ export const Avatar = ({ children, className = "", ...props }) => (
 )
 
 export const AvatarFallback = ({ children, className = "", ...props }) => (
-  <span className={`flex h-full w-full items-center justify-center rounded-full bg-gray-100 text-sm font-medium text-gray-600 ${className}`} {...props}>
+  <span className={`flex h-full w-full items-center justify-center rounded-full bg-primary-soft text-sm font-medium text-default ${className}`} {...props}>
     {children}
   </span>
 )

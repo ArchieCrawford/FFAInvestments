@@ -21,21 +21,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-vh-100" style={{ backgroundColor: '#f7f9fc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="app-card shadow-lg" style={{ width: '400px' }}>
-        <div className="app-card-content p-4">
-          <div className="text-center mb-4">
-            <i className="fas fa-dollar-sign text-primary fs-1 mb-3"></i>
-            <h2 className="fw-bold">FFA Investments</h2>
-            <p className="app-text-muted">Investment Club Portal</p>
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="card shadow-lg w-full max-w-md mx-4">
+        <div className="p-6">
+          <div className="text-center mb-6">
+            <i className="fas fa-dollar-sign text-primary text-4xl mb-3"></i>
+            <h2 className="text-2xl font-bold text-default">FFA Investments</h2>
+            <p className="text-muted mt-1">Investment Club Portal</p>
           </div>
           
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">Email address</label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-default mb-1">Email address</label>
               <input
                 type="email"
-                className="app-input"
+                className="input w-full"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -44,11 +44,11 @@ export default function Login() {
               />
             </div>
             
-            <div className="mb-3">
-              <label htmlFor="password" className="form-label">Password</label>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-default mb-1">Password</label>
               <input
                 type="password"
-                className="app-input"
+                className="input w-full"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -59,12 +59,12 @@ export default function Login() {
             
             <button 
               type="submit" 
-              className="app-btn app-btn-primary w-100"
+              className="btn-primary w-full"
               disabled={loading}
             >
               {loading ? (
                 <>
-                  <span className="spinner-inline me-2" role="status"></span>
+                  <span className="spinner-inline mr-2" role="status"></span>
                   Signing in...
                 </>
               ) : (
@@ -73,8 +73,8 @@ export default function Login() {
             </button>
           </form>
           
-          <div className="text-center mt-3">
-            <small className="app-text-muted">
+          <div className="text-center mt-4">
+            <small className="text-muted">
               <strong>Admin Login:</strong><br/>
               admin@ffa.com / admin123<br/>
               archie.crawford1@gmail.com / archie123

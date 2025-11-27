@@ -2,17 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
-// Styles centralized in global index.css
-
-const BackgroundAnimation = () => (
-  <div className="app-bg-animation">
-    <div className="app-bg-shape app-bg-shape-1"></div>
-    <div className="app-bg-shape app-bg-shape-2"></div>
-    <div className="app-bg-shape app-bg-shape-3"></div>
-    <div className="app-bg-shape app-bg-shape-4"></div>
-  </div>
-)
+import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign, User } from 'lucide-react'
+// Styles centralized in global index.css with semantic theme classes
 
 const ModernLogin = () => {
   const { user, signIn, signUp, loading, error, clearError } = useAuth()
@@ -163,47 +154,42 @@ const ModernLogin = () => {
 
   if (loading) {
     return (
-      <div className="app-shell modern-login">
-        <BackgroundAnimation />
-        <div className="fullscreen-center">
-          <div className="loading-spinner">
-            <div className="spinner-page"></div>
-            <p>Loading...</p>
-          </div>
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted mt-4">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="app-shell modern-login">
-      <BackgroundAnimation />
-
+    <div className="min-h-screen bg-bg flex">
       {/* Left Side - Branding */}
-      <div className="login-branding">
-        <div className="brand-content">
-          <div className="brand-icon">
+      <div className="hidden lg:flex lg:w-1/2 bg-primary items-center justify-center p-12">
+        <div className="max-w-md text-white space-y-8">
+          <div className="flex items-center gap-4">
             <TrendingUp size={48} />
-            <DollarSign size={32} className="dollar-overlay" />
+            <DollarSign size={32} className="opacity-80" />
           </div>
-          <h1 className="brand-title">
-            <span className="gradient-text">FFA</span>
-            <span className="text-white"> Investments</span>
+          <h1 className="text-5xl font-bold">
+            <span>FFA</span>
+            <span className="opacity-90"> Investments</span>
           </h1>
-          <p className="brand-subtitle">
+          <p className="text-xl opacity-90">
             Where futures begin and wealth grows
           </p>
           
-          <div className="feature-highlights">
-            <div className="feature">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
               <Sparkles size={20} />
               <span>Smart Investment Tracking</span>
             </div>
-            <div className="feature">
+            <div className="flex items-center gap-3">
               <TrendingUp size={20} />
               <span>Real-time Portfolio Analytics</span>
             </div>
-            <div className="feature">
+            <div className="flex items-center gap-3">
               <DollarSign size={20} />
               <span>Member Dues Management</span>
             </div>
@@ -212,26 +198,27 @@ const ModernLogin = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="login-form-container">
-        <div className="login-form-wrapper">
-          <div className="form-header">
-            <h2>Welcome Back</h2>
-            <p>Enter your credentials to access your account</p>
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-default">Welcome Back</h2>
+            <p className="text-muted mt-2">Enter your credentials to access your account</p>
           </div>
 
           {/* Demo quick-login removed */}
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {formError && (
-              <div className="error-alert">
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                 <span>{formError}</span>
               </div>
             )}
 
             {mode === 'signup' && (
-              <div className="input-group">
-                <div className="input-wrapper">
-                  <User size={20} className="input-icon" />
+              <div>
+                <label className="block text-sm font-medium text-default mb-2">Display Name</label>
+                <div className="relative">
+                  <User size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                   <input
                     type="text"
                     name="displayName"
@@ -239,14 +226,16 @@ const ModernLogin = () => {
                     value={formData.displayName}
                     onChange={handleInputChange}
                     required={mode === 'signup'}
+                    className="input w-full pl-10"
                   />
                 </div>
               </div>
             )}
 
-            <div className="input-group">
-              <div className="input-wrapper">
-                <Mail size={20} className="input-icon" />
+            <div>
+              <label className="block text-sm font-medium text-default mb-2">Email Address</label>
+              <div className="relative">
+                <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   type="email"
                   name="email"
@@ -254,13 +243,15 @@ const ModernLogin = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
+                  className="input w-full pl-10"
                 />
               </div>
             </div>
 
-            <div className="input-group">
-              <div className="input-wrapper">
-                <Lock size={20} className="input-icon" />
+            <div>
+              <label className="block text-sm font-medium text-default mb-2">Password</label>
+              <div className="relative">
+                <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -268,10 +259,11 @@ const ModernLogin = () => {
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  className="input w-full pl-10 pr-10"
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-default"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -280,9 +272,10 @@ const ModernLogin = () => {
             </div>
 
             {mode === 'signup' && (
-              <div className="input-group">
-                <div className="input-wrapper">
-                  <Lock size={20} className="input-icon" />
+              <div>
+                <label className="block text-sm font-medium text-default mb-2">Confirm Password</label>
+                <div className="relative">
+                  <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
@@ -290,10 +283,11 @@ const ModernLogin = () => {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     required={mode === 'signup'}
+                    className="input w-full pl-10 pr-10"
                   />
                   <button
                     type="button"
-                    className="password-toggle"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-default"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -304,14 +298,14 @@ const ModernLogin = () => {
 
             <button
               type="submit"
-              className={`btn btn-primary btn-pill submit-btn ${isSubmitting ? 'loading' : ''}`}
+              className="btn-primary w-full rounded-full"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <>
-                  <div className="spinner-inline"></div>
+                <span className="flex items-center justify-center gap-2">
+                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   <span>{mode === 'signup' ? 'Creating Account...' : 'Signing In...'}</span>
-                </>
+                </span>
               ) : (
                 <span>{mode === 'signup' ? 'Create Account' : 'Sign In'}</span>
               )}
@@ -319,35 +313,33 @@ const ModernLogin = () => {
           </form>
 
           {mode === 'signin' && (
-            <div style={{ marginTop: 12 }}>
+            <div className="mt-4">
               <button
                 type="button"
-                className="mode-toggle"
+                className="text-sm text-muted hover:text-default transition-colors"
                 onClick={() => setShowForgot(prev => !prev)}
               >
-                <span className="toggle-link">Forgot password?</span>
+                Forgot password?
               </button>
 
               {showForgot && (
-                <div style={{ marginTop: 12 }}>
-                  <div className="input-group">
-                    <div className="input-wrapper">
-                      <Mail size={20} className="input-icon" />
-                      <input
-                        type="email"
-                        name="forgotEmail"
-                        placeholder="Enter your email"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                      />
-                    </div>
+                <div className="mt-4 space-y-3">
+                  <div className="relative">
+                    <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input
+                      type="email"
+                      name="forgotEmail"
+                      placeholder="Enter your email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      className="input w-full pl-10"
+                    />
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: 8 }}>
+                  <div className="flex gap-2">
                     <button
                       type="button"
-                      className="btn btn-outline btn-sm"
+                      className="btn-primary-soft border border-border flex-1"
                       onClick={async () => {
-                        // inline kept for clarity but guarded by forgotSending
                         if (forgotSending) return
                         setForgotStatus(null)
                         if (!forgotEmail) {
@@ -374,10 +366,16 @@ const ModernLogin = () => {
                     >
                       {forgotSending ? 'Sending…' : 'Send reset email'}
                     </button>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => { setShowForgot(false); setForgotEmail(''); setForgotStatus(null) }}>Cancel</button>
+                    <button 
+                      type="button" 
+                      className="btn-primary-soft border border-border" 
+                      onClick={() => { setShowForgot(false); setForgotEmail(''); setForgotStatus(null) }}
+                    >
+                      Cancel
+                    </button>
                   </div>
                   {forgotStatus && (
-                    <div style={{ marginTop: 8 }} className={forgotStatus.type === 'error' ? 'error-alert' : 'text-success'}>
+                    <div className={forgotStatus.type === 'error' ? 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded' : 'text-green-600 px-4 py-3'}>
                       {forgotStatus.text}
                     </div>
                   )}
@@ -386,20 +384,18 @@ const ModernLogin = () => {
             </div>
           )}
 
-          <div className="form-footer">
+          <div className="text-center mt-6">
             <button
               type="button"
-              className="mode-toggle"
+              className="text-sm text-muted hover:text-default transition-colors"
               onClick={handleToggleMode}
             >
               {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
-              <span className="toggle-link">
+              <span className="text-primary font-medium">
                 {mode === 'signin' ? 'Sign Up' : 'Sign In'}
               </span>
             </button>
           </div>
-
-          {/* No demo password or quick-login hints are shown on the public login page. */}
         </div>
       </div>
     </div>
