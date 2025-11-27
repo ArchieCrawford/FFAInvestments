@@ -71,9 +71,7 @@ export async function captureSchwabSnapshot() {
           {
             account_number: accountNumber,
             account_type: accountType,
-            account_hash: accountHash,
-            last_updated_at: new Date().toISOString(),
-            raw_account_data: account
+            display_name: accountNumber
           },
           {
             onConflict: 'account_number',
@@ -219,7 +217,7 @@ export async function getRegisteredAccounts() {
     const { data: accounts, error } = await supabase
       .from('schwab_accounts')
       .select('*')
-      .order('last_updated_at', { ascending: false })
+      .order('created_at', { ascending: false })
     
     if (error) {
       throw new Error(`Failed to fetch accounts: ${error.message}`)
