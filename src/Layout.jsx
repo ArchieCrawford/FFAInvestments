@@ -52,15 +52,6 @@ const memberNav = [
   { title: "Member Feed", url: "/member/feed", icon: "fas fa-comments" },
 ];
 
-const BackgroundAnimation = () => (
-  <div className="app-bg-animation">
-    <div className="app-bg-shape app-bg-shape-1"></div>
-    <div className="app-bg-shape app-bg-shape-2"></div>
-    <div className="app-bg-shape app-bg-shape-3"></div>
-    <div className="app-bg-shape app-bg-shape-4"></div>
-  </div>
-);
-
 export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -122,62 +113,69 @@ export default function Layout({ children, currentPageName }) {
 
   if (loading) {
     return (
-      <div className="app-shell">
-        <BackgroundAnimation />
-        <div className="fullscreen-center">
-          <div className="spinner-page" />
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted mt-4">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-shell">
-      <BackgroundAnimation />
-      <div className="app-main">
-        <aside className="app-sidebar">
-          <div className="app-brand">
-            <div className="app-brand-icon">
-              <i className="fas fa-dollar-sign"></i>
+    <div className="flex h-screen bg-bg overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-64 bg-surface border-r border-border flex flex-col">
+        {/* Brand */}
+        <div className="p-6 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <i className="fas fa-dollar-sign text-white"></i>
             </div>
             <div>
-              <p className="app-brand-title">FFA Investments</p>
-              <p className="app-brand-subtitle">Investment Club Portal</p>
+              <p className="font-bold text-lg text-default">FFA Investments</p>
+              <p className="text-sm text-muted">Investment Club Portal</p>
             </div>
           </div>
+        </div>
 
-          <nav className="app-nav">
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 px-2">
             {navigationItems.map((item) => (
-              <div key={item.title} className="app-nav-item">
+              <div key={item.title} className="mb-1">
                 {item.submenu ? (
                   <>
                     <button
                       type="button"
-                      className={`app-nav-link has-children ${isSubmenuActive(item.submenu) ? 'active' : ''}`}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isSubmenuActive(item.submenu) 
+                          ? 'bg-primary text-white' 
+                          : 'text-default hover:bg-primary-soft'
+                      }`}
                       onClick={() => toggleSubmenu(item.title)}
                       aria-expanded={!!expandedMenus[item.title]}
                     >
-                      <span className="app-nav-link-label">
-                        <i className={`${item.icon} app-nav-icon`} aria-hidden="true"></i>
+                      <span className="flex items-center gap-2">
+                        <i className={`${item.icon} w-5`} aria-hidden="true"></i>
                         {item.title}
                       </span>
-                      <span className="app-nav-chevron" aria-hidden="true">
-                        <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'}`}></i>
-                      </span>
+                      <i className={`fas fa-chevron-${expandedMenus[item.title] ? 'down' : 'right'} text-xs`} aria-hidden="true"></i>
                     </button>
                     {expandedMenus[item.title] && (
-                      <div className="app-submenu">
+                      <div className="ml-4 mt-1 space-y-1">
                         {item.submenu.map((subItem) => (
                           <Link
                             key={subItem.title}
                             to={subItem.url}
-                            className={`app-nav-link sub ${location.pathname === subItem.url ? 'active' : ''}`}
+                            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                              location.pathname === subItem.url 
+                                ? 'bg-primary text-white' 
+                                : 'text-muted hover:bg-primary-soft hover:text-default'
+                            }`}
                             aria-current={location.pathname === subItem.url ? 'page' : undefined}
                           >
-                            <span className="app-nav-link-label">
-                              <i className={`${subItem.icon} app-nav-icon`} aria-hidden="true"></i>
-                              {subItem.title}
-                            </span>
+                            <i className={`${subItem.icon} w-5`} aria-hidden="true"></i>
+                            {subItem.title}
                           </Link>
                         ))}
                       </div>
@@ -186,49 +184,61 @@ export default function Layout({ children, currentPageName }) {
                 ) : (
                   <Link
                     to={item.url}
-                    className={`app-nav-link ${location.pathname === item.url ? 'active' : ''}`}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      location.pathname === item.url 
+                        ? 'bg-primary text-white' 
+                        : 'text-default hover:bg-primary-soft'
+                    }`}
                     aria-current={location.pathname === item.url ? 'page' : undefined}
                   >
-                    <span className="app-nav-link-label">
-                      <i className={`${item.icon} app-nav-icon`} aria-hidden="true"></i>
-                      {item.title}
-                    </span>
+                    <i className={`${item.icon} w-5`} aria-hidden="true"></i>
+                    {item.title}
                   </Link>
                 )}
               </div>
             ))}
-          </nav>
+        </nav>
 
-          <div className="app-user-panel">
-            <div className="app-user-card">
-              <div className="app-user-avatar">
-                {profile?.display_name?.split(' ').map(n => n[0]).join('') ||
-                  user?.email?.split('@')[0]?.substring(0, 2).toUpperCase() ||
-                  'AC'}
-              </div>
-              <div>
-                <p className="app-user-name">{profile?.display_name || user?.email?.split('@')[0] || 'User'}</p>
-                <p className="app-user-email">
-                  {user?.email || 'user@example.com'}
-                  {profile?.role && <span className="app-role-badge">{profile.role}</span>}
-                </p>
-              </div>
+        {/* User Panel */}
+        <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center text-sm font-semibold text-default">
+              {profile?.display_name?.split(' ').map(n => n[0]).join('') ||
+                user?.email?.split('@')[0]?.substring(0, 2).toUpperCase() ||
+                'AC'}
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', alignItems: 'center' }}>
-              <ThemeToggle />
-                <button className="btn-primary-soft border border-border rounded-full px-3 py-1.5 text-sm font-medium" onClick={handleLogout}>
-                  Sign Out
-                </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-default truncate">
+                {profile?.display_name || user?.email?.split('@')[0] || 'User'}
+              </p>
+              <p className="text-xs text-muted truncate">
+                {user?.email || 'user@example.com'}
+              </p>
+              {profile?.role && (
+                <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium rounded-full bg-primary text-white">
+                  {profile.role}
+                </span>
+              )}
             </div>
           </div>
-        </aside>
-
-        <main className="app-content">
-          <div className="app-page">
-            {children}
+          <div className="flex flex-col gap-2">
+            <ThemeToggle />
+            <button 
+              className="btn-primary-soft border border-border rounded-full px-3 py-1.5 text-sm font-medium w-full" 
+              onClick={handleLogout}
+            >
+              Sign Out
+            </button>
           </div>
-        </main>
-      </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-6">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
