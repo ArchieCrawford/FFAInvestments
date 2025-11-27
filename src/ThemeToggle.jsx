@@ -1,6 +1,6 @@
 import { useTheme } from "./ThemeProvider";
 
-export function ThemeToggle() {
+function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
