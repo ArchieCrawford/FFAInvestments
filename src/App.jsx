@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from './ThemeProvider.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import Layout from './Layout.jsx'
 import Login from './components/Login.jsx'
@@ -72,9 +73,10 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-        <Routes>
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+          <Routes>
           {/* Debug route to test basic rendering */}
           <Route path="/debug" element={<div style={{padding: '20px', fontSize: '24px', color: 'black'}}>🎯 Debug Route - App is working! Current time: {new Date().toLocaleString()}</div>} />
           
@@ -307,6 +309,7 @@ function App() {
         </Routes>
         </Router>
       </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }
