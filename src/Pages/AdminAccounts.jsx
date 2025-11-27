@@ -117,13 +117,13 @@ export default function AdminAccounts() {
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Account Management</h1>
-            <p className="text-slate-600">Manage investment accounts and balances</p>
+            <h1 className="text-3xl font-bold text-default mb-2">Account Management</h1>
+            <p className="text-muted">Manage investment accounts and balances</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-blue-900 hover:bg-blue-800 gap-2"
+                className="bg-primary hover:bg-blue-800 gap-2"
                 onClick={() => {
                   setEditingAccount(null);
                   resetForm();
@@ -239,7 +239,7 @@ export default function AdminAccounts() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                  <Button type="submit" className="bg-primary hover:bg-blue-800">
                     {editingAccount ? 'Update Account' : 'Create Account'}
                   </Button>
                 </DialogFooter>
@@ -252,7 +252,7 @@ export default function AdminAccounts() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <Input
                   placeholder="Search accounts..."
                   value={searchTerm}
@@ -283,7 +283,7 @@ export default function AdminAccounts() {
                     </TableRow>
                   ) : filteredAccounts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted">
                         No accounts found
                       </TableCell>
                     </TableRow>
@@ -291,14 +291,14 @@ export default function AdminAccounts() {
                     filteredAccounts.map(account => {
                       const accountValue = account.current_units * (unitPrice?.price || 0);
                       return (
-                        <TableRow key={account.id} className="hover:bg-slate-50">
+                        <TableRow key={account.id} className="hover:bg-bg">
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Wallet className="w-4 h-4 text-blue-600" />
                               <span className="font-semibold">{account.name}</span>
                             </div>
                           </TableCell>
-                          <TableCell className="capitalize text-slate-600">
+                          <TableCell className="capitalize text-muted">
                             {account.account_type?.replace('_', ' ')}
                           </TableCell>
                           <TableCell>
@@ -312,10 +312,10 @@ export default function AdminAccounts() {
                           <TableCell className="font-mono text-sm">
                             {account.current_units.toFixed(4)}
                           </TableCell>
-                          <TableCell className="font-bold text-slate-900">
+                          <TableCell className="font-bold text-default">
                             ${accountValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell className="text-slate-600">
+                          <TableCell className="text-muted">
                             {account.opening_date ? format(new Date(account.opening_date), 'MMM dd, yyyy') : '-'}
                           </TableCell>
                           <TableCell>

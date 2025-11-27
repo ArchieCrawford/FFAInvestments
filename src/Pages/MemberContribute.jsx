@@ -137,7 +137,7 @@ export default function MemberContribute() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
+          <p className="text-muted">Loading...</p>
         </div>
       </div>
     );
@@ -153,8 +153,8 @@ export default function MemberContribute() {
       <div className="max-w-3xl mx-auto space-y-6">
         
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Make a Contribution</h1>
-          <p className="text-slate-600">Add funds to your investment account</p>
+          <h1 className="text-3xl font-bold text-default mb-2">Make a Contribution</h1>
+          <p className="text-muted">Add funds to your investment account</p>
         </div>
 
         {error && (
@@ -207,7 +207,7 @@ export default function MemberContribute() {
               <div className="space-y-2">
                 <Label>Contribution Amount *</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-600">$</span>
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted">$</span>
                   <Input
                     type="number"
                     step="0.01"
@@ -220,7 +220,7 @@ export default function MemberContribute() {
                   />
                 </div>
                 {formData.amount && unitPrice && (
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-muted">
                     ≈ {estimatedUnits.toFixed(4)} units at current price of ${unitPrice.price.toFixed(4)}/unit
                   </p>
                 )}
@@ -243,7 +243,7 @@ export default function MemberContribute() {
                 </Select>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-primary-soft border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Payment Instructions</h4>
                 {formData.payment_method === 'bank_transfer' && (
                   <div className="text-sm text-blue-800 space-y-1">
@@ -273,7 +273,7 @@ export default function MemberContribute() {
               <Button
                 type="submit"
                 disabled={isProcessing || accounts.length === 0}
-                className="w-full bg-blue-900 hover:bg-blue-800 text-lg py-6"
+                className="w-full bg-primary hover:bg-blue-800 text-lg py-6"
               >
                 {isProcessing ? 'Processing...' : `Submit $${formData.amount || '0.00'} Contribution`}
               </Button>
@@ -281,10 +281,10 @@ export default function MemberContribute() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg bg-slate-50">
+        <Card className="border-none shadow-lg bg-bg">
           <CardContent className="pt-6">
-            <h3 className="font-semibold text-slate-900 mb-3">How it works:</h3>
-            <ol className="space-y-2 text-sm text-slate-700">
+            <h3 className="font-semibold text-default mb-3">How it works:</h3>
+            <ol className="space-y-2 text-sm text-default">
               <li className="flex gap-2">
                 <span className="font-semibold text-blue-900">1.</span>
                 Submit your contribution request through this form

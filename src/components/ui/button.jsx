@@ -1,24 +1,40 @@
 import React from 'react'
 
-export const Button = ({ children, className = "", variant = "default", size = "md", pill = false, ...props }) => {
-  // Map component props to design-system classes
+// Semantic button component using the new theme system.
+// Variants intentionally map ONLY to semantic classes + neutral structural Tailwind utilities.
+// (legacy app-btn* classes removed)
+export const Button = ({
+  children,
+  className = "",
+  variant = "default",
+  size = "md",
+  pill = false,
+  ...props
+}) => {
   const variantMap = {
-    default: 'app-btn',
-    primary: 'app-btn app-btn-primary',
-    outline: 'app-btn app-btn-outline',
-    ghost: 'app-btn',
-    success: 'app-btn app-btn-success',
-    danger: 'app-btn app-btn-danger'
+    default: 'btn-primary-soft border border-border text-default',
+    primary: 'btn-primary',
+    outline: 'btn-primary-soft border border-border text-default',
+    ghost: 'btn-primary-soft text-default',
+    // Success / danger fall back to primary styling until extended semantics are defined
+    success: 'btn-primary',
+    danger: 'btn-primary'
   }
 
   const sizeMap = {
-    sm: 'app-btn-sm',
-    md: ''
+    sm: 'text-xs px-3 py-1.5',
+    md: 'text-sm px-4 py-2'
   }
 
-  const pillClass = pill ? 'app-btn-pill' : ''
+  const shapeClass = pill ? 'rounded-full' : 'rounded-md'
 
-  const classes = [variantMap[variant] || variantMap.default, sizeMap[size] || '', pillClass, className].filter(Boolean).join(' ')
+  const classes = [
+    'inline-flex items-center font-medium focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-border transition-colors',
+    variantMap[variant] || variantMap.default,
+    sizeMap[size] || sizeMap.md,
+    shapeClass,
+    className
+  ].filter(Boolean).join(' ')
 
   return (
     <button className={classes} {...props}>

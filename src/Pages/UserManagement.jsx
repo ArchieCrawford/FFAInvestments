@@ -78,11 +78,11 @@ const UserManagement = () => {
 
   return (
     <div className="app-page">
-      <div className="app-card">
-        <div className="app-card-header">
+      <div className="card">
+        <div className="card-header">
           <div>
-            <p className="app-card-title">User Management</p>
-            <p className="app-card-subtitle">Manage user roles and permissions</p>
+            <p className="text-lg font-semibold text-default">User Management</p>
+            <p className="text-sm text-muted">Manage user roles and permissions</p>
           </div>
           <div className="app-pill">
             {users.length} total users
@@ -91,22 +91,22 @@ const UserManagement = () => {
       </div>
 
       {users.length === 0 ? (
-        <div className="app-card app-empty-state">
+        <div className="card text-center">
           <h3>No Users Found</h3>
           <p>No user profiles have been created yet.</p>
         </div>
       ) : (
         <div className="app-grid cols-2">
           {users.map((user) => (
-            <div key={user.id} className="app-card">
-              <div className="app-card-header">
+            <div key={user.id} className="card">
+              <div className="card-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div className="app-user-avatar" style={{ width: '48px', height: '48px' }}>
                     {user.display_name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>
-                    <p className="app-card-title">{user.display_name || 'Unnamed User'}</p>
-                    <p className="app-card-subtitle">ID: {user.id}</p>
+                    <p className="text-lg font-semibold text-default">{user.display_name || 'Unnamed User'}</p>
+                    <p className="text-sm text-muted">ID: {user.id}</p>
                     <small>Joined: {new Date(user.created_at).toLocaleDateString()}</small>
                   </div>
                 </div>
@@ -120,7 +120,7 @@ const UserManagement = () => {
                   <button
                     onClick={() => updateUserRole(user.id, user.role === 'admin' ? 'member' : 'admin')}
                     disabled={updating === user.id}
-                    className={`${user.role === 'admin' ? 'app-btn app-btn-warning app-btn-pill' : 'app-btn app-btn-success app-btn-pill'}`}
+                    className={`${user.role === 'admin' ? 'bg-yellow-600 text-white px-4 py-2 rounded-full hover:bg-yellow-700' : 'bg-green-600 text-white px-4 py-2 rounded-full hover:bg-green-700'}`}
                   >
                     {updating === user.id ? 'Updating…' : user.role === 'admin' ? 'Make Member' : 'Make Admin'}
                   </button>
@@ -136,8 +136,8 @@ const UserManagement = () => {
         </div>
       )}
 
-      <div className="app-card">
-        <h3 className="app-card-title" style={{ marginBottom: '1rem' }}>Role Permissions</h3>
+      <div className="card">
+        <h3 className="text-lg font-semibold text-default" style={{ marginBottom: '1rem' }}>Role Permissions</h3>
         <div className="app-grid cols-2">
           <div className="app-panel" style={{ borderColor: 'rgba(239,68,68,0.4)' }}>
             <h4 style={{ color: '#fecaca', marginBottom: '0.5rem' }}>Admin Role</h4>

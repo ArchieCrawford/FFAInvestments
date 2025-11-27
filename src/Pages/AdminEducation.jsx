@@ -105,13 +105,13 @@ export default function AdminEducation() {
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Education Management</h1>
-            <p className="text-slate-600">Create and manage lessons for members</p>
+            <h1 className="text-3xl font-bold text-default mb-2">Education Management</h1>
+            <p className="text-muted">Create and manage lessons for members</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-blue-900 hover:bg-blue-800 gap-2"
+                className="bg-primary hover:bg-blue-800 gap-2"
                 onClick={() => {
                   setEditingLesson(null);
                   resetForm();
@@ -222,7 +222,7 @@ export default function AdminEducation() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                  <Button type="submit" className="bg-primary hover:bg-blue-800">
                     {editingLesson ? 'Update Lesson' : 'Create Lesson'}
                   </Button>
                 </DialogFooter>
@@ -238,7 +238,7 @@ export default function AdminEducation() {
               <BookOpen className="w-5 h-5 text-blue-600" />
               Educational Resources & Tools
             </CardTitle>
-            <p className="text-slate-600 text-sm">Quick access to interactive learning materials</p>
+            <p className="text-muted text-sm">Quick access to interactive learning materials</p>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -248,11 +248,11 @@ export default function AdminEducation() {
                     <span className="text-lg">🧮</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Unit Calculator</h3>
-                    <p className="text-xs text-slate-600">Quick unit pricing tool</p>
+                    <h3 className="font-semibold text-default">Unit Calculator</h3>
+                    <p className="text-xs text-muted">Quick unit pricing tool</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 mb-3">
+                <p className="text-sm text-muted mb-3">
                   Simple calculator for understanding unit values and member contributions.
                 </p>
                 <a
@@ -271,11 +271,11 @@ export default function AdminEducation() {
                     <span className="text-lg">📚</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Complete Unit Guide</h3>
-                    <p className="text-xs text-slate-600">Interactive learning guide</p>
+                    <h3 className="font-semibold text-default">Complete Unit Guide</h3>
+                    <p className="text-xs text-muted">Interactive learning guide</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 mb-3">
+                <p className="text-sm text-muted mb-3">
                   Comprehensive interactive guide with real FFA data and live simulations.
                 </p>
                 <a
@@ -294,11 +294,11 @@ export default function AdminEducation() {
                     <span className="text-lg">📖</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Education Catalog</h3>
-                    <p className="text-xs text-slate-600">Member learning center</p>
+                    <h3 className="font-semibold text-default">Education Catalog</h3>
+                    <p className="text-xs text-muted">Member learning center</p>
                   </div>
                 </div>
-                <p className="text-sm text-slate-600 mb-3">
+                <p className="text-sm text-muted mb-3">
                   View the education catalog as members see it with all available resources.
                 </p>
                 <a
@@ -338,14 +338,14 @@ export default function AdminEducation() {
                     </TableRow>
                   ) : lessons.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted">
                         No lessons created yet
                       </TableCell>
                     </TableRow>
                   ) : (
                     lessons.map(lesson => (
-                      <TableRow key={lesson.id} className="hover:bg-slate-50">
-                        <TableCell className="font-semibold text-slate-900">
+                      <TableRow key={lesson.id} className="hover:bg-bg">
+                        <TableCell className="font-semibold text-default">
                           {lesson.order_index}
                         </TableCell>
                         <TableCell>
@@ -359,7 +359,7 @@ export default function AdminEducation() {
                             {lesson.track}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-slate-600">
+                        <TableCell className="text-muted">
                           {lesson.duration_minutes} min
                         </TableCell>
                         <TableCell>

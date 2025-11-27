@@ -317,7 +317,7 @@ const SchwabInsights = () => {
 
   // Protected route checks
   if (memberLoading) {
-    return <div className="app-card">Loading...</div>;
+    return <div className="card">Loading...</div>;
   }
 
   if (!member) {
@@ -329,22 +329,22 @@ const SchwabInsights = () => {
       <h1>Schwab Account Insights</h1>
       <p>Snapshots are captured each time you visit this page. Historical pulls are saved automatically so you can track value trends over time.</p>
         {authChecked && !isAuthenticated && (
-          <div className="app-card mt-4">
-            <div className="app-card-content">
+          <div className="card mt-4">
+            <div className="card-content">
               <h4 className="mb-2">Connect to Charles Schwab</h4>
-              <p className="app-text-muted mb-3">
+              <p className="text-muted mb-3">
                 You must authorize your Schwab account before we can pull account insights or historical snapshots.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
-                  className="app-btn app-btn-primary"
+                  className="btn-primary"
                   onClick={handleConnect}
                   disabled={isConnecting}
                 >
                   {isConnecting ? 'Redirecting…' : 'Connect to Charles Schwab'}
                 </button>
                 <button
-                  className="app-btn app-btn-outline"
+                  className="btn-primary-soft border border-border"
                   onClick={() => navigate('/admin/schwab')}
                 >
                   View Schwab Dashboard
@@ -362,29 +362,29 @@ const SchwabInsights = () => {
               <p>Captured {new Date(latest.timestamp).toLocaleString()}</p>
               <div className="metric-value mb-3">${latest.liquidationValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</div>
               {capturingSnapshot && (
-                <p className="app-text-muted">
+                <p className="text-muted">
                   <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.5rem' }}></i>
                   Saving snapshot to database...
                 </p>
               )}
               {snapshotCount > 0 && (
-                <p className="app-text-muted">
+                <p className="text-muted">
                   <i className="fas fa-database" style={{ marginRight: '0.5rem' }}></i>
                   {snapshotCount} historical snapshot{snapshotCount !== 1 ? 's' : ''} saved
               {lastSnapshotDate && (
-                <p className="app-text-muted">
+                <p className="text-muted">
                   <i className="fas fa-clock" style={{ marginRight: '0.5rem' }}></i>
                   Last snapshot: {lastSnapshotDate}
                 </p>
               )}
               {!lastSnapshotDate && authChecked && isAuthenticated && (
-                <p className="app-text-muted">
+                <p className="text-muted">
                   <i className="fas fa-info-circle" style={{ marginRight: '0.5rem' }}></i>
                   No snapshots yet
                 </p>
               )}
               {snapshotError && (
-                <div className="app-alert app-alert-destructive mt-2" style={{ padding: '0.75rem' }}>
+                <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mt-2" style={{ padding: '0.75rem' }}>
                   <i className="fas fa-exclamation-triangle" style={{ marginRight: '0.5rem' }}></i>
                   {snapshotError}
                 </div>
@@ -393,7 +393,7 @@ const SchwabInsights = () => {
               )}
               <div className="flex flex-wrap gap-2 mt-3">
                 <button
-                  className="app-btn app-btn-success"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                   onClick={manualCaptureSnapshot}
                   disabled={capturingSnapshot || !selectedAccountNumber}
                 >
@@ -410,7 +410,7 @@ const SchwabInsights = () => {
                   )}
                 </button>
                 <button
-                  className="app-btn app-btn-outline"
+                  className="btn-primary-soft border border-border"
                   onClick={() => selectedAccountNumber && syncSchwabPositionsForToday().then(() => {
                     const today = new Date().toISOString().slice(0, 10);
                     getPositionsForAccountDate(selectedAccountNumber, today).then(setPositions);
@@ -420,7 +420,7 @@ const SchwabInsights = () => {
                   {syncingPositions ? 'Syncing positions…' : 'Refresh positions'}
                 </button>
                 <button
-                  className="app-btn app-btn-primary"
+                  className="btn-primary"
                   onClick={pushToOrgBalance}
                 >
                   Save snapshot to org history
@@ -463,7 +463,7 @@ const SchwabInsights = () => {
                     })}
                     {positions.length === 0 && (
                       <tr>
-                        <td colSpan="5" className="text-center app-text-muted">
+                        <td colSpan="5" className="text-center text-muted">
                           No positions found. Click "Refresh positions" to sync from Schwab.
                         </td>
                       </tr>
@@ -498,7 +498,7 @@ const SchwabInsights = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="5" className="text-center app-text-muted">
+                        <td colSpan="5" className="text-center text-muted">
                           No historical snapshots available yet. Snapshots are captured automatically when you visit this page.
                         </td>
                       </tr>

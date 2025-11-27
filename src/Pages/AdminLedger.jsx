@@ -122,8 +122,8 @@ export default function AdminLedger() {
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Ledger Management</h1>
-            <p className="text-slate-600">Record and manage all transactions</p>
+            <h1 className="text-3xl font-bold text-default mb-2">Ledger Management</h1>
+            <p className="text-muted">Record and manage all transactions</p>
           </div>
           <div className="flex gap-3">
             <Button 
@@ -137,7 +137,7 @@ export default function AdminLedger() {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  className="bg-blue-900 hover:bg-blue-800 gap-2"
+                  className="bg-primary hover:bg-blue-800 gap-2"
                   onClick={resetForm}
                 >
                   <Plus className="w-4 h-4" />
@@ -241,7 +241,7 @@ export default function AdminLedger() {
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                    <Button type="submit" className="bg-primary hover:bg-blue-800">
                       Record Transaction
                     </Button>
                   </DialogFooter>
@@ -255,7 +255,7 @@ export default function AdminLedger() {
           <CardHeader>
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
@@ -264,7 +264,7 @@ export default function AdminLedger() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-500" />
+                <Filter className="w-4 h-4 text-muted" />
                 <Select value={filterType} onValueChange={setFilterType}>
                   <SelectTrigger className="w-48">
                     <SelectValue />
@@ -304,7 +304,7 @@ export default function AdminLedger() {
                     </TableRow>
                   ) : filteredEntries.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted">
                         No transactions found
                       </TableCell>
                     </TableRow>
@@ -312,7 +312,7 @@ export default function AdminLedger() {
                     filteredEntries.map(entry => {
                       const account = accounts.find(a => a.id === entry.account_id);
                       return (
-                        <TableRow key={entry.id} className="hover:bg-slate-50">
+                        <TableRow key={entry.id} className="hover:bg-bg">
                           <TableCell className="font-medium">
                             {format(new Date(entry.entry_date), 'MMM dd, yyyy')}
                           </TableCell>
@@ -334,10 +334,10 @@ export default function AdminLedger() {
                               </span>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="font-mono text-sm text-slate-600">
+                          <TableCell className="font-mono text-sm text-muted">
                             {entry.unit_price_at_entry ? `$${entry.unit_price_at_entry.toFixed(4)}` : '-'}
                           </TableCell>
-                          <TableCell className="text-slate-600 max-w-xs truncate">
+                          <TableCell className="text-muted max-w-xs truncate">
                             {entry.memo || '-'}
                           </TableCell>
                         </TableRow>

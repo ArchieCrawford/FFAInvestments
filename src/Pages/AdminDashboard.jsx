@@ -106,18 +106,18 @@ export default function AdminDashboard() {
   ].filter(Boolean);
 
   return (
-    <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <div className="p-6 lg:p-8 bg-bg min-h-screen">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">Admin Dashboard</h1>
-            <p className="text-slate-600">Manage your investment club</p>
+            <h1 className="text-3xl lg:text-4xl font-bold text-default mb-2">Admin Dashboard</h1>
+            <p className="text-muted">Manage your investment club</p>
           </div>
           <div className="flex gap-3">
             <Link to={createPageUrl("AdminUsers")}>
-              <Button className="bg-blue-900 hover:bg-blue-800 gap-2">
+              <Button className="bg-primary hover:bg-primary gap-2">
                 <Plus className="w-4 h-4" />
                 Add Member
               </Button>
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-none shadow-lg bg-gradient-to-br from-blue-900 to-blue-800 text-white">
+          <Card className="border-none shadow-lg bg-primary text-white">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium opacity-90">Assets Under Management</CardTitle>
@@ -150,36 +150,36 @@ export default function AdminDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Total Members</CardTitle>
-                <Users className="w-5 h-5 text-blue-600" />
+                <CardTitle className="text-sm font-medium text-muted">Total Members</CardTitle>
+                <Users className="w-5 h-5 text-primary" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{totalMembers}</div>
+              <div className="text-3xl font-bold text-default">{totalMembers}</div>
             </CardContent>
           </Card>
 
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Active Accounts</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Active Accounts</CardTitle>
                 <Wallet className="w-5 h-5 text-emerald-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{activeAccounts}</div>
+              <div className="text-3xl font-bold text-default">{activeAccounts}</div>
             </CardContent>
           </Card>
 
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Unit Price</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Unit Price</CardTitle>
                 <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">
+              <div className="text-3xl font-bold text-default">
                 ${latestUnitPrice?.price?.toFixed(4) || '0.00'}
               </div>
               <Badge variant={latestUnitPrice?.is_finalized ? "default" : "outline"} className="mt-2">
@@ -191,15 +191,15 @@ export default function AdminDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Charles Schwab Positions</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Charles Schwab Positions</CardTitle>
                 <DollarSign className="w-5 h-5 text-indigo-600" />
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="text-3xl font-bold text-slate-900">
+              <div className="text-3xl font-bold text-default">
                 ${latestOrgSnapshot ? latestOrgSnapshot.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
               </div>
-              <p className="text-sm text-slate-500">As of {latestOrgSnapshot?.dateLabel || '—'}</p>
+              <p className="text-sm text-muted">As of {latestOrgSnapshot?.dateLabel || '—'}</p>
               <Link to="/admin/schwab">
                 <Button className="mt-2 w-full gap-2">
                   View Schwab Positions <ArrowRight className="w-4 h-4" />
@@ -211,15 +211,15 @@ export default function AdminDashboard() {
 
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-slate-900">Club total portfolio value over time</CardTitle>
+            <CardTitle className="text-lg font-bold text-default">Club total portfolio value over time</CardTitle>
           </CardHeader>
           <CardContent>
             {orgHistoryLoading ? (
-              <p className="text-slate-500">Loading portfolio trend…</p>
+              <p className="text-muted">Loading portfolio trend…</p>
             ) : orgHistoryError ? (
               <p className="text-red-500">{orgHistoryError}</p>
             ) : orgHistoryData.length === 0 ? (
-              <p className="text-slate-500">No portfolio history available.</p>
+              <p className="text-muted">No portfolio history available.</p>
             ) : (
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
         {tasks.length > 0 && (
           <Card className="border-none shadow-lg border-l-4 border-l-amber-500">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <CardTitle className="text-lg font-bold text-default flex items-center gap-2">
                 <Clock className="w-5 h-5 text-amber-600" />
                 Today's Tasks
               </CardTitle>
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
               {tasks.map((task, idx) => (
                 <div 
                   key={idx}
-                  className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200"
+                  className="flex items-center justify-between p-4 rounded-lg bg-bg border border-border"
                 >
                   <div className="flex items-center gap-3">
                     {task.type === 'warning' ? (
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
                     ) : (
                       <Clock className="w-5 h-5 text-blue-600" />
                     )}
-                    <span className="font-medium text-slate-900">{task.title}</span>
+                    <span className="font-medium text-default">{task.title}</span>
                   </div>
                   <Link to={task.link}>
                     <Button variant="outline" size="sm" className="gap-2">
@@ -284,24 +284,24 @@ export default function AdminDashboard() {
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-900">Recent Transactions</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">Recent Transactions</CardTitle>
             </CardHeader>
             <CardContent>
               {recentLedger.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">No recent transactions</p>
+                <p className="text-muted text-center py-8">No recent transactions</p>
               ) : (
                 <div className="space-y-3">
                   {recentLedger.map(entry => (
                     <div 
                       key={entry.id}
-                      className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all"
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-bg transition-all"
                     >
                       <div>
-                        <p className="font-semibold text-slate-900 capitalize">
+                        <p className="font-semibold text-default capitalize">
                           {entry.entry_type.replace('_', ' ')}
                         </p>
-                        <p className="text-sm text-slate-500">{entry.memo || 'No memo'}</p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-sm text-muted">{entry.memo || 'No memo'}</p>
+                        <p className="text-xs text-muted mt-1">
                           {format(new Date(entry.entry_date), 'MMM dd, yyyy')}
                         </p>
                       </div>
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
                           {entry.amount >= 0 ? '+' : ''}${Math.abs(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                         </p>
                         {entry.units_delta !== 0 && (
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-muted">
                             {entry.units_delta > 0 ? '+' : ''}{entry.units_delta.toFixed(4)} units
                           </p>
                         )}
@@ -324,29 +324,29 @@ export default function AdminDashboard() {
 
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-900">Quick Actions</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
               <Link to={createPageUrl("AdminUsers")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300">
+                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
                   <Users className="w-6 h-6" />
                   <span className="text-sm font-medium">Manage Members</span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminAccounts")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300">
+                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
                   <Wallet className="w-6 h-6" />
                   <span className="text-sm font-medium">Manage Accounts</span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminLedger")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300">
+                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
                   <DollarSign className="w-6 h-6" />
                   <span className="text-sm font-medium">Record Transaction</span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminUnitPrice")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-300">
+                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
                   <TrendingUp className="w-6 h-6" />
                   <span className="text-sm font-medium">Update Unit Price</span>
                 </Button>

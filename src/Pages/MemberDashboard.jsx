@@ -71,10 +71,10 @@ export default function MemberDashboard() {
         
         {/* Header */}
         <div>
-          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-3xl lg:text-4xl font-bold text-default mb-2">
             Welcome back, {user?.full_name?.split(' ')[0] || 'Member'}
           </h1>
-          <p className="text-slate-600">Here's your investment portfolio overview</p>
+          <p className="text-muted">Here's your investment portfolio overview</p>
         </div>
 
         {/* Stats Overview */}
@@ -97,15 +97,15 @@ export default function MemberDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Current Unit Price</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Current Unit Price</CardTitle>
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900 mb-1">
+              <div className="text-3xl font-bold text-default mb-1">
                 ${latestUnitPrice?.price?.toFixed(4) || '0.00'}
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted">
                 {latestUnitPrice?.price_date ? format(new Date(latestUnitPrice.price_date), 'MMM dd, yyyy') : '-'}
               </p>
             </CardContent>
@@ -114,15 +114,15 @@ export default function MemberDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Education Progress</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Education Progress</CardTitle>
                 <BookOpen className="w-5 h-5 text-amber-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900 mb-1">
+              <div className="text-3xl font-bold text-default mb-1">
                 {completedLessons}
               </div>
-              <p className="text-sm text-slate-500">lessons completed</p>
+              <p className="text-sm text-muted">lessons completed</p>
             </CardContent>
           </Card>
         </div>
@@ -131,7 +131,7 @@ export default function MemberDashboard() {
         {chartData.length > 0 && (
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-slate-900">Unit Price History (30 Days)</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">Unit Price History (30 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-64">
@@ -173,7 +173,7 @@ export default function MemberDashboard() {
           {/* My Accounts */}
           <Card className="border-none shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-bold text-slate-900">My Accounts</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">My Accounts</CardTitle>
               <Link to={createPageUrl("MemberAccounts")}>
                 <Button variant="ghost" size="sm" className="gap-2">
                   View All <ChevronRight className="w-4 h-4" />
@@ -182,7 +182,7 @@ export default function MemberDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {accounts.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">No accounts assigned yet</p>
+                <p className="text-muted text-center py-8">No accounts assigned yet</p>
               ) : (
                 accounts.map(account => {
                   const accountValue = account.current_units * (latestUnitPrice?.price || 0);
@@ -192,18 +192,18 @@ export default function MemberDashboard() {
                       to={`${createPageUrl("MemberAccountDetail")}?id=${account.id}`}
                       className="block"
                     >
-                      <div className="flex items-center justify-between p-4 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer">
+                      <div className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-blue-300 hover:bg-primary-soft transition-all cursor-pointer">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                             <Wallet className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">{account.name}</p>
-                            <p className="text-sm text-slate-500">{account.current_units.toFixed(4)} units</p>
+                            <p className="font-semibold text-default">{account.name}</p>
+                            <p className="text-sm text-muted">{account.current_units.toFixed(4)} units</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-slate-900">
+                          <p className="font-bold text-default">
                             ${accountValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                           <Badge variant="outline" className="mt-1">
@@ -221,7 +221,7 @@ export default function MemberDashboard() {
           {/* Recent Announcements */}
           <Card className="border-none shadow-lg">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg font-bold text-slate-900">Recent Announcements</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">Recent Announcements</CardTitle>
               <Link to={createPageUrl("Announcements")}>
                 <Button variant="ghost" size="sm" className="gap-2">
                   View All <ChevronRight className="w-4 h-4" />
@@ -230,22 +230,22 @@ export default function MemberDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {announcements.length === 0 ? (
-                <p className="text-slate-500 text-center py-8">No announcements</p>
+                <p className="text-muted text-center py-8">No announcements</p>
               ) : (
                 announcements.map(announcement => (
                   <div 
                     key={announcement.id}
-                    className="p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-all"
+                    className="p-4 rounded-lg border border-border hover:bg-bg transition-all"
                   >
                     <div className="flex items-start gap-3">
                       <Bell className="w-5 h-5 text-amber-600 mt-0.5" />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-slate-900 mb-1">{announcement.title}</h4>
-                        <p className="text-sm text-slate-600 line-clamp-2">
+                        <h4 className="font-semibold text-default mb-1">{announcement.title}</h4>
+                        <p className="text-sm text-muted line-clamp-2">
                           {announcement.body_markdown}
                         </p>
                         {announcement.created_date && (
-                          <p className="text-xs text-slate-400 mt-2">
+                          <p className="text-xs text-muted mt-2">
                             {format(new Date(announcement.created_date), 'MMM dd, yyyy')}
                           </p>
                         )}

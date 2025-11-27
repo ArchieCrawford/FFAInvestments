@@ -100,10 +100,10 @@ const PostComposer = ({ onCreate, currentUserId }) => {
   }
 
   return (
-    <div className="app-card">
+    <div className="card">
       <form onSubmit={handleSubmit}>
         <textarea
-          className="app-input w-full bg-transparent placeholder:text-slate-500 p-2 rounded-md border"
+          className="input w-full bg-transparent placeholder:text-muted p-2 rounded-md border border-border"
           rows={4}
           placeholder="Share an update, link, or photo with the club..."
           value={content}
@@ -111,21 +111,21 @@ const PostComposer = ({ onCreate, currentUserId }) => {
         />
         <div className="flex gap-2 mt-2 items-center">
           <input type="file" accept="image/*" onChange={handleFileChange} />
-          <input className="app-input" placeholder="Link URL (optional)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
+          <input className="input" placeholder="Link URL (optional)" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} />
         </div>
         {previewUrl && (
           <div className="mt-2">
             <img src={previewUrl} alt="preview" className="max-h-40 object-cover rounded-md" />
-            <div className="text-xs text-slate-400">{imageFile?.name}</div>
+            <div className="text-xs text-muted">{imageFile?.name}</div>
           </div>
         )}
-        {uploadError && <div className="text-red-400 mt-2">{uploadError}</div>}
+        {uploadError && <div className="text-muted mt-2">{uploadError}</div>}
         <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-3 text-slate-400">
+          <div className="flex items-center gap-3 text-muted">
             <div className="flex items-center gap-1"><Image size={16} /> Image</div>
             <div className="flex items-center gap-1"><LinkIcon size={16} /> Link</div>
           </div>
-          <button className="app-btn app-btn-primary app-btn-sm" type="submit" disabled={submitting || uploading || (!content.trim() && !imageFile && !linkUrl)}>
+          <button className="btn-primary btn-sm" type="submit" disabled={submitting || uploading || (!content.trim() && !imageFile && !linkUrl)}>
             {uploading ? 'Uploading…' : submitting ? 'Posting…' : 'Post'}
           </button>
         </div>
@@ -177,25 +177,25 @@ const CommentList = ({ postId, currentUserId, canDeleteComment, onCommentCreated
     }
   }
 
-  if (loading) return <div className="py-4 text-slate-400">Loading comments…</div>
-  if (error) return <div className="py-4 text-red-500">{error}</div>
+  if (loading) return <div className="py-4 text-muted">Loading comments…</div>
+  if (error) return <div className="py-4 text-muted">{error}</div>
   return (
     <div className="mt-2">
       <div className="space-y-2">
-        {(comments || []).length === 0 && <div className="text-slate-400">No comments yet</div>}
+        {(comments || []).length === 0 && <div className="text-muted">No comments yet</div>}
         {(comments || []).map(c => (
-          <div key={c.id} className="p-2 rounded-md bg-slate-800/40 flex justify-between items-start">
+          <div key={c.id} className="p-2 rounded-md bg-surface border border-border flex justify-between items-start">
             <div>
-              <div className="text-xs text-slate-400">{c.author_id} • {new Date(c.created_at).toLocaleString()}</div>
-              <div className="text-slate-100">{c.content}</div>
+              <div className="text-xs text-muted">{c.author_id} • {new Date(c.created_at).toLocaleString()}</div>
+              <div className="text-default">{c.content}</div>
             </div>
-            {canDeleteComment && <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleDelete(c.id)}><Trash size={14} /></button>}
+            {canDeleteComment && <button className="btn-primary-soft btn-sm border border-border" onClick={() => handleDelete(c.id)}><Trash size={14} /></button>}
           </div>
         ))}
       </div>
       <div className="mt-2 flex gap-2">
-        <input className="app-input flex-1" placeholder="Write a comment..." value={text} onChange={(e) => setText(e.target.value)} />
-        <button className="app-btn app-btn-primary app-btn-sm" onClick={handleCreate} disabled={!text.trim()}>Reply</button>
+        <input className="input flex-1" placeholder="Write a comment..." value={text} onChange={(e) => setText(e.target.value)} />
+        <button className="btn-primary btn-sm" onClick={handleCreate} disabled={!text.trim()}>Reply</button>
       </div>
     </div>
   )
@@ -204,7 +204,6 @@ const CommentList = ({ postId, currentUserId, canDeleteComment, onCommentCreated
 const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   const [likes, setLikes] = useState(post.like_count || 0)
   const [commentsOpen, setCommentsOpen] = useState(false)
-  // initialize liked state from post (enriched by feed loader)
   const [likedByMe, setLikedByMe] = useState(post.liked_by_me || false)
 
   useEffect(() => {
@@ -212,7 +211,6 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   }, [post.like_count])
 
   useEffect(() => {
-    // keep local liked state in sync if post prop changes
     setLikedByMe(Boolean(post.liked_by_me))
   }, [post.liked_by_me])
 
@@ -246,19 +244,19 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
   const canDelete = profile?.role === 'admin' || currentUserId === post.author_id
 
   return (
-    <div className="app-card">
+    <div className="card">
       <div className="flex justify-between items-start">
         <div>
-          <div className="text-slate-200 font-medium">{post.author_name || post.author_id}</div>
-          <div className="text-xs text-slate-500">{new Date(post.created_at).toLocaleString()}</div>
+          <div className="text-default font-medium">{post.author_name || post.author_id}</div>
+          <div className="text-xs text-muted">{new Date(post.created_at).toLocaleString()}</div>
         </div>
         <div className="flex items-center gap-2">
-          {canDelete && <button className="app-btn app-btn-outline app-btn-sm text-red-400" onClick={handleDelete}><Trash size={14} /></button>}
+          {canDelete && <button className="btn-primary-soft btn-sm border border-border" onClick={handleDelete}><Trash size={14} /></button>}
         </div>
       </div>
-      <div className="mt-3 text-slate-100 whitespace-pre-wrap">{post.content}</div>
+      <div className="mt-3 text-default whitespace-pre-wrap">{post.content}</div>
       {post.link_url && (
-        <a href={post.link_url} target="_blank" rel="noreferrer" className="block mt-3 text-slate-300 underline">{post.link_url}</a>
+        <a href={post.link_url} target="_blank" rel="noreferrer" className="block mt-3 text-muted underline">{post.link_url}</a>
       )}
       {post.image_url && (
         <div className="mt-3">
@@ -267,8 +265,8 @@ const PostCard = ({ post, currentUserId, profile, onDelete }) => {
       )}
 
       <div className="mt-3 flex items-center gap-3">
-        <button className="app-btn app-btn-outline app-btn-sm" onClick={toggleLike}><Heart size={14} /> <span className="ml-1">{likes}</span></button>
-        <button className="app-btn app-btn-outline app-btn-sm" onClick={() => setCommentsOpen(v => !v)}><MessageSquare size={14} /> <span className="ml-1">Comments</span></button>
+        <button className="btn-primary-soft btn-sm border border-border" onClick={toggleLike}><Heart size={14} /> <span className="ml-1">{likes}</span></button>
+        <button className="btn-primary-soft btn-sm border border-border" onClick={() => setCommentsOpen(v => !v)}><MessageSquare size={14} /> <span className="ml-1">Comments</span></button>
       </div>
 
       {commentsOpen && (
@@ -305,13 +303,11 @@ const MemberFeed = () => {
   useEffect(() => { loadInitial() }, [loadInitial])
 
   const handleCreate = async (post) => {
-    // After creating a post we fetch the most recent enriched post from the RPC
     try {
       const { posts: latest } = await getMemberFeed({ limit: 1 })
       const newPost = (latest && latest[0]) || post
       setPosts(prev => [newPost, ...(prev || [])])
     } catch (err) {
-      // Fallback to raw post if enrichment fails
       setPosts(prev => [post, ...(prev || [])])
     }
   }
@@ -330,8 +326,6 @@ const MemberFeed = () => {
     }
   }
 
-  // server-side RPC returns enriched posts; no client-side enrichment needed
-
   const handleDeleteLocal = (postId) => {
     setPosts(prev => (prev || []).filter(p => p.post_id !== postId))
   }
@@ -339,28 +333,28 @@ const MemberFeed = () => {
   if (!profile) return null
 
   return (
-    <div className="app-content">
-      <div className="app-card">
-        <div className="app-card-header">
+    <div className="flex flex-col gap-4 w-full">
+      <div className="card">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <p className="app-heading-lg">Member Feed</p>
-            <p className="app-text-muted">Share updates, links, and photos with the club.</p>
+            <p className="text-default font-semibold text-xl">Member Feed</p>
+            <p className="text-muted">Share updates, links, and photos with the club.</p>
           </div>
         </div>
-        <div className="app-card-content space-y-4">
-          {error && <div className="app-alert">{error}</div>}
+        <div className="mt-3 space-y-4">
+          {error && <div className="card bg-primary-soft border border-border text-default p-3 rounded-md">{error}</div>}
           <PostComposer onCreate={handleCreate} currentUserId={profile?.id} />
           {loading ? (
-            <div className="py-8 text-center text-slate-400">Loading feed…</div>
+            <div className="py-8 text-center text-muted">Loading feed…</div>
           ) : (
             <div className="space-y-4">
-              {(posts || []).length === 0 && <div className="text-slate-400">No posts yet.</div>}
+              {(posts || []).length === 0 && <div className="text-muted">No posts yet.</div>}
               {(posts || []).map(post => (
                 <PostCard key={post.post_id} post={post} currentUserId={profile.id} profile={profile} onDelete={handleDeleteLocal} />
               ))}
               {nextCursor && (
                 <div className="text-center">
-                  <button className="app-btn app-btn-outline" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>
+                  <button className="btn-primary-soft border border-border" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>
                 </div>
               )}
             </div>

@@ -175,14 +175,14 @@ const DuesTracker = () => {
 
 
   return (
-    <div className="app-content">
-      <div className="app-card">
-        <div className="app-card-header">
+    <div className="space-y-6">
+      <div className="card">
+        <div className="card-header">
           <div>
-            <p className="app-heading-lg">Member Dues / Contributions</p>
-            <p className="app-text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
+            <p className="text-2xl font-bold text-default">Member Dues / Contributions</p>
+            <p className="text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
           </div>
-          <button className="app-btn app-btn-outline app-btn-sm app-btn-pill">
+          <button className="btn-primary-soft border border-border text-sm px-3 py-1 rounded-full">
             <Download size={16} />
             Export
           </button>
@@ -190,22 +190,22 @@ const DuesTracker = () => {
 
         <div className="flex flex-wrap gap-3 items-end mt-4">
           <div style={{ minWidth: 220 }}>
-            <label className="app-text-muted text-sm" htmlFor="dues-name-filter">Member name</label>
+            <label className="text-muted text-sm" htmlFor="dues-name-filter">Member name</label>
             <input
               id="dues-name-filter"
-              className="app-input"
+              className="input"
               placeholder="Search by member"
               value={filterName}
               onChange={(e) => setFilterName(e.target.value)}
             />
           </div>
           <div>
-            <label className="app-text-muted text-sm" htmlFor="dues-range-filter">Date range</label>
+            <label className="text-muted text-sm" htmlFor="dues-range-filter">Date range</label>
             <select
               id="dues-range-filter"
               value={filterRange}
               onChange={(e) => setFilterRange(e.target.value)}
-              className="app-input"
+              className="input"
             >
               <option value="12">Last 12 months</option>
               <option value="6">Last 6 months</option>
@@ -213,30 +213,30 @@ const DuesTracker = () => {
               <option value="all">All</option>
             </select>
           </div>
-          <div className="text-xs text-slate-400">Rows: {visibleRows.length}</div>
-          <div className="text-xs text-slate-400 ml-auto flex flex-col sm:flex-row sm:items-center sm:gap-4 text-right">
+          <div className="text-xs text-muted">Rows: {visibleRows.length}</div>
+          <div className="text-xs text-muted ml-auto flex flex-col sm:flex-row sm:items-center sm:gap-4 text-right">
             <span>Total contribution: {totalContributionsDisplay}</span>
             <span>Total portfolio value: {totalPortfolioDisplay}</span>
           </div>
         </div>
       </div>
 
-      <div className="app-card">
-        <div className="app-card-header">
-          <p className="app-heading-md">Club valuation trend</p>
+      <div className="card">
+        <div className="card-header">
+          <p className="text-xl font-semibold text-default">Club valuation trend</p>
         </div>
-        <div className="app-card-content">
+        <div className="card-content">
           {valuationLoading ? (
-            <div className="py-8 text-center text-slate-400">Loading valuation history…</div>
+            <div className="py-8 text-center text-muted">Loading valuation history…</div>
           ) : valuationError ? (
             <div className="text-red-400 flex items-center gap-3 flex-wrap">
               <span>{valuationError}</span>
-              <button className="app-btn app-btn-outline app-btn-xs" onClick={fetchValuationHistory}>
+              <button className="btn-primary-soft border border-border text-xs px-2 py-1" onClick={fetchValuationHistory}>
                 Retry
               </button>
             </div>
           ) : valuationChartData.length === 0 ? (
-            <p className="text-slate-400">No valuation history available.</p>
+            <p className="text-muted">No valuation history available.</p>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -268,43 +268,43 @@ const DuesTracker = () => {
       </div>
 
       {error ? (
-        <div className="app-card">
-          <div className="app-card-header">
-            <p className="app-heading-md">Unable to load dues</p>
+        <div className="card">
+          <div className="card-header">
+            <p className="text-xl font-semibold text-default">Unable to load dues</p>
           </div>
-          <div className="app-card-content flex flex-wrap gap-3 items-center text-slate-200">
+          <div className="card-content flex flex-wrap gap-3 items-center text-muted">
             <AlertCircle size={18} className="text-red-400" />
             <span>{error}</span>
-            <button className="app-btn app-btn-outline app-btn-sm" onClick={fetchRows}>Retry</button>
+            <button className="btn-primary-soft border border-border text-sm px-3 py-1" onClick={fetchRows}>Retry</button>
           </div>
         </div>
       ) : null}
 
-      <div className="app-card">
-        <div className="app-card-header">
-          <p className="app-heading-md">Dues / Contributions by Member & Month</p>
+      <div className="card">
+        <div className="card-header">
+          <p className="text-xl font-semibold text-default">Dues / Contributions by Member & Month</p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-900/80">
+        <div className="rounded-xl border border-slate-800 bg-surface/80">
           <div className="max-h-[70vh] overflow-y-auto border-t border-slate-800">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="spinner-page" />
               </div>
             ) : (
-              <table className="app-table min-w-full" style={{ width: '100%' }}>
-                <thead className="sticky top-0 z-10 bg-slate-900">
+              <table className="w-full border-collapse min-w-full" style={{ width: '100%' }}>
+                <thead className="sticky top-0 z-10 bg-surface">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Member</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Period</th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Contribution</th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Portfolio Value</th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-slate-400 sm:px-6">Ownership %</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted sm:px-6">Member</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted sm:px-6">Period</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted sm:px-6">Contribution</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted sm:px-6">Portfolio Value</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-muted sm:px-6">Ownership %</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 bg-slate-950/40">
                   {noVisibleRows ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-slate-500 sm:px-6">
+                      <td colSpan={5} className="px-4 py-6 text-center text-muted sm:px-6">
                         No dues records for the selected filters.
                       </td>
                     </tr>
@@ -312,9 +312,9 @@ const DuesTracker = () => {
                     visibleRows.map((row) => {
                       const safeKey = row.id || `${row.member_name || 'unknown'}-${row.report_month || row.report_date || 'unknown'}`
                       return (
-                        <tr key={safeKey} className="hover:bg-slate-900/80">
+                        <tr key={safeKey} className="hover:bg-surface/80">
                           <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name || 'Unknown'}</td>
-                          <td className="px-4 py-2 text-sm text-slate-200 sm:px-6">{formatPeriod(row)}</td>
+                          <td className="px-4 py-2 text-sm text-muted sm:px-6">{formatPeriod(row)}</td>
                           <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.total_contribution)}</td>
                           <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.portfolio_value)}</td>
                           <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatPercent(row.ownership_pct)}</td>

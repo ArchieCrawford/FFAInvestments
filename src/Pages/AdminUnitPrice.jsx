@@ -123,21 +123,21 @@ export default function AdminUnitPrice() {
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Unit Price Management</h1>
-            <p className="text-slate-600">Calculate and track NAV per unit</p>
+            <h1 className="text-3xl font-bold text-default mb-2">Unit Price Management</h1>
+            <p className="text-muted">Calculate and track NAV per unit</p>
           </div>
         </div>
 
         {/* Tab Navigation */}
         <Card>
           <CardContent className="p-0">
-            <div className="flex border-b border-slate-200">
+            <div className="flex border-b border-border">
               <button
                 onClick={() => setActiveTab('unit-price')}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
                   activeTab === 'unit-price'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-primary-soft'
+                    : 'text-muted hover:text-default'
                 }`}
               >
                 <Calculator className="w-4 h-4" />
@@ -147,8 +147,8 @@ export default function AdminUnitPrice() {
                 onClick={() => setActiveTab('portfolio-builder')}
                 className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
                   activeTab === 'portfolio-builder'
-                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-primary-soft'
+                    : 'text-muted hover:text-default'
                 }`}
               >
                 <Users className="w-4 h-4" />
@@ -163,7 +163,7 @@ export default function AdminUnitPrice() {
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-blue-900 hover:bg-blue-800 gap-2"
+                className="bg-primary hover:bg-blue-800 gap-2"
                 onClick={() => {
                   resetForm();
                   handleCalculate();
@@ -258,7 +258,7 @@ export default function AdminUnitPrice() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                  <Button type="submit" className="bg-primary hover:bg-blue-800">
                     Add Unit Price
                   </Button>
                 </DialogFooter>
@@ -292,15 +292,15 @@ export default function AdminUnitPrice() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Total AUM</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Total AUM</CardTitle>
                 <DollarSign className="w-5 h-5 text-emerald-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900 mb-1">
+              <div className="text-3xl font-bold text-default mb-1">
                 ${latestPrice?.total_aum?.toLocaleString('en-US', { minimumFractionDigits: 0 }) || '0'}
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted">
                 ${latestPrice?.cash_balance?.toLocaleString() || '0'} cash + ${latestPrice?.invested_value?.toLocaleString() || '0'} invested
               </p>
             </CardContent>
@@ -309,12 +309,12 @@ export default function AdminUnitPrice() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-slate-600">Units Outstanding</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">Units Outstanding</CardTitle>
                 <TrendingUp className="w-5 h-5 text-blue-600" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-slate-900">
+              <div className="text-3xl font-bold text-default">
                 {latestPrice?.total_units_outstanding?.toFixed(4) || '0.0000'}
               </div>
             </CardContent>
@@ -388,13 +388,13 @@ export default function AdminUnitPrice() {
                     </TableRow>
                   ) : unitPrices.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted">
                         No unit prices recorded
                       </TableCell>
                     </TableRow>
                   ) : (
                     unitPrices.slice(0, 30).map(price => (
-                      <TableRow key={price.id} className="hover:bg-slate-50">
+                      <TableRow key={price.id} className="hover:bg-bg">
                         <TableCell className="font-medium">
                           {format(new Date(price.price_date), 'MMM dd, yyyy')}
                         </TableCell>

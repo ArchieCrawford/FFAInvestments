@@ -56,7 +56,7 @@ export default function SchwabCallback() {
       {status === 'processing' && <p>Completing Schwab login…</p>}
       {status === 'success' && <p>Success. Redirecting…</p>}
       {status === 'error' && (
-        <div className="app-alert app-alert-destructive">
+        <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
           <strong>Schwab connection failed.</strong>
           <div>{error}</div>
         </div>

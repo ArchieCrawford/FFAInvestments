@@ -119,13 +119,13 @@ export default function AdminUsers() {
         
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Member Management</h1>
-            <p className="text-slate-600">Manage club members and permissions</p>
+            <h1 className="text-3xl font-bold text-default mb-2">Member Management</h1>
+            <p className="text-muted">Manage club members and permissions</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-blue-900 hover:bg-blue-800 gap-2"
+                className="bg-primary hover:bg-blue-800 gap-2"
                 onClick={() => {
                   setEditingUser(null);
                   resetForm();
@@ -249,7 +249,7 @@ export default function AdminUsers() {
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                  <Button type="submit" className="bg-primary hover:bg-blue-800">
                     {editingUser ? 'Update Member' : 'Add Member'}
                   </Button>
                 </DialogFooter>
@@ -262,7 +262,7 @@ export default function AdminUsers() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted" />
                 <Input
                   placeholder="Search members..."
                   value={searchTerm}
@@ -292,15 +292,15 @@ export default function AdminUsers() {
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted">
                         No members found
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredUsers.map(user => (
-                      <TableRow key={user.id} className="hover:bg-slate-50">
+                      <TableRow key={user.id} className="hover:bg-bg">
                         <TableCell className="font-semibold">{user.full_name}</TableCell>
-                        <TableCell className="text-slate-600">{user.email}</TableCell>
+                        <TableCell className="text-muted">{user.email}</TableCell>
                         <TableCell>
                           <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                             {user.role}

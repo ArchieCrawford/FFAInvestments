@@ -257,7 +257,7 @@ const SchwabRawData = () => {
 
   // Protected route checks
   if (memberLoading) {
-    return <div className="app-card">Loading...</div>;
+    return <div className="card">Loading...</div>;
   }
 
   if (!member) {
@@ -443,7 +443,7 @@ const SchwabRawData = () => {
                 (!selectedEndpoint && !customEndpoint.trim()) ||
                 ((selectedEndpoint || customEndpoint).includes('{accountNumber}') && !selectedAccountNumber && accountList.length === 0)
               }
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>

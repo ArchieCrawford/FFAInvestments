@@ -90,11 +90,11 @@ const AdminMembers = () => {
     return (
       <AppLayout>
         <div className="app-page">
-          <div className="app-card">
-            <div className="app-card-header">
-              <p className="app-heading-md">Member Accounts</p>
+          <div className="card">
+            <div className="card-header">
+              <p className="text-xl font-semibold text-default">Member Accounts</p>
             </div>
-            <div className="app-card-content text-red-300">{error}</div>
+            <div className="card-content text-red-300">{error}</div>
           </div>
         </div>
       </AppLayout>
@@ -104,26 +104,26 @@ const AdminMembers = () => {
   return (
     <AppLayout>
       <div className="app-page">
-      <div className="app-card">
-        <div className="app-card-header">
+      <div className="card">
+        <div className="card-header">
           <div>
-            <p className="app-heading-lg">Member Accounts</p>
-            <p className="app-text-muted">Overview of current balances and contributions</p>
+            <p className="text-2xl font-bold text-default">Member Accounts</p>
+            <p className="text-muted">Overview of current balances and contributions</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-3 mt-4">
           <div className="flex-1" style={{ minWidth: 220 }}>
-            <label className="app-text-muted text-sm">Search members</label>
+            <label className="text-muted text-sm">Search members</label>
             <input
-              className="app-input"
+              className="input"
               placeholder="Search by name or email"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div>
-            <label className="app-text-muted text-sm">Status</label>
-            <select className="app-input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <label className="text-muted text-sm">Status</label>
+            <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="all">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -133,35 +133,35 @@ const AdminMembers = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="app-card app-card-stat">
+        <div className="card text-center">
           <div>
-            <p className="app-text-muted">Total Members</p>
-            <p className="app-heading-lg">{accounts.length}</p>
+            <p className="text-muted">Total Members</p>
+            <p className="text-2xl font-bold text-default">{accounts.length}</p>
           </div>
           <Users size={32} />
         </div>
-        <div className="app-card app-card-stat">
+        <div className="card text-center">
           <div>
-            <p className="app-text-muted">Active Accounts</p>
-            <p className="app-heading-lg">{accounts.filter((a) => a.is_active).length}</p>
+            <p className="text-muted">Active Accounts</p>
+            <p className="text-2xl font-bold text-default">{accounts.filter((a) => a.is_active).length}</p>
           </div>
           <Target size={32} />
         </div>
-        <div className="app-card app-card-stat">
+        <div className="card text-center">
           <div>
-            <p className="app-text-muted">Total Contributions</p>
-            <p className="app-heading-lg">${totals.contributions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p className="text-muted">Total Contributions</p>
+            <p className="text-2xl font-bold text-default">${totals.contributions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
           <DollarSign size={32} />
         </div>
       </div>
 
-      <div className="app-card">
-        <div className="app-card-header">
-          <p className="app-heading-md">Member Detail</p>
+      <div className="card">
+        <div className="card-header">
+          <p className="text-xl font-semibold text-default">Member Detail</p>
         </div>
-        <div className="app-card-content" style={{ overflowX: 'auto' }}>
-          <table className="app-table min-w-full">
+        <div className="card-content" style={{ overflowX: 'auto' }}>
+          <table className="w-full border-collapse min-w-full">
             <thead>
               <tr>
                 <th>Member</th>
@@ -188,17 +188,17 @@ const AdminMembers = () => {
                   <td className="text-right">{Number(account.current_units || 0).toFixed(4)}</td>
                   <td className="text-right">{Number(account.ownership_percentage || 0).toFixed(2)}%</td>
                   <td>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${account.is_active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600 text-slate-200'}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${account.is_active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600 text-muted'}`}>
                       {account.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td>
                     {account.email ? (
-                      <a className="app-btn app-btn-outline app-btn-sm" href={`mailto:${account.email}`}>
+                      <a className="btn-primary-soft border border-border text-sm px-3 py-1" href={`mailto:${account.email}`}>
                         Email
                       </a>
                     ) : (
-                      <span className="text-slate-500 text-sm">No email</span>
+                      <span className="text-muted text-sm">No email</span>
                     )}
                   </td>
                 </tr>

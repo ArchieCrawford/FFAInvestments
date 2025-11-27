@@ -50,7 +50,7 @@ const AdminSchwabRawData = () => {
         <p>This page exercises the key Schwab endpoints so you can quickly confirm connectivity after logging in.</p>
         {selectedAccount && <p className="small text-muted mb-0">Inspecting account <strong>{selectedAccount}</strong>.</p>}
         {error && (
-          <div className="app-alert app-alert-destructive mb-4">
+          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg mb-4">
             <strong>Warning:</strong> {error}
           </div>
         )}
@@ -58,14 +58,14 @@ const AdminSchwabRawData = () => {
         {!loading && (
           <>
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="app-card diagnostics-card bg-dark">
-                <div className="app-card-header">
-                  <h5 className="app-card-title mb-0">Accounts Summary</h5>
+              <div className="card diagnostics-card bg-dark">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Accounts Summary</h5>
                 </div>
-                <div className="app-card-content">
+                <div className="card-content">
                   <p className="small text-muted">{accounts.length} account{accounts.length !== 1 ? 's' : ''} returned.</p>
                   <div className="table-responsive">
-                    <table className="app-table table-sm">
+                    <table className="w-full border-collapse table-sm">
                       <thead>
                         <tr>
                           <th>Account</th>
@@ -86,14 +86,14 @@ const AdminSchwabRawData = () => {
                   </div>
                 </div>
               </div>
-              <div className="app-card diagnostics-card bg-dark">
-                <div className="app-card-header">
-                  <h5 className="app-card-title mb-0">Market Snapshot</h5>
+              <div className="card diagnostics-card bg-dark">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Market Snapshot</h5>
                 </div>
-                <div className="app-card-content">
+                <div className="card-content">
                   <h6 className="text-uppercase text-muted small">Featured Quotes</h6>
                   <div className="table-responsive mb-3">
-                    <table className="app-table table-sm">
+                    <table className="w-full border-collapse table-sm">
                       <thead>
                         <tr>
                           <th>Symbol</th>
@@ -115,23 +115,23 @@ const AdminSchwabRawData = () => {
                 </div>
               </div>
             </div>
-            <div className="app-card diagnostics-card bg-dark mt-4">
-              <div className="app-card-header">
-                <h5 className="app-card-title mb-0">Account Detail</h5>
+            <div className="card diagnostics-card bg-dark mt-4">
+              <div className="card-header">
+                <h5 className="card-title mb-0">Account Detail</h5>
                 {selectedAccount && <span className="badge bg-secondary text-uppercase">{selectedAccount}</span>}
               </div>
-              <div className="app-card-content">
+              <div className="card-content">
                 <pre className="bg-black rounded p-3 small text-wrap" style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(accountDetails, null, 2)}</pre>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 mt-4">
-              <div className="app-card diagnostics-card bg-dark">
-                <div className="app-card-header">
-                  <h5 className="app-card-title mb-0">Recent Positions</h5>
+              <div className="card diagnostics-card bg-dark">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Recent Positions</h5>
                 </div>
-                <div className="app-card-content">
+                <div className="card-content">
                   <div className="table-responsive">
-                    <table className="app-table table-sm">
+                    <table className="w-full border-collapse table-sm">
                       <thead>
                         <tr>
                           <th>Symbol</th>
@@ -152,13 +152,13 @@ const AdminSchwabRawData = () => {
                   </div>
                 </div>
               </div>
-              <div className="app-card diagnostics-card bg-dark">
-                <div className="app-card-header">
-                  <h5 className="app-card-title mb-0">Recent Transactions</h5>
+              <div className="card diagnostics-card bg-dark">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Recent Transactions</h5>
                 </div>
-                <div className="app-card-content">
+                <div className="card-content">
                   <div className="table-responsive">
-                    <table className="app-table table-sm">
+                    <table className="w-full border-collapse table-sm">
                       <thead>
                         <tr>
                           <th>Date</th>
@@ -180,13 +180,13 @@ const AdminSchwabRawData = () => {
                 </div>
               </div>
             </div>
-            <div className="app-card diagnostics-card bg-dark mt-4">
-              <div className="app-card-header">
-                <h5 className="app-card-title mb-0">Recent Orders</h5>
+            <div className="card diagnostics-card bg-dark mt-4">
+              <div className="card-header">
+                <h5 className="card-title mb-0">Recent Orders</h5>
               </div>
-              <div className="app-card-content">
+              <div className="card-content">
                 <div className="table-responsive">
-                  <table className="app-table table-sm">
+                  <table className="w-full border-collapse table-sm">
                     <thead>
                       <tr>
                         <th>Order #</th>

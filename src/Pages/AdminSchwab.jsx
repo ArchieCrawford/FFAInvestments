@@ -127,14 +127,14 @@ const AdminSchwab = () => {
           const tokenRaw = localStorage.getItem('schwab_tokens') || ''
           const status = schwabApi.getAuthStatus?.()
           return (
-            <div className="app-card app-mb-lg" style={{ border: '1px dashed var(--app-border-muted)' }}>
-              <div className="app-card-header">
-                <h6 className="app-card-title" style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="card mb-8" style={{ border: '1px dashed var(--app-border-muted)' }}>
+              <div className="card-header">
+                <h6 className="text-lg font-semibold text-default" style={{ display: 'flex', alignItems: 'center' }}>
                   <i className="fas fa-bug" style={{ marginRight: '0.5rem' }}></i>
                   Schwab Debug Panel
                 </h6>
               </div>
-              <div className="app-card-content" style={{ fontSize: '0.75rem' }}>
+              <div className="card-content" style={{ fontSize: '0.75rem' }}>
                 <div><strong>Auth Status:</strong> {status ? JSON.stringify(status) : 'n/a'}</div>
                 <div style={{ marginTop: '0.5rem' }}><strong>Token (truncated):</strong> {tokenRaw.slice(0, 160)}{tokenRaw.length > 160 ? '…' : ''}</div>
                 <div style={{ marginTop: '0.5rem' }}><strong>Accounts loaded:</strong> {accounts.length}</div>
@@ -154,7 +154,7 @@ const AdminSchwab = () => {
         
         {isAuthenticated && (
           <button 
-            className="app-btn app-btn-outline app-btn-danger"
+            className="btn-primary-soft border border-red-500 text-red-500"
             onClick={handleDisconnect}
           >
             <i className="fas fa-unlink" style={{ marginRight: '0.5rem' }}></i>
@@ -165,7 +165,7 @@ const AdminSchwab = () => {
 
       {/* Connection Status */}
       <div className="mb-4">
-        <div className={`app-alert ${isAuthenticated ? 'app-alert-success' : ''}`}>
+        <div className={`${isAuthenticated ? 'bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg' : ''}`}>
           <i className={`fas ${isAuthenticated ? 'fa-check-circle' : 'fa-info-circle'}`} style={{ marginRight: '0.75rem' }}></i>
           <div>
             <strong>Status:</strong> {isAuthenticated ? 'Connected to Charles Schwab' : 'Not connected to Charles Schwab'}
@@ -180,7 +180,7 @@ const AdminSchwab = () => {
 
       {error && (
         <div className="mb-4">
-          <div className="app-alert app-alert-destructive">
+          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
             <i className="fas fa-exclamation-triangle" style={{ marginRight: '0.5rem' }}></i>
             {error}
           </div>
@@ -190,19 +190,19 @@ const AdminSchwab = () => {
       {/* Account Information */}
         {isAuthenticated && accounts.length > 0 && (
         <div className="mb-4">
-          <div className="app-card">
-            <div className="app-card-header">
-              <h5 className="app-card-title">
+          <div className="card">
+            <div className="card-header">
+              <h5 className="text-lg font-semibold text-default">
                 <i className="fas fa-wallet" style={{ marginRight: '0.5rem' }}></i>
                 Connected Accounts
               </h5>
             </div>
-            <div className="app-card-content">
+            <div className="card-content">
               <div className="grid gap-3 md:grid-cols-2">
                 {accounts.map(acc => (
-                  <div key={acc.id} className="app-card">
-                    <div className="app-card-content">
-                      <h6 className="app-heading-md">{acc.type}</h6>
+                  <div key={acc.id} className="card">
+                    <div className="card-content">
+                      <h6 className="text-xl font-semibold text-default">{acc.type}</h6>
                       <p>
                         <strong>Account ID:</strong> {acc.id}<br />
                         <strong>Status:</strong> {acc.isActive ? 'Active' : 'Inactive'}
@@ -219,32 +219,32 @@ const AdminSchwab = () => {
       {/* Feature Navigation + Insights */}
       {isAuthenticated && (
         <div className="mb-4">
-          <div className="app-card">
-            <div className="app-card-header">
-              <h5 className="app-card-title">
+          <div className="card">
+            <div className="card-header">
+              <h5 className="text-lg font-semibold text-default">
                 <i className="fas fa-tools" style={{ marginRight: '0.5rem' }}></i>
                 Charles Schwab Features
               </h5>
             </div>
-            <div className="app-card-content">
+            <div className="card-content">
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="app-card h-100">
-                  <div className="app-card-content text-center">
+                <div className="card h-100">
+                  <div className="card-content text-center">
                     <i className="fas fa-chart-pie fa-3x mb-3"></i>
-                    <h5 className="app-heading-md">Account Insights</h5>
+                    <h5 className="text-xl font-semibold text-default">Account Insights</h5>
                     <p>View portfolio analytics, performance metrics, and export data to Excel.</p>
                     <div style={{ marginTop: 24 }}>
                       <SchwabInsights />
                     </div>
                   </div>
                 </div>
-                <div className="app-card h-100">
-                  <div className="app-card-content text-center">
+                <div className="card h-100">
+                  <div className="card-content text-center">
                     <i className="fas fa-code fa-3x mb-3"></i>
-                    <h5 className="app-heading-md">Raw Data Viewer</h5>
+                    <h5 className="text-xl font-semibold text-default">Raw Data Viewer</h5>
                     <p>Debug API calls, test endpoints, and view raw response data.</p>
                     <button 
-                      className="app-btn app-btn-outline"
+                      className="btn-primary-soft border border-border"
                       onClick={() => navigate('/admin/schwab/raw-data')}
                     >
                       <i className="fas fa-database" style={{ marginRight: '0.5rem' }}></i>
@@ -260,14 +260,14 @@ const AdminSchwab = () => {
 
       {/* Connection Setup */}
       {!isAuthenticated && (
-        <div className="app-card">
-          <div className="app-card-header">
-            <h5 className="app-card-title">
+        <div className="card">
+          <div className="card-header">
+            <h5 className="text-lg font-semibold text-default">
               <i className="fas fa-link" style={{ marginRight: '0.5rem' }}></i>
               Connect to Charles Schwab
             </h5>
           </div>
-          <div className="app-card-content">
+          <div className="card-content">
             <div className="text-center">
               <i className="fas fa-university fa-4x mb-4"></i>
               <h4>Connect Your Charles Schwab Account</h4>
@@ -276,7 +276,7 @@ const AdminSchwab = () => {
               </p>
               
               <button 
-                className="app-btn app-btn-primary app-btn-lg"
+                className="btn-primary text-lg px-8 py-3"
                 onClick={handleConnect}
                 disabled={isLoading}
               >
@@ -295,7 +295,7 @@ const AdminSchwab = () => {
                 )}
               </button>
               
-              <p className="app-text-muted mt-3">
+              <p className="text-muted mt-3">
                 <small>You'll be redirected to Charles Schwab for secure authentication</small>
               </p>
             </div>

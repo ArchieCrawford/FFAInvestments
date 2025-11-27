@@ -92,18 +92,18 @@ const MemberDirectory = () => {
 
   return (
     <div className="app-page">
-      <div className="app-card">
-        <div className="app-card-header">
+      <div className="card">
+        <div className="card-header">
           <div>
-            <p className="app-card-title">Member Directory</p>
-            <p className="app-card-subtitle">Connect with fellow FFA Investment Club members</p>
+            <p className="text-lg font-semibold text-default">Member Directory</p>
+            <p className="text-sm text-muted">Connect with fellow FFA Investment Club members</p>
           </div>
           <div className="app-pill">
             <Users size={16} />
             {directoryStats.active} Active
           </div>
         </div>
-        <div className="app-card-content">
+        <div className="card-content">
           <label style={{ display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
             Search Members
           </label>
@@ -122,8 +122,8 @@ const MemberDirectory = () => {
       </div>
 
       {error && (
-        <div className="app-card">
-          <div className="app-card-content text-red-300">{error}</div>
+        <div className="card">
+          <div className="card-content text-red-300">{error}</div>
         </div>
       )}
 
@@ -157,12 +157,12 @@ const MemberDirectory = () => {
 
       <div className="app-grid cols-2">
         {filteredMembers.map((member) => (
-          <div className="app-card" key={member.id}>
-            <div className="app-card-header">
+          <div className="card" key={member.id}>
+            <div className="card-header">
               <div>
-                <p className="app-card-title">{member.displayName || 'Member'}</p>
+                <p className="text-lg font-semibold text-default">{member.displayName || 'Member'}</p>
                 {member.member_name && member.member_name !== member.displayName && (
-                  <p className="app-card-subtitle">{member.member_name}</p>
+                  <p className="text-sm text-muted">{member.member_name}</p>
                 )}
               </div>
               <div className="app-pill" style={{ background: member.status === 'active' ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.2)', color: '#fff' }}>
@@ -219,14 +219,14 @@ const MemberDirectory = () => {
       </div>
 
       {filteredMembers.length === 0 && !error && (
-        <div className="app-card app-empty-state">
+        <div className="card text-center">
           <Users size={32} style={{ marginBottom: '0.8rem' }} />
           <h3>No Members Found</h3>
           <p>{searchTerm ? 'Try adjusting your search terms.' : 'No active members in the directory yet.'}</p>
         </div>
       )}
 
-      <div className="app-card">
+      <div className="card">
         <h3 style={{ marginBottom: '0.5rem' }}>Need Help Connecting?</h3>
         <p>Club Email: Contact the administrators for member connection assistance.</p>
         <p style={{ marginTop: '0.5rem' }}>Privacy: Only active club members can view this directory. Contact information is provided voluntarily by members.</p>

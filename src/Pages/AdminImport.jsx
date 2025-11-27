@@ -248,8 +248,8 @@ export default function AdminImport() {
       <div className="max-w-6xl mx-auto space-y-6">
         
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Import Historical Data</h1>
-          <p className="text-slate-600">Bulk import members, accounts, transactions, and unit prices from Excel/CSV</p>
+          <h1 className="text-3xl font-bold text-default mb-2">Import Historical Data</h1>
+          <p className="text-muted">Bulk import members, accounts, transactions, and unit prices from Excel/CSV</p>
         </div>
 
         {error && (
@@ -275,7 +275,7 @@ export default function AdminImport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">Import member profiles with contact info and KYC status</p>
+              <p className="text-sm text-muted">Import member profiles with contact info and KYC status</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -296,7 +296,7 @@ export default function AdminImport() {
                     }}
                     className="hidden"
                   />
-                  <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
+                  <Button size="sm" className="w-full bg-primary hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
                     <Upload className="w-3 h-3 mr-1" />
                     Upload
                   </Button>
@@ -313,7 +313,7 @@ export default function AdminImport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">Import accounts with units, balances, and owners</p>
+              <p className="text-sm text-muted">Import accounts with units, balances, and owners</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -334,7 +334,7 @@ export default function AdminImport() {
                     }}
                     className="hidden"
                   />
-                  <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
+                  <Button size="sm" className="w-full bg-primary hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
                     <Upload className="w-3 h-3 mr-1" />
                     Upload
                   </Button>
@@ -351,7 +351,7 @@ export default function AdminImport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">Import historical ledger entries and transactions</p>
+              <p className="text-sm text-muted">Import historical ledger entries and transactions</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -372,7 +372,7 @@ export default function AdminImport() {
                     }}
                     className="hidden"
                   />
-                  <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
+                  <Button size="sm" className="w-full bg-primary hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
                     <Upload className="w-3 h-3 mr-1" />
                     Upload
                   </Button>
@@ -389,7 +389,7 @@ export default function AdminImport() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600">Import historical unit price data</p>
+              <p className="text-sm text-muted">Import historical unit price data</p>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -410,7 +410,7 @@ export default function AdminImport() {
                     }}
                     className="hidden"
                   />
-                  <Button size="sm" className="w-full bg-blue-900 hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
+                  <Button size="sm" className="w-full bg-primary hover:bg-blue-800" type="button" onClick={(e) => e.currentTarget.previousElementSibling.click()}>
                     <Upload className="w-3 h-3 mr-1" />
                     Upload
                   </Button>
@@ -426,7 +426,7 @@ export default function AdminImport() {
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle>Preview Data</CardTitle>
-                  <p className="text-sm text-slate-600 mt-1">
+                  <p className="text-sm text-muted mt-1">
                     Review {previewData.length} records before importing
                   </p>
                 </div>
@@ -462,7 +462,7 @@ export default function AdminImport() {
                   </TableBody>
                 </Table>
                 {previewData.length > 50 && (
-                  <p className="text-sm text-slate-500 text-center py-4">
+                  <p className="text-sm text-muted text-center py-4">
                     Showing first 50 of {previewData.length} records
                   </p>
                 )}
