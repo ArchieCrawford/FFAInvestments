@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign } from 'lucide-react'
-import './ModernLogin.css'
+// Styles centralized in global index.css
 
 const BackgroundAnimation = () => (
   <div className="app-bg-animation">
