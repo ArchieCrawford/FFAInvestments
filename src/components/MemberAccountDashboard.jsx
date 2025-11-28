@@ -61,7 +61,7 @@ export default function MemberAccountDashboard() {
   };
 
   const filteredTimeline = getFilteredTimeline();
-  const chartData = filteredTimeline.map(e => ({ date: formatDate(e.report_date), portfolioValue: e.portfolio_value }));
+  const chartData = filteredTimeline.map(e => ({ date: formatDate(e.report_date), portfolio_value: e.portfolio_value }));
   const latestEntry = timeline[timeline.length - 1];
   const previousEntry = timeline[timeline.length - 2];
 
@@ -192,9 +192,9 @@ export default function MemberAccountDashboard() {
                   <YAxis tickFormatter={(value) => formatCurrency(value)} stroke="rgb(var(--color-text))" />
                   <Tooltip 
                     contentStyle={{ backgroundColor: 'rgb(var(--color-surface))', borderColor: 'rgb(var(--color-border))' }}
-                    formatter={(value, name) => [name === 'portfolioValue' ? formatCurrency(value) : value, name === 'portfolioValue' ? 'Portfolio Value' : 'Value']} 
+                    formatter={(value, name) => [name === 'portfolio_value' ? formatCurrency(value) : value, name === 'portfolio_value' ? 'Portfolio Value' : 'Value']} 
                   />
-                  <Area type="monotone" dataKey="portfolioValue" stroke="rgb(var(--color-primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
+                  <Area type="monotone" dataKey="portfolio_value" stroke="rgb(var(--color-primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (

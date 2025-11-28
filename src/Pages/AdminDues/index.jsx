@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { AlertCircle, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { getMemberTimeline } from '../../lib/ffaApi'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Page } from '../../components/Page'
 
@@ -18,42 +19,57 @@ const DuesTracker = () => {
     setLoading(true)
     setError(null)
     try {
-      let query = supabase.from('ffa_timeline').select(`
-        id,
-        member_name,
-        report_month,
-        report_date,
-        portfolio_value,
-        total_units,
-        total_contribution,
-        ownership_pct,
-        portfolio_growth,
-        portfolio_growth_amount
-      `)
+      // Fetch all member accounts
+      const { data: memberAccounts, error: memberError } = await supabase
+        .from('member_accounts')
+        .select('member_id, member_name')
+        .order('member_name')
 
+      if (memberError) throw memberError
+
+      // Filter by name if needed
+      let filteredMembers = memberAccounts || []
       if (filterName && filterName.trim() !== '') {
-        query = query.ilike('member_name', `%${filterName.trim()}%`)
+        const searchTerm = filterName.trim().toLowerCase()
+        filteredMembers = filteredMembers.filter(m => 
+          m.member_name?.toLowerCase().includes(searchTerm)
+        )
       }
 
-      if (filterRange && filterRange !== 'all') {
-        const months = Number(filterRange) || 12
-        const from = new Date()
-        from.setMonth(from.getMonth() - months)
-        const iso = from.toISOString().split('T')[0]
-        query = query.gte('report_date', iso)
+      // Fetch timeline for each member using canonical RPC
+      const allTimelineData = []
+      for (const member of filteredMembers) {
+        try {
+          const timeline = await getMemberTimeline(member.member_id)
+          
+          // Apply date filter
+          let filteredTimeline = timeline || []
+          if (filterRange && filterRange !== 'all') {
+            const months = Number(filterRange) || 12
+            const cutoff = new Date()
+            cutoff.setMonth(cutoff.getMonth() - months)
+            filteredTimeline = filteredTimeline.filter(entry => 
+              new Date(entry.report_date) >= cutoff
+            )
+          }
+
+          // Add member name to each timeline entry
+          filteredTimeline.forEach(entry => {
+            allTimelineData.push({
+              ...entry,
+              member_name: member.member_name,
+              member_id: member.member_id
+            })
+          })
+        } catch (err) {
+          console.warn(`Could not load timeline for ${member.member_name}:`, err)
+        }
       }
 
-        query = query.order('report_date', { ascending: true })
+      // Sort by date
+      allTimelineData.sort((a, b) => new Date(a.report_date) - new Date(b.report_date))
 
-      const { data, error } = await query
-
-      if (error) {
-        setError(error.message)
-        setRows([])
-        return
-      }
-
-      setRows(data || [])
+      setRows(allTimelineData)
     } catch (err) {
       setError(err.message || String(err))
       setRows([])
@@ -164,7 +180,6 @@ const DuesTracker = () => {
   }, [])
 
   const formatPeriod = useCallback((row) => {
-    if (row.report_month) return row.report_month
     if (row.report_date) {
       const d = new Date(row.report_date)
       if (!Number.isNaN(d.getTime())) return d.toLocaleDateString()
@@ -310,15 +325,17 @@ const DuesTracker = () => {
                       </td>
                     </tr>
                   ) : (
-                    visibleRows.map((row) => {
-                      const safeKey = row.id || `${row.member_name || 'unknown'}-${row.report_month || row.report_date || 'unknown'}`
+                    visibleRows.map((row, idx) => {
+                      const safeKey = `${row.member_id || 'unknown'}-${row.report_date || idx}`
+                      // Calculate ownership % from total_units if needed (requires total club units)
+                      const ownershipPct = null // Not available in canonical schema without club-wide calculation
                       return (
                         <tr key={safeKey} className="hover:bg-surface/80">
                           <td className="px-4 py-2 text-sm text-slate-100 sm:px-6">{row.member_name || 'Unknown'}</td>
                           <td className="px-4 py-2 text-sm text-muted sm:px-6">{formatPeriod(row)}</td>
                           <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.total_contribution)}</td>
                           <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatCurrency(row.portfolio_value)}</td>
-                          <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{formatPercent(row.ownership_pct)}</td>
+                          <td className="px-4 py-2 text-right text-sm tabular-nums text-slate-100 sm:px-6">{ownershipPct !== null ? formatPercent(ownershipPct) : '—'}</td>
                         </tr>
                       )
                     })

@@ -2,6 +2,10 @@ import Papa from 'papaparse'
 import { supabase } from './src/lib/supabase.js'
 import { readFileSync } from 'fs'
 
+// ⚠️ DEPRECATED: This script writes to the legacy ffa_timeline table.
+// For new imports, write directly to member_monthly_balances with canonical fields:
+// member_id, report_date, portfolio_value, total_units, total_contribution, growth_amount, growth_pct
+
 // Script to import FFA timeline CSV data into Supabase
 async function importTimelineData() {
   try {
