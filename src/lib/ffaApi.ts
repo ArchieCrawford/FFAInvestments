@@ -15,9 +15,13 @@ const MEMBER_ACCOUNT_FIELDS = `
 `
 
 export async function getDashboard(asOfDate: string) {
-  const { data, error } = await supabase.rpc('api_get_dashboard', {
-    as_of_date: asOfDate,
-  })
+  const { data, error } = await supabase.rpc('api_get_dashboard')
+  // Debug logging in dev or when ?debug=1 is present
+  const isDebug = (typeof window !== 'undefined' && window.location.search.includes('debug=1'))
+    || (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV)
+  if (isDebug) {
+    console.debug('[RPC] api_get_dashboard result', { data, error })
+  }
   if (error) throw error
   return data
 }
@@ -61,6 +65,11 @@ export async function getMemberTimeline(memberId: string) {
   const { data, error } = await supabase.rpc('api_get_member_timeline', {
     member_id_in: memberId,
   })
+  const isDebug = (typeof window !== 'undefined' && window.location.search.includes('debug=1'))
+    || (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV)
+  if (isDebug) {
+    console.debug('[RPC] api_get_member_timeline result', { memberId, dataLength: Array.isArray(data) ? data.length : null, error })
+  }
   if (error) throw error
   return data
 }

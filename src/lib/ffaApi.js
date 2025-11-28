@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js'
+import { supabase } from './supabase.js' 
 
 const MEMBER_ACCOUNT_FIELDS = `
   id,
@@ -15,9 +15,7 @@ const MEMBER_ACCOUNT_FIELDS = `
 `
 
 export async function getDashboard(asOfDate) {
-  const { data, error } = await supabase.rpc('api_get_dashboard', {
-    as_of_date: asOfDate,
-  })
+  const { data, error } = await supabase.rpc('api_get_dashboard')
   if (error) throw error
   return data
 }
@@ -76,14 +74,12 @@ export async function getOrgBalanceHistory() {
   return data
 }
 
-// Replaced unit_prices table usage with club_unit_valuations
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase
     .from('club_unit_valuations')
     .select('valuation_date, unit_value, total_units_outstanding, total_value')
     .order('valuation_date', { ascending: true })
   if (error) throw error
-  // Normalize shape to previous consumer expectation
   return (data || []).map(r => ({
     id: r.valuation_date,
     price_date: r.valuation_date,
@@ -124,7 +120,6 @@ export async function createMemberUnitTransaction(params) {
   return data;
 }
 
-// DEPRECATED: Use getMemberTimeline() instead which uses the canonical RPC
 export async function getMemberDues(memberId) {
   console.warn('getMemberDues is deprecated. Use getMemberTimeline() instead.');
   if (memberId) {
@@ -132,10 +127,6 @@ export async function getMemberDues(memberId) {
   }
   throw new Error('getMemberDues without memberId is not supported. Use getMemberTimeline() with a specific member_id.');
 }
-
-// ----------------------------
-// Member Feed helpers
-// ----------------------------
 
 export async function getMemberFeed({ limit = 20, cursor = null } = {}) {
   const { data, error } = await supabase.rpc('api_get_member_feed', {
@@ -153,14 +144,7 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
   let resolvedAuthor = authorId
   if (!resolvedAuthor) {
     const { data: userData, error: userErr } = await supabase.auth.getUser()
-    // Treat the Supabase "Auth session missing" as a not-authenticated case
-    if (userErr) {
-      const isSessionMissing = (userErr.message || '').toLowerCase().includes('session missing')
-      if (isSessionMissing) {
-        throw new Error('Not authenticated')
-      }
-      throw userErr
-    }
+    if (userErr) throw userErr
     const user = userData?.user
     if (!user) throw new Error('Not authenticated')
     resolvedAuthor = user.id

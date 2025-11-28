@@ -10,6 +10,8 @@ returns table (
   growth_amount numeric,
   growth_pct numeric
 )
+security definer
+set search_path = public
 language sql
 stable
 as $$

@@ -3,6 +3,8 @@
 
 create or replace function public.api_get_dashboard()
 returns jsonb
+security definer
+set search_path = public
 language sql
 stable
 as $$
