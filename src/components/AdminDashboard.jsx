@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Page } from '../components/Page'
+import { createClient } from '@supabase/supabase-js';
+
+// Minimal Supabase client initializer. Assumes env vars are set via Vite.
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -16,19 +22,46 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const members = await base44.entities.User.list();
-      const timeline = await base44.entities.Timeline.getAll();
-      
-      const totalAUM = members.reduce((sum, member) => sum + (member.currentBalance || 0), 0);
-      const activeAccounts = members.filter(m => m.status === 'active').length;
-      
+      // Prefer a canonical RPC if available
+      const rpc = await supabase.rpc('api_get_dashboard');
+
+      if (!rpc.error && rpc.data) {
+        const d = rpc.data;
+        setStats({
+          totalMembers: d.total_members ?? 0,
+          totalAUM: d.total_aum ?? 0,
+          activeAccounts: d.active_accounts ?? 0,
+          unitPrice: d.current_unit_value ?? 0,
+        });
+        return;
+      }
+
+      // Fallback: query canonical tables directly
+      const [{ data: members, error: membersErr }, { data: accounts, error: accountsErr }] = await Promise.all([
+        supabase.from('members').select('id,status'),
+        supabase.from('member_accounts').select('member_id,current_balance')
+      ]);
+
+      if (membersErr) throw membersErr;
+      if (accountsErr) throw accountsErr;
+
+      const totalAUM = (accounts ?? []).reduce((sum, acc) => sum + (acc.current_balance ?? 0), 0);
+      const activeAccounts = (members ?? []).filter(m => m.status === 'active').length;
+
+      // Latest unit valuation
+      const { data: valuationRows, error: valErr } = await supabase
+        .from('club_unit_valuations')
+        .select('unit_value, valuation_date')
+        .order('valuation_date', { ascending: false })
+        .limit(1);
+      if (valErr) throw valErr;
+      const unitValue = valuationRows && valuationRows.length > 0 ? (valuationRows[0].unit_value ?? 0) : 0;
+
       setStats({
-        totalMembers: members.length,
+        totalMembers: (members ?? []).length,
         totalAUM,
         activeAccounts,
-        unitPrice: timeline.length > 0
-          ? (totalAUM / members.reduce((sum, m) => sum + (m.totalUnits || 0), 0))
-          : 0
+        unitPrice: unitValue,
       });
     } catch (error) {
       console.error('Error loading stats:', error);

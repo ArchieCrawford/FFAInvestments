@@ -1,13 +1,25 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { createClient } from '@supabase/supabase-js';
 import { Link } from 'react-router-dom';
 import { Page } from '../components/Page';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function EducationCatalog() {
   const { data: lessons = [], isLoading } = useQuery({
     queryKey: ['education-lessons'],
-    queryFn: () => base44.entities.EducationLesson.list('order_index'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('education_lessons')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const publishedLessons = lessons.filter(lesson => lesson.is_published);

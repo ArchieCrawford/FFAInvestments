@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { createClient } from "@supabase/supabase-js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Plus, Edit2, BookOpen } from "lucide-react";
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function AdminEducation() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -37,11 +42,26 @@ export default function AdminEducation() {
 
   const { data: lessons = [], isLoading } = useQuery({
     queryKey: ['lessons'],
-    queryFn: () => base44.entities.EducationLesson.list('order_index'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('education_lessons')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const createMutation = useMutation({
-    mutationFn: (lessonData) => base44.entities.EducationLesson.create(lessonData),
+    mutationFn: async (lessonData) => {
+      const { data, error } = await supabase
+        .from('education_lessons')
+        .insert(lessonData)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       setIsDialogOpen(false);
@@ -51,7 +71,16 @@ export default function AdminEducation() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, lessonData }) => base44.entities.EducationLesson.update(id, lessonData),
+    mutationFn: async ({ id, lessonData }) => {
+      const { data, error } = await supabase
+        .from('education_lessons')
+        .update(lessonData)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lessons'] });
       setIsDialogOpen(false);

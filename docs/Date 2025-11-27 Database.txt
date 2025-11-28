@@ -1,0 +1,436 @@
+Overview — runbook to recreate the database, tables, and flows
+
+Below is a thorough breakdown of the database objects, columns, relationships, and operational runbook that another AI (or engineer) could use to recreate and operate your system. I cover every relevant table (including the new unit tables you added), their important columns, indexes, how they relate, and the day-to-day processes (ETL, UI wiring, rollups, snapshot & positions sync, unit valuation and member transactions). I also explain the provided dashboard function and how it ties into these tables.
+
+If you want I can also produce a single-file SQL schema dump that recreates all tables (excluding RLS policies) or JSON schema documents for each table.
+High-level architecture & intent
+
+    The app tracks Schwab brokerage accounts, daily Schwab snapshots and positions, and aggregates those into organization-level balances.
+    The app models an investment club with members who own units; club unit valuations (NAV-style unit values) are stored in club_unit_valuations and member unit transactions recorded in member_unit_transactions.
+    Member balances and historical monthly member balances are stored in member_accounts and member_monthly_balances.
+    There's an aggregate org_balance_history that stores daily/periodic totals (cash, positions, total value), which is used for charts and the dashboard.
+    The UI triggers capture of Schwab snapshots and positions (via the Schwab API); rollups and other SQL functions compute organization-level results.
+
+Tables, key columns & indexes (schema-level breakdown)
+
+Note: this list includes the core tables you asked to keep plus the two new ones you added. It omits unrelated schemas (auth, storage, etc.).
+
+    public.schwab_accounts
+        Purpose: Catalog of Schwab accounts tracked by the app.
+        Key columns:
+            id uuid primary key (gen_random_uuid())
+            account_number text UNIQUE — primary external matching key
+            account_type text
+            display_name text
+            created_at timestamptz DEFAULT now()
+        Usage:
+            Upsert when Schwab accounts are fetched.
+            Joined from snapshots and positions by account_id or account_number.
+
+    public.schwab_account_snapshots
+        Purpose: Daily snapshot of Schwab account totals (liquidation, cash, raw JSON).
+        Key columns:
+            id uuid primary key
+            account_id uuid (FK to schwab_accounts.id, often present)
+            snapshot_date date (unique per account; unique(account_id, snapshot_date) expected)
+            liquidation_value numeric
+            cash_balance numeric
+            raw_json jsonb (full Schwab API payload)
+            created_at timestamptz DEFAULT now()
+        Indexes:
+            index on snapshot_date (helps rollups by date)
+            unique(account_id, snapshot_date) recommended for upsert behavior
+        Usage:
+            Inserted/updated daily from Schwab API (captureSchwabSnapshot).
+            Used by rollup functions (api_roll_schwab_into_org_balance) to populate org_balance_history.
+
+    public.schwab_positions
+        Purpose: Per-account per-date positions (individual holdings).
+        Key columns:
+            id uuid or serial
+            account_number text — used for joins/aggregation; must match schwab_accounts.account_number
+            as_of_date date — the date the position is reported
+            symbol text
+            description text
+            asset_type text
+            quantity numeric
+            price numeric
+            market_value numeric
+            cost_basis numeric
+            side text
+            raw_json jsonb
+            created_at timestamptz DEFAULT now()
+        Indexes:
+            index on (account_number, as_of_date DESC) (used by v_schwab_positions_daily & queries)
+        Usage:
+            Populated from Schwab positions feed; used by the view that aggregates positions per account/date.
+
+    public.v_schwab_positions_daily (view)
+        Purpose: Aggregates schwab_positions to compute positions_value per account and date.
+        Typical definition:
+            SELECT account_number, as_of_date, SUM(market_value) AS positions_value FROM public.schwab_positions GROUP BY account_number, as_of_date;
+        Usage:
+            Used by rollups to compute positions_value when snapshot liquidation_value is missing or to cross-check totals.
+
+    public.org_balance_history
+        Purpose: Organization-level balance history; stores rollups from Schwab (and potentially other sources).
+        Key columns (commonly present):
+            id uuid primary key
+            balance_date date UNIQUE
+            source text (e.g., 'schwab_positions' or 'schwab_snapshots')
+            total_value numeric
+            cash_value numeric
+            positions_value numeric
+            metadata jsonb (e.g., account mapping)
+            created_at timestamptz DEFAULT now()
+        Usage:
+            Populated by functions like api_roll_schwab_into_org_balance(date).
+            Source for dashboards and charts.
+
+    public.members
+        Purpose: Club members registry (people who hold units).
+        Key columns (typical):
+            id uuid primary key
+            name / display_name text
+            email text
+            is_active boolean
+            created_at timestamptz
+        Usage:
+            Referenced by member_accounts and member_unit_transactions.
+
+    public.member_accounts
+        Purpose: Member-specific account information and current units/value.
+        Key columns (typical):
+            id uuid primary key
+            member_id uuid references public.members(id)
+            current_units numeric
+            current_value numeric
+            other metadata columns
+        Usage:
+            Used to compute member-level stats and for reconciliation with member_monthly_balances.
+
+    public.member_monthly_balances
+        Purpose: Historical member balance snapshots by month (for reporting).
+        Key columns (typical):
+            id uuid primary key
+            member_id uuid references members
+            for_month date (or year int / month int)
+            units numeric
+            value numeric
+            created_at timestamptz
+
+    public.club_unit_valuations (NEW)
+        Purpose: Stores club-wide per-date NAV/unit valuation.
+        Definition (created as requested):
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+            valuation_date date NOT NULL UNIQUE
+            total_value numeric NOT NULL
+            total_units_outstanding numeric NOT NULL
+            unit_value numeric NOT NULL
+            created_at timestamptz DEFAULT now()
+        Index:
+            index on (valuation_date) — note UNIQUE already creates index; the explicit index was added for clarity.
+        Usage:
+            Insert a new row whenever you compute the NAV/unit value for the club (e.g., daily after org rollups).
+            The unit_value = total_value / total_units_outstanding (store computed value for audit).
+            Used by dashboard and member transaction calculations.
+
+    public.member_unit_transactions (NEW)
+        Purpose: Record member-level unit buy/sell/adjustment transactions (cash in/out, units delta).
+        Definition (created as requested):
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+            member_id uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE
+            tx_date date NOT NULL
+            tx_type text NOT NULL (e.g., 'buy', 'sell', 'adjustment', 'deposit', 'withdrawal')
+            cash_amount numeric NOT NULL (positive for cash in, negative for cash out)
+            unit_value_at_tx numeric NOT NULL (unit value used to compute units_delta)
+            units_delta numeric NOT NULL (positive for purchased units, negative for redeemed)
+            notes text
+            created_at timestamptz DEFAULT now()
+        Index:
+            index on (member_id, tx_date)
+        Usage:
+            Record when members buy or sell club units; used to recompute member units and aggregate member accounts over time.
+
+Key SQL functions & views (how they work)
+
+    api_roll_schwab_into_org_balance(p_date date)
+        Purpose: For a given date, upsert one or more rows into public.org_balance_history by aggregating from schwab_account_snapshots and v_schwab_positions_daily.
+        Behavior:
+            Read snapshots for snapshot_date = p_date.
+            Join to schwab_accounts to map account ids to account_numbers.
+            Left join v_schwab_positions_daily for positions totals by account/date.
+            Use snapshot.liquidation_value when available; otherwise use positions_value to compute totals.
+            Insert or upsert into public.org_balance_history with source = 'schwab_positions' or similar.
+        Operational note:
+            Call once per day after you have ingested snapshots & positions for that date.
+            It usually does ON CONFLICT (balance_date, source) DO UPDATE to make rollups idempotent.
+
+    v_schwab_positions_daily (view)
+        Aggregates schwab_positions into positions_value per account and date
+        Used by rollups to compute positions_value for org-level totals.
+
+    public.api_get_dashboard() (provided SQL function)
+        Purpose: Single-shot dashboard payload builder returning JSONB of latest org balance, latest unit valuation (NAV), and member counts/aggregate units/value.
+        Implementation (summary of given code):
+            latest_org: selects the most recent row (ORDER BY balance_date DESC LIMIT 1) from public.org_balance_history, returning balance_date, total_value, stock_value, schwab_cash, schwab_mm, credit_union_cash
+            latest_nav: selects the most recent row (ORDER BY valuation_date DESC LIMIT 1) from public.club_unit_valuations, returning valuation_date, unit_value, total_units_outstanding, total_value
+            member_stats: aggregates public.member_accounts with:
+                active_members = count(*) WHERE is_active
+                total_member_units = SUM(current_units)
+                total_member_value = SUM(current_value)
+            Returns jsonb_build_object with keys:
+                'org_balance' => latest_org row_to_json
+                'unit_valuation' => latest_nav row_to_json
+                'member_stats' => row_to_json(member_stats)
+        Usage:
+            Client or edge function can call public.api_get_dashboard() to receive a single JSON payload for summary panels.
+            This function relies on club_unit_valuations and org_balance_history being kept up to date.*
+
+Typical daily operational runbook (step-by-step)
+
+Below is an ordered runbook describing how data gets into the system and how to produce derived results. This is what to hand to another AI or operator who needs to recreate behavior.
+
+    Ingest Schwab accounts & snapshots (ETL / UI trigger)
+        Trigger: captureSchwabSnapshot() or an automated ETL job.
+        Steps:
+            Call Schwab API: schwabApi.getAccounts() to fetch accounts (payloads include securitiesAccount, currentBalances, aggregatedBalance, etc.).
+            Resolve primary accountNumber from payload at account.securitiesAccount.accountNumber (or other agreed path).
+            Upsert account into public.schwab_accounts by account_number to avoid duplicates.
+            Compute snapshot_date = current_date (YYYY-MM-DD).
+            Extract liquidation_value and cash_balance:
+                Prefer aggregatedBalance.currentLiquidationValue,
+                Fallback to securitiesAccount.currentBalances.liquidationValue,
+                For cash, prefer securitiesAccount.currentBalances.cashBalance.
+            Insert or upsert one row in public.schwab_account_snapshots with (account_id, snapshot_date, liquidation_value, cash_balance, raw_json).
+            Log success and return inserted/upserted snapshot.
+        Notes:
+            Use unique(account_id, snapshot_date) to upsert safely.
+            Catch and report errors for UI display.
+            Optionally store full raw_json for debugging and reprocessing.
+
+    Sync Schwab positions for the same date
+        Trigger: After snapshot capture.
+        Steps:
+            Call Schwab API to fetch positions for the account (schwabApi.getPositionsForAccount(accountNumber)).
+            Map positions to your table column names and set as_of_date = current_date.
+            To be idempotent: delete existing rows for (account_number, as_of_date=current_date) then bulk insert new rows; or upsert if you have a unique key.
+            Log inserted count and any errors.
+        Notes:
+            Ensure account_number in positions exactly matches schwab_accounts.account_number.
+
+    Roll up to org_balance_history
+        Trigger: After snapshots & positions are present for the date (can be scheduled as daily job).
+        Steps:
+            Run api_roll_schwab_into_org_balance(p_date := current_date) or corresponding stored procedure.
+            The function should:
+                Use schwab_account_snapshots for the date when present.
+                Use v_schwab_positions_daily to compute positions_value per account if snapshot.liquidation_value missing.
+                Insert or upsert aggregated org totals into public.org_balance_history with source/source metadata.
+            Confirm new row(s) exist in org_balance_history for that date.
+        Notes:
+            Keep this job idempotent (function should upsert). Call once after ETL finishes.
+
+    Compute club unit valuation (NAV) and save to club_unit_valuations
+        Trigger: After org_balance_history is available and member units outstanding is known for the valuation date.
+        Steps:
+            Compute total_value: use org_balance_history.total_value for the relevant date (or sum of sources).
+            Determine total_units_outstanding: sum current units from member_accounts OR compute based on historical member_unit_transactions.
+            Compute unit_value = total_value / total_units_outstanding (handle division by zero carefully).
+            Insert a row into public.club_unit_valuations:
+                valuation_date = date (typically current_date)
+                total_value
+                total_units_outstanding
+                unit_value
+            Use UNIQUE constraint on valuation_date to upsert rather than duplicate.
+        Notes:
+            The stored unit_value is canonical for that date and used when recording member transactions.
+            Keep full audit trail for NAV computations externally if required.
+
+    Record member unit transactions (member buys/sells)
+        Trigger: Member deposit/withdrawal or admin adjustments.
+        Steps:
+            For a buy (member adds cash to purchase units):
+                Record cash_amount (positive), tx_type = 'buy', tx_date, unit_value_at_tx (value from nearest club_unit_valuations or computed), units_delta = cash_amount / unit_value_at_tx.
+            For a sell (member redeems units for cash):
+                cash_amount (negative if cash leaves club), tx_type = 'sell', units_delta negative.
+            Insert row into public.member_unit_transactions.
+            Update public.member_accounts.current_units and current_value (or schedule a recompute job) — you can recompute by replaying transactions or by maintaining incremental totals:
+                current_units = previous_current_units + SUM(units_delta for member)
+                current_value = current_units * latest unit_value (or sum of per-transaction values depending on your model).
+        Notes:
+            member_unit_transactions should be the source of truth for member ownership changes.
+            Prefer to store the unit_value_at_tx at the time so historical cost basis is recoverable.
+
+    Recompute member monthly balances
+        Trigger: Monthly cron or after transactions.
+        Steps:
+            For each member, compute month-end units and value (units * unit_value at the month-end valuation).
+            Insert into public.member_monthly_balances as snapshot.
+            Use this for historical reporting & charts.
+
+    Dashboard / API
+        The provided public.api_get_dashboard() SQL function:
+            Pulls latest org_balance_history row.
+            Pulls latest club_unit_valuations row (NAV).
+            Produces member aggregate stats from member_accounts.
+            Returns combined JSONB with keys:
+                org_balance -> latest org totals
+                unit_valuation -> latest NAV row
+                member_stats -> one-row aggregates (active_members, total_member_units, total_member_value)
+        Usage:
+            Call SELECT public.api_get_dashboard(); from server or edge function to get the data to render a dashboard.
+            Ensure the underlying tables (org_balance_history, club_unit_valuations, member_accounts) are kept up-to-date by the ETL/cron processes above.
+
+Important constraints & operational cautions
+
+    Do NOT modify existing RLS policies. Ensure any automated jobs use the service_role key if they must bypass RLS.
+    Keep unique constraints in mind for upserts:
+        schwab_accounts.account_number should be UNIQUE.
+        schwab_account_snapshots should have UNIQUE (account_id, snapshot_date).
+        org_balance_history likely uses UNIQUE (balance_date, source).
+        club_unit_valuations uses UNIQUE (valuation_date).
+    Indexes:
+        Index dates used in queries and rollups: snapshot_date, as_of_date, balance_date, valuation_date.
+        Index member lookups: member_id on member_unit_transactions and member_monthly_balances.
+    Use idempotent operations for ETL:
+        Upsert snapshots and valuations using unique keys.
+        For positions, consider delete-then-insert per-account/date to ensure idempotency.
+    Raw JSON:
+        Keep raw_json columns for Schwab payloads. They allow reprocessing and debugging if an ETL run failed.
+    Auditing:
+        Keep unit_value_at_tx in transactions to provide historical cost basis and audit trails.
+
+Example SQL snippets (useful templates)
+
+    Upsert Schwab account by account_number
+
+SQL Query
+
+INSERT INTO public.schwab_accounts (account_number, account_type, display_name)
+VALUES ('12345', 'brokerage', 'Primary Schwab')
+ON CONFLICT (account_number)
+DO UPDATE SET account_type = EXCLUDED.account_type, display_name = EXCLUDED.display_name
+RETURNING *;
+
+    Upsert account snapshot (idempotent)
+
+SQL Query
+
+INSERT INTO public.schwab_account_snapshots (account_id, snapshot_date, liquidation_value, cash_balance, raw_json)
+VALUES ('account-uuid', '2025-11-26', 100000.00, 5000.00, '{"raw":"payload"}'::jsonb)
+ON CONFLICT (account_id, snapshot_date)
+DO UPDATE SET liquidation_value = EXCLUDED.liquidation_value, cash_balance = EXCLUDED.cash_balance, raw_json = EXCLUDED.raw_json
+RETURNING *;
+
+    Insert club unit valuation (upsert)
+
+SQL Query
+
+INSERT INTO public.club_unit_valuations (valuation_date, total_value, total_units_outstanding, unit_value)
+VALUES ('2025-11-26', 200000.00, 10000.00, 20.00)
+ON CONFLICT (valuation_date)
+DO UPDATE SET total_value = EXCLUDED.total_value, total_units_outstanding = EXCLUDED.total_units_outstanding, unit_value = EXCLUDED.unit_value
+RETURNING *;
+
+    Record a member buy transaction
+
+SQL Query
+
+INSERT INTO public.member_unit_transactions (member_id, tx_date, tx_type, cash_amount, unit_value_at_tx, units_delta, notes)
+VALUES ('member-uuid','2025-11-26','buy', 2000.00, 20.00, 100.00, 'Initial buy')
+RETURNING *;
+
+    Recompute member current units (simple approach)
+
+    Option A — incremental update: after recording transaction update member_accounts.current_units/current_value
+
+SQL Query
+
+UPDATE public.member_accounts ma
+SET current_units = coalesce(current_units,0) + t.units_delta,
+    current_value = (coalesce(current_units,0) + t.units_delta) * cu.unit_value
+FROM (
+  SELECT member_id, SUM(units_delta) AS units_delta
+  FROM public.member_unit_transactions
+  WHERE tx_date = '2025-11-26'
+  GROUP BY member_id
+) t
+CROSS JOIN (
+  SELECT unit_value FROM public.club_unit_valuations WHERE valuation_date = '2025-11-26' LIMIT 1
+) cu
+WHERE ma.member_id = t.member_id;
+
+    Call dashboard function
+
+SQL Query
+
+SELECT public.api_get_dashboard();
+
+Suggested cron / scheduled jobs & triggers
+
+    Daily at 00:30 (after markets close / or whenever you ingest Schwab data)
+        Run Schwab ingestion job:
+            Fetch accounts & snapshots, upsert schwab_accounts + schwab_account_snapshots for the date.
+            Fetch positions and insert into schwab_positions for that date (delete & insert to be idempotent).
+        Run api_roll_schwab_into_org_balance(p_date := current_date).
+        Compute club unit valuation and upsert into public.club_unit_valuations.
+        Recompute member_accounts.current_units/current_value (either by applying transactions cumulatively or a separate reconciliation job).
+        Persist month-end member_monthly_balances if month ended.
+
+    On-demand / UI triggered:
+        captureSchwabSnapshot() from the UI (calls Schwab API and upserts snapshot).
+        syncSchwabPositionsForToday() after snapshot capture.
+
+Troubleshooting & QA checks
+
+    If dashboard shows nulls:
+        Verify org_balance_history has a recent row. SELECT * FROM public.org_balance_history ORDER BY balance_date DESC LIMIT 5;
+        Verify club_unit_valuations has a recent row. SELECT * FROM public.club_unit_valuations ORDER BY valuation_date DESC LIMIT 5;
+        Verify member_accounts contains expected current_units and current_value.
+
+    If positions look incorrect:
+        Check schwab_positions rows for the as_of_date; ensure account_number matches schwab_accounts.account_number.
+        Check v_schwab_positions_daily for aggregated market_value per account/date.
+
+    If member balances diverge:
+        Reconcile member_accounts.current_units by replaying member_unit_transactions for the member:
+            SELECT SUM(units_delta) FROM public.member_unit_transactions WHERE member_id = '...';
+        Confirm unit_value history in club_unit_valuations and compute expected historical value.
+
+    Error logging:
+        Ensure ETL jobs log both the Supabase { data, error } responses and the raw Schwab payloads for failed runs (raw_json helps reprocessing).
+        Watch for RLS errors in logs (if automated jobs do not use service_role key they may be blocked).
+
+Summary for a recipient AI (concise checklist)
+
+    Create these key tables (or verify they exist):
+        schwab_accounts
+        schwab_account_snapshots
+        schwab_positions
+        org_balance_history
+        members
+        member_accounts
+        member_monthly_balances
+        club_unit_valuations (new)
+        member_unit_transactions (new)
+
+    Implement ingestion:
+        captureSchwabSnapshot(): getAccounts -> upsert schwab_accounts -> upsert schwab_account_snapshots
+        syncSchwabPositionsForToday(): get positions -> delete existing positions for account/date -> insert new positions
+
+    Implement rollups:
+        api_roll_schwab_into_org_balance(date): compute org totals and upsert into org_balance_history
+
+    Compute NAV:
+        Compute club_unit_valuations per date by total_value and total_units_outstanding -> store unit_value
+
+    Maintain member transactions:
+        Insert into member_unit_transactions for buys/sells; update member_accounts accordingly
+
+    Dashboard:
+        Use public.api_get_dashboard() as the single endpoint for summary data
+
+    Keep everything idempotent and audited:
+        Use upserts, date-based unique constraints, and raw_json storage for reprocessing
+

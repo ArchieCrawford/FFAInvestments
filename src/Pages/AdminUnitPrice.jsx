@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { createClient } from "@supabase/supabase-js";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,11 @@ import { Plus, Lock, TrendingUp, DollarSign, Calculator, Building, Users } from 
 import { format } from "date-fns";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import PortfolioBuilder from "./PortfolioBuilder.jsx";
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function AdminUnitPrice() {
   const [activeTab, setActiveTab] = useState('unit-price');
@@ -35,21 +40,59 @@ export default function AdminUnitPrice() {
 
   const { data: unitPrices = [], isLoading } = useQuery({
     queryKey: ['unit-prices'],
-    queryFn: () => base44.entities.UnitPrice.list('-price_date'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('club_unit_valuations')
+        .select('*')
+        .order('valuation_date', { ascending: false });
+      if (error) throw error;
+      // Map canonical fields to UI expectations
+      return (data || []).map(row => ({
+        id: row.id,
+        price_date: row.valuation_date,
+        price: row.unit_value,
+        total_aum: row.total_aum,
+        total_units_outstanding: row.total_units_outstanding,
+        cash_balance: row.cash_balance,
+        invested_value: row.invested_value,
+        is_finalized: row.is_finalized ?? false,
+        finalized_by_email: row.finalized_by_email ?? null,
+        finalized_at: row.finalized_at ?? null,
+        notes: row.notes ?? '',
+      }));
+    },
   });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.Account.list(),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('member_accounts')
+        .select('id, current_units, cash_balance, invested_value');
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: async (priceData) => {
-      const user = await base44.auth.me();
-      return base44.entities.UnitPrice.create({
-        ...priceData,
-        finalized_by_email: null,
-      });
+      const payload = {
+        valuation_date: priceData.price_date,
+        unit_value: priceData.price,
+        total_aum: priceData.total_aum,
+        total_units_outstanding: priceData.total_units_outstanding,
+        cash_balance: priceData.cash_balance,
+        invested_value: priceData.invested_value,
+        notes: priceData.notes,
+        is_finalized: false,
+      };
+      const { data, error } = await supabase
+        .from('club_unit_valuations')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unit-prices'] });
@@ -60,12 +103,20 @@ export default function AdminUnitPrice() {
 
   const finalizeMutation = useMutation({
     mutationFn: async (priceId) => {
-      const user = await base44.auth.me();
-      return base44.entities.UnitPrice.update(priceId, {
-        is_finalized: true,
-        finalized_by_email: user.email,
-        finalized_at: new Date().toISOString(),
-      });
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData?.user?.email ?? null;
+      const { data, error } = await supabase
+        .from('club_unit_valuations')
+        .update({
+          is_finalized: true,
+          finalized_by_email: email,
+          finalized_at: new Date().toISOString(),
+        })
+        .eq('id', priceId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unit-prices'] });

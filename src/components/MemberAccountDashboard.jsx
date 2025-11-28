@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { base44 } from '@/api/base44Client';
+import { createClient } from '@supabase/supabase-js';
 import { Page } from './Page';
 import { Wallet, TrendingUp, Users, Mail } from 'lucide-react';
+
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 export default function MemberAccountDashboard() {
   const { memberId } = useParams();
@@ -15,13 +20,27 @@ export default function MemberAccountDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const allMembers = await base44.entities.User.list();
-        const memberData = allMembers.find(m => m.id === parseInt(memberId, 10));
-        if (memberData) {
-          setMember(memberData);
-          const timelineData = await base44.entities.Account.getTimeline(parseInt(memberId, 10));
-          setTimeline(timelineData.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate)));
-        }
+        const memberIdNum = parseInt(memberId, 10);
+        const [{ data: memberRow, error: memberErr }, { data: balances, error: balErr }] = await Promise.all([
+          supabase.from('members').select('*').eq('id', memberIdNum).single(),
+          supabase
+            .from('member_monthly_balances')
+            .select('id, report_month, portfolio_value, total_units')
+            .eq('member_id', memberIdNum)
+            .order('report_month', { ascending: true })
+        ]);
+
+        if (memberErr) throw memberErr;
+        if (balErr) throw balErr;
+
+        setMember(memberRow);
+        const timelineData = (balances || []).map(b => ({
+          id: b.id,
+          reportDate: b.report_month,
+          portfolioValue: b.portfolio_value ?? 0,
+          totalUnits: b.total_units ?? 0,
+        }));
+        setTimeline(timelineData);
       } catch (err) {
         console.error(err);
       } finally {
