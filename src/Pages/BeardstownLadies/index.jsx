@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './BeardstownLadies.css';
-import { Page } from '../Page';
+import { Page } from '../../components/Page';
 
 const BeardstownLadies = () => {
   const [checkedItems, setCheckedItems] = useState({});

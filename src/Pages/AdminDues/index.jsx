@@ -329,6 +329,7 @@ const DuesTracker = () => {
           </div>
         </div>
       </div>
+      </div>
     </Page>
   )
 }
