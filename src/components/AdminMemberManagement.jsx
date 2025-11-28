@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getMemberTimeline } from '../lib/ffaApi';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Page } from './Page';
 import { RefreshCw, List } from 'lucide-react';
@@ -35,10 +36,11 @@ export default function AdminMemberManagement() {
 
   const loadMemberTimeline = async (memberId) => {
     try {
-      const timeline = await base44.entities.Account.getTimeline(memberId);
-      setMemberTimeline(timeline.sort((a, b) => new Date(a.reportDate) - new Date(b.reportDate)));
+      const timeline = await getMemberTimeline(String(memberId));
+      setMemberTimeline((timeline || []).sort((a, b) => new Date(a.report_date) - new Date(b.report_date)));
     } catch (error) {
       console.error('Error loading timeline:', error);
+      setMemberTimeline([]);
     }
   };
 
@@ -121,8 +123,8 @@ export default function AdminMemberManagement() {
   };
 
   const chartData = memberTimeline.map(entry => ({
-    date: new Date(entry.reportDate).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-    value: entry.portfolioValue
+    date: new Date(entry.report_date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+    value: entry.portfolio_value
   }));
 
   if (loading) {
@@ -309,15 +311,15 @@ export default function AdminMemberManagement() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {memberTimeline.slice(-10).reverse().map((entry) => (
-                        <tr key={entry.id} className="hover:bg-surface">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatDate(entry.reportDate)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatCurrency(entry.portfolioValue)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{entry.totalUnits?.toFixed(4)}</td>
+                      {memberTimeline.slice(-10).reverse().map((entry, idx) => (
+                        <tr key={idx} className="hover:bg-surface">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatDate(entry.report_date)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatCurrency(entry.portfolio_value)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{entry.total_units?.toFixed(4)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {entry.portfolioGrowth ? (
-                              <span className={`badge ${entry.portfolioGrowth >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {entry.portfolioGrowth >= 0 ? '+' : ''}{(entry.portfolioGrowth * 100).toFixed(2)}%
+                            {entry.growth_pct !== null && entry.growth_pct !== undefined ? (
+                              <span className={`badge ${entry.growth_pct >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                {entry.growth_pct >= 0 ? '+' : ''}{(entry.growth_pct * 100).toFixed(2)}%
                               </span>
                             ) : (
                               <span className="text-muted">-</span>

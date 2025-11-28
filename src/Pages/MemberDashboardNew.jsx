@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase'
+import { getMemberTimeline } from '../lib/ffaApi'
 import {
   ResponsiveContainer,
   LineChart,
@@ -60,22 +61,12 @@ const MemberDashboard = () => {
 
       let timeline = []
       if (account.member_id) {
-        const { data: timelineData, error: timelineError } = await supabase
-          .from('member_monthly_balances')
-          .select(`
-            report_date,
-            portfolio_value,
-            total_units,
-            total_contribution,
-            growth_amount,
-            growth_pct
-          `)
-          .eq('member_id', account.member_id)
-          .order('report_date', { ascending: true })
-        if (timelineError) {
-          console.warn('Could not load member history:', timelineError)
-        } else {
+        try {
+          const timelineData = await getMemberTimeline(account.member_id)
           timeline = timelineData || []
+        } catch (timelineError) {
+          console.warn('Could not load member history:', timelineError)
+          timeline = []
         }
       }
 

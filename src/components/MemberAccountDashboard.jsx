@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { createClient } from '@supabase/supabase-js';
+import { getMemberTimeline } from '../lib/ffaApi';
 import { Page } from './Page';
 import { Wallet, TrendingUp, Users, Mail } from 'lucide-react';
 
@@ -21,26 +22,23 @@ export default function MemberAccountDashboard() {
     const load = async () => {
       try {
         const memberIdNum = parseInt(memberId, 10);
-        const [{ data: memberRow, error: memberErr }, { data: balances, error: balErr }] = await Promise.all([
-          supabase.from('members').select('*').eq('id', memberIdNum).single(),
-          supabase
-            .from('member_monthly_balances')
-            .select('id, report_month, portfolio_value, total_units')
-            .eq('member_id', memberIdNum)
-            .order('report_month', { ascending: true })
-        ]);
+        const { data: memberRow, error: memberErr } = await supabase
+          .from('members')
+          .select('*')
+          .eq('id', memberIdNum)
+          .single();
 
         if (memberErr) throw memberErr;
-        if (balErr) throw balErr;
 
         setMember(memberRow);
-        const timelineData = (balances || []).map(b => ({
-          id: b.id,
-          reportDate: b.report_month,
-          portfolioValue: b.portfolio_value ?? 0,
-          totalUnits: b.total_units ?? 0,
-        }));
-        setTimeline(timelineData);
+
+        try {
+          const timelineData = await getMemberTimeline(String(memberIdNum));
+          setTimeline(timelineData || []);
+        } catch (err) {
+          console.error('Error loading timeline:', err);
+          setTimeline([]);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -59,16 +57,16 @@ export default function MemberAccountDashboard() {
     const months = selectedPeriod === '12m' ? 12 : selectedPeriod === '6m' ? 6 : 3;
     const cutoff = new Date();
     cutoff.setMonth(cutoff.getMonth() - months);
-    return timeline.filter(t => new Date(t.reportDate) >= cutoff);
+    return timeline.filter(t => new Date(t.report_date) >= cutoff);
   };
 
   const filteredTimeline = getFilteredTimeline();
-  const chartData = filteredTimeline.map(e => ({ date: formatDate(e.reportDate), portfolioValue: e.portfolioValue }));
+  const chartData = filteredTimeline.map(e => ({ date: formatDate(e.report_date), portfolioValue: e.portfolio_value }));
   const latestEntry = timeline[timeline.length - 1];
   const previousEntry = timeline[timeline.length - 2];
 
-  const totalGrowth = latestEntry && timeline[0] ? ((latestEntry.portfolioValue - timeline[0].portfolioValue) / timeline[0].portfolioValue) * 100 : 0;
-  const monthlyGrowth = latestEntry && previousEntry ? ((latestEntry.portfolioValue - previousEntry.portfolioValue) / previousEntry.portfolioValue) * 100 : 0;
+  const totalGrowth = latestEntry && timeline[0] ? ((latestEntry.portfolio_value - timeline[0].portfolio_value) / timeline[0].portfolio_value) * 100 : 0;
+  const monthlyGrowth = latestEntry && previousEntry ? ((latestEntry.portfolio_value - previousEntry.portfolio_value) / previousEntry.portfolio_value) * 100 : 0;
   const periodOptions = [
     { value: '3m', label: '3M' },
     { value: '6m', label: '6M' },
@@ -122,7 +120,7 @@ export default function MemberAccountDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted mb-1">Current Portfolio Value</p>
-                <p className="text-3xl font-bold text-default">{formatCurrency(latestEntry?.portfolioValue || 0)}</p>
+                <p className="text-3xl font-bold text-default">{formatCurrency(latestEntry?.portfolio_value || 0)}</p>
               </div>
               <Wallet className="w-8 h-8 text-primary" />
             </div>
@@ -131,7 +129,7 @@ export default function MemberAccountDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted mb-1">Total Units</p>
-                <p className="text-3xl font-bold text-default">{latestEntry?.totalUnits?.toFixed(2) || '0.00'}</p>
+                <p className="text-3xl font-bold text-default">{latestEntry?.total_units?.toFixed(2) || '0.00'}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-primary" />
             </div>
@@ -223,11 +221,11 @@ export default function MemberAccountDashboard() {
                   <tbody>
                     {filteredTimeline.slice(-5).reverse().map((entry, index) => {
                       const prevEntry = filteredTimeline[filteredTimeline.length - 2 - index];
-                      const change = prevEntry ? ((entry.portfolioValue - prevEntry.portfolioValue) / prevEntry.portfolioValue) * 100 : 0;
+                      const change = prevEntry ? ((entry.portfolio_value - prevEntry.portfolio_value) / prevEntry.portfolio_value) * 100 : 0;
                       return (
-                        <tr key={entry.id} className="border-b border-border">
-                          <td className="py-3 text-default">{formatDate(entry.reportDate)}</td>
-                          <td className="py-3 text-default">{formatCurrency(entry.portfolioValue)}</td>
+                        <tr key={index} className="border-b border-border">
+                          <td className="py-3 text-default">{formatDate(entry.report_date)}</td>
+                          <td className="py-3 text-default">{formatCurrency(entry.portfolio_value)}</td>
                           <td className="py-3">
                             <span className={`badge ${change >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
                               {change >= 0 ? '+' : ''}{change.toFixed(2)}%
@@ -253,11 +251,11 @@ export default function MemberAccountDashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">First Record</span>
-                <strong className="text-default">{timeline[0] ? formatDate(timeline[0].reportDate) : 'N/A'}</strong>
+                <strong className="text-default">{timeline[0] ? formatDate(timeline[0].report_date) : 'N/A'}</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Latest Record</span>
-                <strong className="text-default">{latestEntry ? formatDate(latestEntry.reportDate) : 'N/A'}</strong>
+                <strong className="text-default">{latestEntry ? formatDate(latestEntry.report_date) : 'N/A'}</strong>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Account Status</span>

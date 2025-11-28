@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '../lib/supabase';
 
 export default function CSVImporter({ onImportComplete }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -72,28 +73,24 @@ export default function CSVImporter({ onImportComplete }) {
         });
       }
 
-      // Parse timeline entry
+      // Parse timeline entry - use canonical field names for member_monthly_balances
       if (row.Report_Date && row.Portfolio_Value) {
         const timelineEntry = {
-          id: Date.now() + index,
-          memberId: memberMap.get(memberName).id,
-          memberName: memberName,
-          reportMonth: row.Report_Month,
-          reportDate: new Date(row.Report_Date).toISOString(),
-          portfolioValue: parseFloat(row.Portfolio_Value) || 0,
-          totalUnits: parseFloat(row.Total_Units) || 0,
-          totalContribution: parseFloat(row.Total_Contribution) || 0,
-          ownershipPct: parseFloat(row.Ownership_Pct) || 0,
-          portfolioGrowth: parseFloat(row.Portfolio_Growth) || 0,
-          portfolioGrowthAmount: parseFloat(row.Portfolio_Growth_Amount) || 0
+          member_id: memberMap.get(memberName).id,
+          report_date: new Date(row.Report_Date).toISOString().split('T')[0], // Date only
+          portfolio_value: parseFloat(row.Portfolio_Value) || 0,
+          total_units: parseFloat(row.Total_Units) || 0,
+          total_contribution: parseFloat(row.Total_Contribution) || 0,
+          growth_amount: parseFloat(row.Portfolio_Growth_Amount) || 0,
+          growth_pct: parseFloat(row.Portfolio_Growth) || 0
         };
         timelineData.push(timelineEntry);
 
         // Update member summary with latest data
         const member = memberMap.get(memberName);
-        member.totalUnits = Math.max(member.totalUnits, timelineEntry.totalUnits);
-        member.currentBalance = Math.max(member.currentBalance, timelineEntry.portfolioValue);
-        member.totalContribution = Math.max(member.totalContribution, timelineEntry.totalContribution);
+        member.totalUnits = Math.max(member.totalUnits, timelineEntry.total_units);
+        member.currentBalance = Math.max(member.currentBalance, timelineEntry.portfolio_value);
+        member.totalContribution = Math.max(member.totalContribution, timelineEntry.total_contribution);
       }
     });
 
@@ -102,7 +99,13 @@ export default function CSVImporter({ onImportComplete }) {
     
     // Save to storage
     await base44.entities.User.bulkImport(members);
-    await base44.entities.Timeline.bulkImport(timelineData);
+    
+    // Import timeline data to member_monthly_balances
+    const { error: timelineError } = await supabase
+      .from('member_monthly_balances')
+      .upsert(timelineData, { onConflict: 'member_id,report_date' });
+    
+    if (timelineError) throw timelineError;
 
     console.log(`Imported ${members.length} members and ${timelineData.length} timeline entries`);
   };

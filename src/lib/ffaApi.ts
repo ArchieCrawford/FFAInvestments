@@ -104,30 +104,13 @@ export async function getLatestUnitValuation() {
   return data || null
 }
 
+// DEPRECATED: Use getMemberTimeline() instead which uses the canonical RPC
 export async function getMemberDues(memberId?: string) {
-  let query = supabase
-    .from('ffa_timeline')
-    .select(`
-      id,
-      member_name,
-      report_month,
-      report_date,
-      portfolio_value,
-      total_units,
-      total_contribution,
-      ownership_pct,
-      portfolio_growth,
-      portfolio_growth_amount
-    `)
-    .order('report_date', { ascending: true })
-
+  console.warn('getMemberDues is deprecated. Use getMemberTimeline() instead.');
   if (memberId) {
-    query = query.eq('member_id', memberId)
+    return getMemberTimeline(memberId);
   }
-
-  const { data, error } = await query
-  if (error) throw error
-  return data || []
+  throw new Error('getMemberDues without memberId is not supported. Use getMemberTimeline() with a specific member_id.');
 }
 
 export async function getMemberFeed({ limit = 20, cursor = null }: { limit?: number; cursor?: string | null } = {}) {
