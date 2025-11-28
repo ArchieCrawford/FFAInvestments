@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react'
 import { AlertCircle, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { Page } from '../../components/Page'
 
 const DuesTracker = () => {
   const [loading, setLoading] = useState(true)
@@ -175,18 +176,18 @@ const DuesTracker = () => {
 
 
   return (
-    <div className="space-y-6">
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <p className="text-2xl font-bold text-default">Member Dues / Contributions</p>
-            <p className="text-muted">Contributions and valuation rows from <code>ffa_timeline</code></p>
-          </div>
-          <button className="btn-primary-soft border border-border text-sm px-3 py-1 rounded-full">
-            <Download size={16} />
-            Export
-          </button>
-        </div>
+    <Page 
+      title="Member Dues / Contributions" 
+      subtitle="Contributions and valuation rows from ffa_timeline"
+      actions={
+        <button className="btn-primary-soft border border-border text-sm px-3 py-1 rounded-full">
+          <Download size={16} />
+          Export
+        </button>
+      }
+    >
+      <div className="space-y-6">
+        <div className="card">
 
         <div className="flex flex-wrap gap-3 items-end mt-4">
           <div style={{ minWidth: 220 }}>
@@ -328,7 +329,7 @@ const DuesTracker = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   )
 }
 

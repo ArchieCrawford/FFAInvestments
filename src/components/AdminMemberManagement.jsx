@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Page } from './Page';
+import { RefreshCw, List } from 'lucide-react';
 
 export default function AdminMemberManagement() {
   const [members, setMembers] = useState([]);
@@ -103,18 +105,18 @@ export default function AdminMemberManagement() {
 
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'active': return <span className="app-pill">Active</span>;
-      case 'invited': return <span className="app-pill">Invited</span>;
-      case 'pending_invite': return <span className="app-pill">Pending Invite</span>;
-      default: return <span className="app-pill">Unknown</span>;
+      case 'active': return <span className="badge bg-green-500/20 text-green-500">Active</span>;
+      case 'invited': return <span className="badge bg-blue-500/20 text-blue-400">Invited</span>;
+      case 'pending_invite': return <span className="badge bg-yellow-500/20 text-yellow-500">Pending Invite</span>;
+      default: return <span className="badge">Unknown</span>;
     }
   };
 
   const getRoleBadge = (role) => {
     switch (role) {
-      case 'admin': return <span className="app-pill">Admin</span>;
-      case 'member': return <span className="app-pill">Member</span>;
-      default: return <span className="app-pill">Unknown</span>;
+      case 'admin': return <span className="badge bg-red-500/20 text-red-400">Admin</span>;
+      case 'member': return <span className="badge bg-primary/20 text-primary">Member</span>;
+      default: return <span className="badge">Unknown</span>;
     }
   };
 
@@ -125,56 +127,62 @@ export default function AdminMemberManagement() {
 
   if (loading) {
     return (
-      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="spinner-page" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <Page title="Member Account Management">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading member accounts...</p>
+          </div>
         </div>
-      </div>
+      </Page>
     );
   }
 
-  return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>Member Account Management</h2>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="app-btn app-btn-outline" onClick={() => window.location.href = '/admin/users'}>
-            <i className="fas fa-list" style={{ marginRight: '0.5rem' }}></i>
-            Member Directory
-          </button>
-          <button className="app-btn app-btn-primary" onClick={() => window.location.reload()}>
-            <i className="fas fa-sync" style={{ marginRight: '0.5rem' }}></i>
-            Refresh Data
-          </button>
-        </div>
-      </div>
+  const actions = (
+    <div className="flex gap-3">
+      <button className="btn-primary-soft flex items-center gap-2" onClick={() => window.location.href = '/admin/users'}>
+        <List className="w-4 h-4" />
+        Member Directory
+      </button>
+      <button className="btn-primary flex items-center gap-2" onClick={() => window.location.reload()}>
+        <RefreshCw className="w-4 h-4" />
+        Refresh Data
+      </button>
+    </div>
+  );
 
-      <div className="app-grid cols-2" style={{ gap: '1rem' }}>
+  return (
+    <Page
+      title="Member Account Management"
+      subtitle="View and manage individual member accounts"
+      actions={actions}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Member List */}
         <div>
-          <div className="app-card">
-            <div className="app-card-header">
-              <h5 className="app-card-title"><i className="fas fa-users me-2"></i>All Members ({members.length})</h5>
+          <div className="card overflow-hidden">
+            <div className="p-6 border-b border-border">
+              <h5 className="text-lg font-semibold text-default">All Members ({members.length})</h5>
             </div>
-            <div className="app-card-content" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto">
               {members.map((member) => (
                 <div 
                   key={member.id}
                   onClick={() => handleMemberSelect(member)}
-                  style={{ cursor: 'pointer', marginBottom: '0.5rem' }}
+                  className="p-4 rounded-lg border border-border hover:bg-surface cursor-pointer transition-colors"
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <h6 style={{ margin: 0 }}>{member.name}</h6>
-                      <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>{member.email || 'No email'}</p>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h6 className="font-semibold text-default mb-1">{member.name}</h6>
+                      <p className="text-sm text-muted mb-2">{member.email || 'No email'}</p>
+                      <div className="flex gap-2">
                         {getRoleBadge(member.role)}
                         {getStatusBadge(member.status)}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right', marginLeft: '0.75rem' }}>
-                      <div style={{ fontWeight: 700 }}>{formatCurrency(member.currentBalance || 0)}</div>
-                      <small className="app-text-muted">{member.totalUnits?.toFixed(2) || '0'} units</small>
+                    <div className="text-right ml-3">
+                      <div className="font-bold text-default">{formatCurrency(member.currentBalance || 0)}</div>
+                      <small className="text-muted">{member.totalUnits?.toFixed(2) || '0'} units</small>
                     </div>
                   </div>
                 </div>
@@ -188,37 +196,35 @@ export default function AdminMemberManagement() {
           {selectedMember ? (
             <>
               {/* Member Header */}
-              <div className="app-card mb-4">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div className="card p-6">
+                <div className="flex justify-between items-start flex-wrap gap-4">
                   <div>
-                    <h4>{selectedMember.name}</h4>
-                    <p className="app-text-muted" style={{ marginBottom: '0.5rem' }}>
+                    <h4 className="text-2xl font-bold text-default mb-2">{selectedMember.name}</h4>
+                    <p className="text-muted mb-3">
                       {selectedMember.email || 'No email provided'} • Member since {formatDate(selectedMember.joinDate)}
                     </p>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="flex gap-2">
                       {getRoleBadge(selectedMember.role)}
                       {getStatusBadge(selectedMember.status)}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div className="flex gap-2">
                     <button
-                      className="app-btn app-btn-outline app-btn-sm"
+                      className="btn-primary-soft text-sm"
                       onClick={() => {
                         setInviteData({ memberId: selectedMember.id, email: selectedMember.email || '', role: selectedMember.role });
                         setShowInviteModal(true);
                       }}
                     >
-                      <i className="fas fa-envelope" style={{ marginRight: '0.5rem' }}></i>
                       {selectedMember.status === 'pending_invite' ? 'Send Invite' : 'Resend Invite'}
                     </button>
                     <button
-                      className="app-btn app-btn-outline app-btn-sm"
+                      className="btn-primary-soft text-sm"
                       onClick={() => {
                         setRoleData({ memberId: selectedMember.id, role: selectedMember.role });
                         setShowRoleModal(true);
                       }}
                     >
-                      <i className="fas fa-user-cog" style={{ marginRight: '0.5rem' }}></i>
                       Change Role
                     </button>
                   </div>
@@ -226,52 +232,63 @@ export default function AdminMemberManagement() {
               </div>
 
               {/* Member Stats */}
-              <div className="app-grid cols-3" style={{ marginBottom: '1rem' }}>
-                <div className="app-card app-card-stat">
-                  <div>
-                    <div className="app-heading-md">Current Balance</div>
-                    <div className="app-heading-lg">{formatCurrency(selectedMember.currentBalance || 0)}</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="card p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted mb-1">Current Balance</p>
+                      <p className="text-3xl font-bold text-default">{formatCurrency(selectedMember.currentBalance || 0)}</p>
+                    </div>
                   </div>
-                  <i className="fas fa-wallet fa-2x" />
                 </div>
-                <div className="app-card app-card-stat">
-                  <div>
-                    <div className="app-heading-md">Total Units</div>
-                    <div className="app-heading-lg">{selectedMember.totalUnits?.toFixed(4) || '0.0000'}</div>
+                <div className="card p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted mb-1">Total Units</p>
+                      <p className="text-3xl font-bold text-default">{selectedMember.totalUnits?.toFixed(4) || '0.0000'}</p>
+                    </div>
                   </div>
-                  <i className="fas fa-coins fa-2x" />
                 </div>
-                <div className="app-card app-card-stat">
-                  <div>
-                    <div className="app-heading-md">Data Points</div>
-                    <div className="app-heading-lg">{memberTimeline.length}</div>
+                <div className="card p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted mb-1">Data Points</p>
+                      <p className="text-3xl font-bold text-default">{memberTimeline.length}</p>
+                    </div>
                   </div>
-                  <i className="fas fa-chart-bar fa-2x" />
                 </div>
               </div>
 
               {/* Portfolio Chart */}
-              <div className="app-card mb-4">
-                <div className="app-card-header"><h5 className="app-card-title">Portfolio Performance</h5></div>
-                <div className="app-card-content">
+              <div className="card">
+                <div className="p-6 border-b border-border"><h5 className="text-lg font-semibold text-default">Portfolio Performance</h5></div>
+                <div className="p-6">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value) => [formatCurrency(value), 'Portfolio Value']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" />
+                      <XAxis dataKey="date" stroke="rgb(var(--color-muted))" />
+                      <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} stroke="rgb(var(--color-muted))" />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), 'Portfolio Value']} 
+                        contentStyle={{ 
+                          backgroundColor: 'rgb(var(--color-surface))', 
+                          border: '1px solid rgb(var(--color-border))',
+                          borderRadius: '8px',
+                          color: 'rgb(var(--color-text))'
+                        }}
+                      />
                       <Line 
                         type="monotone" 
                         dataKey="value" 
-                        stroke="#1e40af" 
+                        stroke="rgb(var(--color-primary))" 
                         strokeWidth={2}
-                        dot={{ fill: '#1e40af', strokeWidth: 2, r: 4 }}
+                        dot={{ fill: 'rgb(var(--color-primary))', strokeWidth: 2, r: 4 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="text-center app-text-muted py-4">
+                  <div className="text-center text-muted py-8">
                     No timeline data available for this member
                   </div>
                 )}
@@ -279,49 +296,45 @@ export default function AdminMemberManagement() {
               </div>
 
               {/* Recent Activity */}
-              <div className="app-card">
-                <div className="app-card-header"><h5 className="app-card-title">Recent Portfolio Activity</h5></div>
-                <div className="app-card-content">
-                  <div style={{ overflowX: 'auto' }}>
-                    <table className="app-table">
+              <div className="card overflow-hidden">
+                <div className="p-6 border-b border-border"><h5 className="text-lg font-semibold text-default">Recent Portfolio Activity</h5></div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
                     <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Portfolio Value</th>
-                        <th>Units</th>
-                        <th>Growth</th>
+                      <tr className="border-b border-border bg-surface">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Portfolio Value</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Units</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Growth</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-border">
                       {memberTimeline.slice(-10).reverse().map((entry) => (
-                        <tr key={entry.id}>
-                          <td>{formatDate(entry.reportDate)}</td>
-                          <td>{formatCurrency(entry.portfolioValue)}</td>
-                          <td>{entry.totalUnits?.toFixed(4)}</td>
-                          <td>
+                        <tr key={entry.id} className="hover:bg-surface">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatDate(entry.reportDate)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatCurrency(entry.portfolioValue)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{entry.totalUnits?.toFixed(4)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {entry.portfolioGrowth ? (
-                              <span className={`app-pill`}>
+                              <span className={`badge ${entry.portfolioGrowth >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
                                 {entry.portfolioGrowth >= 0 ? '+' : ''}{(entry.portfolioGrowth * 100).toFixed(2)}%
                               </span>
                             ) : (
-                              <span className="app-text-muted">-</span>
+                              <span className="text-muted">-</span>
                             )}
                           </td>
                         </tr>
                       ))}
                     </tbody>
-                    </table>
-                  </div>
+                  </table>
                 </div>
               </div>
             </>
           ) : (
-            <div className="app-card text-center">
-              <div className="app-card-content">
-                <i className="fas fa-user-friends fa-3x mb-3"></i>
-                <h5>Select a Member</h5>
-                <p className="app-text-muted">Choose a member from the list to view their account details</p>
-              </div>
+            <div className="card p-12 text-center">
+              <div className="text-6xl mb-4 text-primary">👥</div>
+              <h5 className="text-xl font-bold text-default mb-2">Select a Member</h5>
+              <p className="text-muted">Choose a member from the list to view their account details</p>
             </div>
           )}
         </div>
@@ -329,53 +342,52 @@ export default function AdminMemberManagement() {
 
       {/* Invite Modal */}
       {showInviteModal && (
-        <div className="modal-backdrop">
-          <div className="modal-panel" role="dialog" aria-modal="true">
-            <div className="app-card">
-              <div className="app-card-header">
-                <h5 className="app-card-title">Send Account Invitation</h5>
-                <button type="button" className="modal-close" onClick={() => setShowInviteModal(false)} aria-label="Close" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h5 className="text-xl font-semibold text-default">Send Account Invitation</h5>
+              <button type="button" className="text-muted hover:text-default" onClick={() => setShowInviteModal(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-default mb-2">Email Address</label>
+                <input
+                  type="email"
+                  className="input w-full"
+                  value={inviteData.email}
+                  onChange={(e) => setInviteData({...inviteData, email: e.target.value})}
+                  placeholder="Enter member's email address"
+                />
               </div>
-              <div className="app-card-content">
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="app-text-muted">Email Address</label>
-                  <input
-                    type="email"
-                    className="app-form-control"
-                    value={inviteData.email}
-                    onChange={(e) => setInviteData({...inviteData, email: e.target.value})}
-                    placeholder="Enter member's email address"
-                  />
-                </div>
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="app-text-muted">Account Role</label>
-                  <select
-                    className="app-form-control"
-                    value={inviteData.role}
-                    onChange={(e) => setInviteData({...inviteData, role: e.target.value})}
-                  >
-                    <option value="member">Member (View only access)</option>
-                    <option value="admin">Admin (Full access)</option>
-                  </select>
-                  <div className="app-text-muted" style={{ marginTop: '0.5rem' }}>
-                    Members can only view their own accounts. Admins can manage all accounts.
-                  </div>
-                </div>
-              </div>
-              <div className="app-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                <button type="button" className="app-btn app-btn-outline" onClick={() => setShowInviteModal(false)}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="app-btn app-btn-primary"
-                  onClick={handleSendInvite}
-                  disabled={!inviteData.email}
+              <div>
+                <label className="block text-sm font-medium text-default mb-2">Account Role</label>
+                <select
+                  className="input w-full"
+                  value={inviteData.role}
+                  onChange={(e) => setInviteData({...inviteData, role: e.target.value})}
                 >
-                  <i className="fas fa-paper-plane" style={{ marginRight: '0.5rem' }}></i>
-                  Send Invitation
-                </button>
+                  <option value="member">Member (View only access)</option>
+                  <option value="admin">Admin (Full access)</option>
+                </select>
+                <p className="text-sm text-muted mt-2">
+                  Members can only view their own accounts. Admins can manage all accounts.
+                </p>
               </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button type="button" className="btn-primary-soft" onClick={() => setShowInviteModal(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSendInvite}
+                disabled={!inviteData.email}
+              >
+                Send Invitation
+              </button>
             </div>
           </div>
         </div>
@@ -383,47 +395,44 @@ export default function AdminMemberManagement() {
 
       {/* Role Change Modal */}
       {showRoleModal && (
-        <div className="modal-backdrop">
-          <div className="modal-panel" role="dialog" aria-modal="true">
-            <div className="app-card">
-              <div className="app-card-header">
-                <h5 className="app-card-title">Change Member Role</h5>
-                <button type="button" className="modal-close" onClick={() => setShowRoleModal(false)} aria-label="Close" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="card p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h5 className="text-xl font-semibold text-default">Change Member Role</h5>
+              <button type="button" className="text-muted hover:text-default" onClick={() => setShowRoleModal(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-default mb-2">Select New Role</label>
+              <select
+                className="input w-full"
+                value={roleData.role}
+                onChange={(e) => setRoleData({...roleData, role: e.target.value})}
+              >
+                <option value="member">Member (View only access)</option>
+                <option value="admin">Admin (Full management access)</option>
+              </select>
+              <div className="text-sm text-muted mt-3">
+                <p className="mb-1"><strong className="text-default">Member:</strong> Can only view their own account dashboard</p>
+                <p><strong className="text-default">Admin:</strong> Can manage all accounts, invite users, and access admin features</p>
               </div>
-              <div className="app-card-content">
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="app-text-muted">Select New Role</label>
-                  <select
-                    className="app-form-control"
-                    value={roleData.role}
-                    onChange={(e) => setRoleData({...roleData, role: e.target.value})}
-                  >
-                    <option value="member">Member (View only access)</option>
-                    <option value="admin">Admin (Full management access)</option>
-                  </select>
-                  <div className="app-text-muted" style={{ marginTop: '0.5rem' }}>
-                    <strong>Member:</strong> Can only view their own account dashboard<br/>
-                    <strong>Admin:</strong> Can manage all accounts, invite users, and access admin features
-                  </div>
-                </div>
-              </div>
-              <div className="app-card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                <button type="button" className="app-btn app-btn-outline" onClick={() => setShowRoleModal(false)}>
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="app-btn app-btn-warning"
-                  onClick={handleRoleChange}
-                >
-                  <i className="fas fa-user-cog" style={{ marginRight: '0.5rem' }}></i>
-                  Update Role
-                </button>
-              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button type="button" className="btn-primary-soft" onClick={() => setShowRoleModal(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleRoleChange}
+              >
+                Update Role
+              </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </Page>
   );
 }

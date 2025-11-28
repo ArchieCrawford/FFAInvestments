@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Settings, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { Page } from '../components/Page'
 
 const DEFAULT_SETTINGS = {
   dues_info: 'Membership dues are $50 per month. Payment options available through the portal.',
@@ -146,303 +147,198 @@ const AdminSettings = () => {
 
   if (!user) {
     return (
-      <div className="modern-login-container">
-        <div className="login-form-container">
-          <div className="login-form-wrapper">
-            <div className="error-alert">
-              <AlertCircle size={20} />
-              <span>You must be logged in to access this page.</span>
-            </div>
+      <Page title="Admin Settings">
+        <div className="card p-6 border-l-4 border-red-500">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="text-red-400" />
+            <span className="text-red-400">You must be logged in to access this page.</span>
           </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   if (!isAdmin()) {
     return (
-      <div className="modern-login-container">
-        <div className="login-form-container">
-          <div className="login-form-wrapper">
-            <div className="error-alert">
-              <AlertCircle size={20} />
-              <span>Admin access required to view this page.</span>
-            </div>
+      <Page title="Admin Settings">
+        <div className="card p-6 border-l-4 border-red-500">
+          <div className="flex items-center gap-3">
+            <AlertCircle size={20} className="text-red-400" />
+            <span className="text-red-400">Admin access required to view this page.</span>
           </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   if (loading) {
     return (
-      <div className="modern-login-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading settings...</p>
+      <Page title="Admin Settings">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading settings...</p>
+          </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   return (
-    <div className="modern-login-container">
-      {/* Background Animation */}
-      <div className="bg-animation">
-        <div className="bg-shape bg-shape-1"></div>
-        <div className="bg-shape bg-shape-2"></div>
-        <div className="bg-shape bg-shape-3"></div>
-        <div className="bg-shape bg-shape-4"></div>
-      </div>
+    <Page
+      title="Admin Settings"
+      subtitle="Control what members see across the platform"
+    >
+      <div className="card p-8 max-w-4xl mx-auto">
 
-      {/* Left Side - Branding */}
-      <div className="login-branding">
-        <div className="brand-content">
-          <div className="brand-icon">
-            <Settings size={48} />
+        <form onSubmit={handleSave} className="space-y-6">
+          {error && (
+            <div className="card p-4 border-l-4 border-red-500 flex items-center gap-3">
+              <AlertCircle size={20} className="text-red-400" />
+              <span className="text-red-400">{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="card p-4 border-l-4 border-green-500 bg-green-500/10 flex items-center gap-3">
+              <CheckCircle size={20} className="text-green-500" />
+              <span className="text-green-600">{success}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Club Name
+            </label>
+            <input
+              type="text"
+              name="club_name"
+              placeholder="FFA Investments"
+              value={form.club_name}
+              onChange={handleChange}
+              required
+              className="input w-full"
+            />
           </div>
-          <h1 className="brand-title">
-            <span className="gradient-text">Admin</span>
-            <span className="text-white"> Settings</span>
-          </h1>
-          <p className="brand-subtitle">
-            Control what members see across the platform
-          </p>
-          
-          <div className="feature-highlights">
-            <div className="feature">
-              <Settings size={20} />
-              <span>Real-time Updates</span>
-            </div>
-            <div className="feature">
-              <Save size={20} />
-              <span>Instant Synchronization</span>
-            </div>
-            <div className="feature">
-              <CheckCircle size={20} />
-              <span>Global Configuration</span>
-            </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Club Tagline
+            </label>
+            <input
+              type="text"
+              name="tagline"
+              placeholder="Where futures begin and wealth grows"
+              value={form.tagline}
+              onChange={handleChange}
+              className="input w-full"
+            />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Homepage Message
+            </label>
+            <textarea
+              name="homepage_message"
+              placeholder="Welcome message that appears on the member homepage"
+              value={form.homepage_message}
+              onChange={handleChange}
+              rows={3}
+              className="input w-full resize-y"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Member Welcome Message
+            </label>
+            <textarea
+              name="welcome_message"
+              placeholder="Personal welcome message for returning members"
+              value={form.welcome_message}
+              onChange={handleChange}
+              rows={2}
+              className="input w-full resize-y"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Dues Information
+            </label>
+            <textarea
+              name="dues_info"
+              placeholder="Information about membership dues and payment"
+              value={form.dues_info}
+              onChange={handleChange}
+              rows={2}
+              className="input w-full resize-y"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Contact Email
+            </label>
+            <input
+              type="email"
+              name="contact_email"
+              placeholder="admin@ffainvestments.com"
+              value={form.contact_email}
+              onChange={handleChange}
+              className="input w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Meeting Schedule
+            </label>
+            <input
+              type="text"
+              name="meeting_schedule"
+              placeholder="Weekly meetings every Tuesday at 7:00 PM"
+              value={form.meeting_schedule}
+              onChange={handleChange}
+              className="input w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-default mb-2">
+              Current Announcements
+            </label>
+            <textarea
+              name="announcements"
+              placeholder="Important announcements for members"
+              value={form.announcements}
+              onChange={handleChange}
+              rows={3}
+              className="input w-full resize-y"
+            />
+          </div>
+
+          <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2" disabled={saving}>
+            {saving ? (
+              <>
+                <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Saving Changes...</span>
+              </>
+            ) : (
+              <>
+                <Save size={20} />
+                <span>Save Settings</span>
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 p-4 card bg-primary/10 border-l-4 border-primary">
+          <p className="text-sm text-default">💡 Changes are saved to the database and visible to all members immediately.</p>
         </div>
       </div>
-
-      {/* Right Side - Settings Form */}
-      <div className="login-form-container">
-        <div className="login-form-wrapper" style={{ maxWidth: '600px' }}>
-          <div className="form-header">
-            <h2>Club Settings</h2>
-            <p>Update content that members see on their dashboards</p>
-          </div>
-
-          <form onSubmit={handleSave} className="login-form">
-            {error && (
-              <div className="error-alert">
-                <AlertCircle size={20} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div className="error-alert" style={{ 
-                background: 'rgba(22,163,74,0.1)', 
-                borderColor: 'rgba(22,163,74,0.3)', 
-                color: '#bbf7d0' 
-              }}>
-                <CheckCircle size={20} />
-                <span>{success}</span>
-              </div>
-            )}
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Club Name
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  name="club_name"
-                  placeholder="FFA Investments"
-                  value={form.club_name}
-                  onChange={handleChange}
-                  required
-                  style={{ paddingLeft: '1rem' }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Club Tagline
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  name="tagline"
-                  placeholder="Where futures begin and wealth grows"
-                  value={form.tagline}
-                  onChange={handleChange}
-                  style={{ paddingLeft: '1rem' }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Homepage Message
-              </label>
-              <div className="input-wrapper">
-                <textarea
-                  name="homepage_message"
-                  placeholder="Welcome message that appears on the member homepage"
-                  value={form.homepage_message}
-                  onChange={handleChange}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: 'var(--bg-tertiary)',
-                    borderRadius: '12px',
-                    border: '2px solid transparent',
-                    color: 'var(--text-primary)',
-                    fontSize: '1rem',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Member Welcome Message
-              </label>
-              <div className="input-wrapper">
-                <textarea
-                  name="welcome_message"
-                  placeholder="Personal welcome message for returning members"
-                  value={form.welcome_message}
-                  onChange={handleChange}
-                  rows={2}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: 'var(--bg-tertiary)',
-                    borderRadius: '12px',
-                    border: '2px solid transparent',
-                    color: 'var(--text-primary)',
-                    fontSize: '1rem',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Dues Information
-              </label>
-              <div className="input-wrapper">
-                <textarea
-                  name="dues_info"
-                  placeholder="Information about membership dues and payment"
-                  value={form.dues_info}
-                  onChange={handleChange}
-                  rows={2}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: 'var(--bg-tertiary)',
-                    borderRadius: '12px',
-                    border: '2px solid transparent',
-                    color: 'var(--text-primary)',
-                    fontSize: '1rem',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Contact Email
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="email"
-                  name="contact_email"
-                  placeholder="admin@ffainvestments.com"
-                  value={form.contact_email}
-                  onChange={handleChange}
-                  style={{ paddingLeft: '1rem' }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Meeting Schedule
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  name="meeting_schedule"
-                  placeholder="Weekly meetings every Tuesday at 7:00 PM"
-                  value={form.meeting_schedule}
-                  onChange={handleChange}
-                  style={{ paddingLeft: '1rem' }}
-                />
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Current Announcements
-              </label>
-              <div className="input-wrapper">
-                <textarea
-                  name="announcements"
-                  placeholder="Important announcements for members"
-                  value={form.announcements}
-                  onChange={handleChange}
-                  rows={3}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    background: 'var(--bg-tertiary)',
-                    borderRadius: '12px',
-                    border: '2px solid transparent',
-                    color: 'var(--text-primary)',
-                    fontSize: '1rem',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }}
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="submit-btn" disabled={saving}>
-              {saving ? (
-                <>
-                  <div className="spinner-inline"></div>
-                  <span>Saving Changes...</span>
-                </>
-              ) : (
-                <>
-                  <Save size={20} />
-                  <span>Save Settings</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="demo-hint">
-            <p>💡 Changes are saved to the database and visible to all members immediately.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </Page>
   )
 }
 

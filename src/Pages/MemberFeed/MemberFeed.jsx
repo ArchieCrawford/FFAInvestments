@@ -12,6 +12,7 @@ import {
 } from '../../lib/ffaApi'
 import { supabase } from '../../lib/supabase'
 import { Trash, Heart, MessageSquare, Image, Link as LinkIcon } from 'lucide-react'
+import { Page } from '../../components/Page'
 
 const PostComposer = ({ onCreate, currentUserId }) => {
   const [content, setContent] = useState('')
@@ -333,15 +334,9 @@ const MemberFeed = () => {
   if (!profile) return null
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <div className="card">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div>
-            <p className="text-default font-semibold text-xl">Member Feed</p>
-            <p className="text-muted">Share updates, links, and photos with the club.</p>
-          </div>
-        </div>
-        <div className="mt-3 space-y-4">
+    <Page title="Member Feed" subtitle="Share updates, links, and photos with the club">
+      <div className="flex flex-col gap-4 w-full">
+        <div className="space-y-4">
           {error && <div className="card bg-primary-soft border border-border text-default p-3 rounded-md">{error}</div>}
           <PostComposer onCreate={handleCreate} currentUserId={profile?.id} />
           {loading ? (
@@ -361,7 +356,7 @@ const MemberFeed = () => {
           )}
         </div>
       </div>
-    </div>
+    </Page>
   )
 }
 

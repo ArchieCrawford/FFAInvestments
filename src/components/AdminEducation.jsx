@@ -1,24 +1,29 @@
 import React from 'react';
+import { Page } from './Page';
+import { Plus } from 'lucide-react';
 
 export default function AdminEducation() {
+  const actions = (
+    <button className="btn-primary flex items-center gap-2">
+      <Plus className="w-4 h-4" />
+      Add Lesson
+    </button>
+  );
+
   return (
-    <div className="app-page">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="app-heading-lg">Education Management</h2>
-        <button className="app-btn app-btn-primary app-btn-pill">+ Add Lesson</button>
-      </div>
-      
-      <div className="app-card">
-        <div className="app-card-header">
-          <p className="app-card-title">Educational Content</p>
-          <p className="app-card-subtitle">Build lessons, workshops, and tutorials</p>
+    <Page
+      title="Education Management"
+      actions={actions}
+    >
+      <div className="card p-6">
+        <div className="mb-4">
+          <h3 className="text-xl font-semibold text-default mb-2">Educational Content</h3>
+          <p className="text-sm text-muted">Build lessons, workshops, and tutorials</p>
         </div>
-        <div className="app-card-content">
-          <p className="app-text-muted">
-            No educational content created yet. Start building your investment education library.
-          </p>
-        </div>
+        <p className="text-muted">
+          No educational content created yet. Start building your investment education library.
+        </p>
       </div>
-    </div>
+    </Page>
   );
 }

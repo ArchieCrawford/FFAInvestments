@@ -1,44 +1,46 @@
 import React from 'react';
+import { Page } from './Page';
+import { Plus } from 'lucide-react';
 
 export default function AdminAccounts() {
   const stats = [
-    { label: 'Total Accounts', value: '0', accent: 'var(--accent-purple)', icon: '🏦' },
-    { label: 'Active Accounts', value: '0', accent: 'var(--accent-green)', icon: '✅' },
-    { label: 'Total Balance', value: '$0.00', accent: 'var(--accent-pink)', icon: '💰' }
+    { label: 'Total Accounts', value: '0', icon: '🏦' },
+    { label: 'Active Accounts', value: '0', icon: '✅' },
+    { label: 'Total Balance', value: '$0.00', icon: '💰' }
   ];
 
   return (
-    <div className="app-page">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="app-heading-lg">Accounts</h2>
-        <button className="app-btn app-btn-primary app-btn-pill">+ Add Account</button>
-      </div>
-      
-      <div className="app-card">
-        <div className="app-card-header">
-          <div>
-            <p className="app-card-title">Account Management</p>
-            <p className="app-card-subtitle">Track account totals and balances</p>
-          </div>
-        </div>
-        <div className="app-card-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="app-grid cols-3">
-            {stats.map((stat) => (
-              <div key={stat.label} className="app-card app-card-stat">
+    <Page
+      title="Accounts"
+      subtitle="Track account totals and balances"
+      actions={
+        <button className="btn-primary rounded-full px-4 py-2 flex items-center gap-2">
+          <Plus size={16} />
+          Add Account
+        </button>
+      }
+    >
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {stats.map((stat) => (
+            <div key={stat.label} className="card p-6">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="app-text-muted">{stat.label}</p>
-                  <p className="app-heading-lg" style={{ color: stat.accent }}>{stat.value}</p>
+                  <p className="text-sm text-muted mb-1">{stat.label}</p>
+                  <p className="text-3xl font-bold text-default">{stat.value}</p>
                 </div>
-                <span className="app-pill">{stat.icon}</span>
+                <span className="text-3xl">{stat.icon}</span>
               </div>
-            ))}
-          </div>
-          
-          <p className="app-text-muted">
+            </div>
+          ))}
+        </div>
+        
+        <div className="card p-6">
+          <p className="text-muted text-center">
             No accounts created yet. Click "Add Account" to get started.
           </p>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

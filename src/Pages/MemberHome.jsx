@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { Home, Mail, Calendar, DollarSign, Bell, TrendingUp, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Page } from '../components/Page'
 
 const MemberHome = () => {
   const { user, profile } = useAuth()
@@ -78,199 +79,191 @@ const MemberHome = () => {
 
   if (!user) {
     return (
-      <div className="modern-login-container">
-        <div className="login-form-container">
-          <div className="login-form-wrapper">
-            <div className="error-alert">
-              <span>Please log in to view your dashboard.</span>
-            </div>
+      <Page title="Member Home">
+        <div className="card p-6">
+          <div className="text-red-400">
+            <span>Please log in to view your dashboard.</span>
           </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   if (loading) {
     return (
-      <div className="modern-login-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading dashboard...</p>
+      <Page title="Member Home">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading dashboard...</p>
+          </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   if (error) {
     return (
-      <div className="modern-login-container">
-        <div className="login-form-container">
-          <div className="login-form-wrapper">
-            <div className="error-alert">
-              <span>{error}</span>
-            </div>
+      <Page title="Member Home">
+        <div className="card p-6">
+          <div className="text-red-400">
+            <span>{error}</span>
           </div>
         </div>
-      </div>
+      </Page>
     )
   }
 
   return (
-    <div className="modern-login-container">
-      {/* Background Animation */}
-      <div className="bg-animation">
-        <div className="bg-shape bg-shape-1"></div>
-        <div className="bg-shape bg-shape-2"></div>
-        <div className="bg-shape bg-shape-3"></div>
-        <div className="bg-shape bg-shape-4"></div>
-      </div>
-
-      {/* Left Side - Club Info */}
-      <div className="login-branding">
-        <div className="brand-content">
-          <div className="brand-icon">
-            <TrendingUp size={48} />
-            <DollarSign size={32} className="dollar-overlay" />
-          </div>
-          <h1 className="brand-title">
-            <span className="gradient-text">{settings?.club_name || 'FFA Investments'}</span>
-          </h1>
-          {settings?.tagline && (
-            <p className="brand-subtitle">{settings.tagline}</p>
-          )}
-          
-          {settings?.homepage_message && (
-            <div style={{ 
-              marginTop: '2rem', 
-              padding: '1.5rem', 
-              background: 'rgba(255, 255, 255, 0.05)', 
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
-            }}>
-              <p style={{ color: 'var(--text-primary)', lineHeight: '1.6', margin: 0 }}>
-                {settings.homepage_message}
-              </p>
-            </div>
-          )}
-
-          <div className="feature-highlights" style={{ marginTop: '2rem' }}>
-            {settings?.meeting_schedule && (
-              <div className="feature">
-                <Calendar size={20} />
-                <span>{settings.meeting_schedule}</span>
+    <Page 
+      title={`Welcome, ${profile?.display_name || user.email}!`}
+      subtitle={settings?.tagline || 'FFA Investments Member Portal'}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Club Info */}
+        <div className="space-y-6">
+          {/* Club Overview */}
+          <div className="card p-6">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-primary-soft rounded-full">
+                <TrendingUp className="w-6 h-6 text-primary" />
               </div>
-            )}
-            {settings?.contact_email && (
-              <div className="feature">
-                <Mail size={20} />
-                <span>{settings.contact_email}</span>
-              </div>
-            )}
-            {settings?.dues_info && (
-              <div className="feature">
-                <DollarSign size={20} />
-                <span>{settings.dues_info}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Member Dashboard */}
-      <div className="login-form-container">
-        <div className="login-form-wrapper">
-          <div className="form-header">
-            <h2>Member Home</h2>
-            <p>Welcome back, {profile?.display_name || user.email}</p>
-          </div>
-
-          {settings?.welcome_message && (
-            <div className="demo-hint" style={{ marginBottom: '2rem' }}>
-              <p>{settings.welcome_message}</p>
-            </div>
-          )}
-
-          {settings?.announcements && (
-            <div className="error-alert" style={{ 
-              background: 'rgba(59, 130, 246, 0.1)', 
-              borderColor: 'rgba(59, 130, 246, 0.3)', 
-              color: '#93c5fd',
-              marginBottom: '2rem'
-            }}>
-              <Bell size={20} />
               <div>
-                <strong>Announcement:</strong>
-                <p style={{ margin: '0.5rem 0 0 0', lineHeight: '1.5' }}>{settings.announcements}</p>
+                <h2 className="text-xl font-bold text-default">{settings?.club_name || 'FFA Investments'}</h2>
+                <p className="text-sm text-muted">{settings?.tagline}</p>
               </div>
             </div>
-          )}
+            
+            {settings?.homepage_message && (
+              <div className="card p-4 bg-surface">
+                <p className="text-default leading-relaxed">
+                  {settings.homepage_message}
+                </p>
+              </div>
+            )}
+          </div>
 
-          {/* Member Actions */}
-          <div className="login-form">
-            <div className="demo-users">
-              <p className="demo-label">Quick Actions:</p>
-              <div className="demo-buttons" style={{ flexDirection: 'column', gap: '1rem' }}>
-                {[
-                  {
-                    label: 'View Portfolio',
-                    icon: <TrendingUp size={16} />,
-                    path: '/member/dashboard',
-                    gradient: 'from-blue-400 to-cyan-400'
-                  },
-                  {
-                    label: 'Investment Tracker',
-                    icon: <DollarSign size={16} />,
-                    path: '/member/contribute',
-                    gradient: 'from-green-400 to-emerald-400'
-                  },
-                  {
-                    label: 'Profile Directory',
-                    icon: <User size={16} />,
-                    path: '/member/directory',
-                    gradient: 'from-purple-400 to-pink-400'
-                  }
-                ].map((action) => (
-                  <button
-                    key={action.path}
-                    type="button"
-                    className={`demo-btn bg-gradient-to-r ${action.gradient}`}
-                    style={{ justifyContent: 'flex-start', width: '100%' }}
-                    onClick={() => navigate(action.path)}
-                  >
-                    {action.icon}
-                    <span>{action.label}</span>
-                  </button>
-                ))}
+          {/* Club Details */}
+          <div className="card p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-default mb-4">Club Information</h3>
+            
+            {settings?.meeting_schedule && (
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-default">Meeting Schedule</p>
+                  <p className="text-sm text-muted">{settings.meeting_schedule}</p>
+                </div>
               </div>
-            </div>
+            )}
+            
+            {settings?.contact_email && (
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-default">Contact</p>
+                  <p className="text-sm text-muted">{settings.contact_email}</p>
+                </div>
+              </div>
+            )}
+            
+            {settings?.dues_info && (
+              <div className="flex items-start gap-3">
+                <DollarSign className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-default">Membership Dues</p>
+                  <p className="text-sm text-muted">{settings.dues_info}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Member Status */}
-          <div style={{ 
-            marginTop: '2rem',
-            padding: '1.5rem',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.05)'
-          }}>
-            <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1.1rem' }}>
-              Your Status
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-                <strong>Role:</strong> {profile?.role || 'Member'}
-              </p>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-                <strong>Email:</strong> {user.email}
-              </p>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-                <strong>Member Since:</strong> {new Date(user.created_at).toLocaleDateString()}
-              </p>
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-default mb-4">Your Status</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted">Role</span>
+                <span className="text-sm font-medium text-default">{profile?.role || 'Member'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted">Email</span>
+                <span className="text-sm font-medium text-default">{user.email}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted">Member Since</span>
+                <span className="text-sm font-medium text-default">{new Date(user.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Actions & Announcements */}
+        <div className="space-y-6">
+          {/* Announcements */}
+          {settings?.announcements && (
+            <div className="card p-6 border-l-4 border-primary bg-primary-soft">
+              <div className="flex items-start gap-3">
+                <Bell className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-semibold text-default mb-2">Announcement</p>
+                  <p className="text-sm text-default leading-relaxed">{settings.announcements}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Welcome Message */}
+          {settings?.welcome_message && (
+            <div className="card p-6">
+              <p className="text-default">{settings.welcome_message}</p>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-default mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              {[
+                {
+                  label: 'View Portfolio',
+                  icon: <TrendingUp size={18} />,
+                  path: '/member/dashboard',
+                  description: 'Check your investment performance'
+                },
+                {
+                  label: 'Investment Tracker',
+                  icon: <DollarSign size={18} />,
+                  path: '/member/contribute',
+                  description: 'Record contributions and withdrawals'
+                },
+                {
+                  label: 'Profile Directory',
+                  icon: <User size={18} />,
+                  path: '/member/directory',
+                  description: 'Connect with other members'
+                }
+              ].map((action) => (
+                <button
+                  key={action.path}
+                  type="button"
+                  className="btn-primary w-full px-4 py-3 rounded-lg flex items-center gap-3 text-left hover:opacity-90 transition-opacity"
+                  onClick={() => navigate(action.path)}
+                >
+                  <div className="flex-shrink-0">
+                    {action.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{action.label}</p>
+                    <p className="text-xs opacity-90">{action.description}</p>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   )
 }
 

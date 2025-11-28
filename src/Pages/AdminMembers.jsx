@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Users, DollarSign, Target } from 'lucide-react'
-import AppLayout from '../components/AppLayout'
+import { Page } from '../components/Page'
 
 const MEMBER_ACCOUNT_FIELDS = `
   id,
@@ -78,137 +78,138 @@ const AdminMembers = () => {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="fullscreen-center">
-          <div className="spinner-page" />
+      <Page title="Member Accounts">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading member accounts...</p>
+          </div>
         </div>
-      </AppLayout>
+      </Page>
     )
   }
 
   if (error) {
     return (
-      <AppLayout>
-        <div className="app-page">
-          <div className="card">
-            <div className="card-header">
-              <p className="text-xl font-semibold text-default">Member Accounts</p>
-            </div>
-            <div className="card-content text-red-300">{error}</div>
-          </div>
+      <Page title="Member Accounts">
+        <div className="card p-6 border-l-4 border-red-500">
+          <p className="text-red-400">{error}</p>
         </div>
-      </AppLayout>
+      </Page>
     )
   }
 
   return (
-    <AppLayout>
-      <div className="app-page">
-      <div className="card">
-        <div className="card-header">
-          <div>
-            <p className="text-2xl font-bold text-default">Member Accounts</p>
-            <p className="text-muted">Overview of current balances and contributions</p>
+    <Page
+      title="Member Accounts"
+      subtitle="Overview of current balances and contributions"
+    >
+      <div className="space-y-6">
+        <div className="card p-6">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex-1" style={{ minWidth: 220 }}>
+              <label className="block text-sm font-medium text-default mb-2">Search members</label>
+              <input
+                className="input w-full"
+                placeholder="Search by name or email"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-default mb-2">Status</label>
+              <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">All</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-3 mt-4">
-          <div className="flex-1" style={{ minWidth: 220 }}>
-            <label className="text-muted text-sm">Search members</label>
-            <input
-              className="input"
-              placeholder="Search by name or email"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-muted text-sm">Status</label>
-            <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">All</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="card text-center">
-          <div>
-            <p className="text-muted">Total Members</p>
-            <p className="text-2xl font-bold text-default">{accounts.length}</p>
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted mb-1">Total Members</p>
+                <p className="text-3xl font-bold text-default">{accounts.length}</p>
+              </div>
+              <Users size={32} className="text-primary" />
+            </div>
           </div>
-          <Users size={32} />
-        </div>
-        <div className="card text-center">
-          <div>
-            <p className="text-muted">Active Accounts</p>
-            <p className="text-2xl font-bold text-default">{accounts.filter((a) => a.is_active).length}</p>
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted mb-1">Active Accounts</p>
+                <p className="text-3xl font-bold text-default">{accounts.filter((a) => a.is_active).length}</p>
+              </div>
+              <Target size={32} className="text-primary" />
+            </div>
           </div>
-          <Target size={32} />
-        </div>
-        <div className="card text-center">
-          <div>
-            <p className="text-muted">Total Contributions</p>
-            <p className="text-2xl font-bold text-default">${totals.contributions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <div className="card p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted mb-1">Total Contributions</p>
+                <p className="text-3xl font-bold text-default">${totals.contributions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+              <DollarSign size={32} className="text-primary" />
+            </div>
           </div>
-          <DollarSign size={32} />
         </div>
-      </div>
 
-      <div className="card">
-        <div className="card-header">
-          <p className="text-xl font-semibold text-default">Member Detail</p>
-        </div>
-        <div className="card-content" style={{ overflowX: 'auto' }}>
-          <table className="w-full border-collapse min-w-full">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Email</th>
-                <th className="text-right">Current Value</th>
-                <th className="text-right">Total Contributions</th>
-                <th className="text-right">Units</th>
-                <th className="text-right">Ownership %</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredAccounts.map((account) => (
-                <tr key={account.id}>
-                  <td>{account.member_name}</td>
-                  <td>{account.email || '—'}</td>
-                  <td className="text-right">
-                    ${Number(account.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="text-right">
-                    ${Number(account.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="text-right">{Number(account.current_units || 0).toFixed(4)}</td>
-                  <td className="text-right">{Number(account.ownership_percentage || 0).toFixed(2)}%</td>
-                  <td>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${account.is_active ? 'bg-green-500/20 text-green-400' : 'bg-slate-600 text-muted'}`}>
-                      {account.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td>
-                    {account.email ? (
-                      <a className="btn-primary-soft border border-border text-sm px-3 py-1" href={`mailto:${account.email}`}>
-                        Email
-                      </a>
-                    ) : (
-                      <span className="text-muted text-sm">No email</span>
-                    )}
-                  </td>
+        <div className="card overflow-hidden">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-xl font-semibold text-default">Member Detail</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-surface">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Member</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Current Value</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Total Contributions</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Units</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Ownership %</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredAccounts.map((account) => (
+                  <tr key={account.id} className="hover:bg-surface">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{account.member_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">{account.email || '—'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">
+                      ${Number(account.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">
+                      ${Number(account.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">{Number(account.current_units || 0).toFixed(4)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">{Number(account.ownership_percentage || 0).toFixed(2)}%</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`badge ${account.is_active ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-muted'}`}>
+                        {account.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {account.email ? (
+                        <a className="text-primary hover:text-primary/80" href={`mailto:${account.email}`}>
+                          Email
+                        </a>
+                      ) : (
+                        <span className="text-muted">No email</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-      </div>
-    </AppLayout>
+    </Page>
   )
 }
 

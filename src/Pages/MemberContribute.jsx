@@ -13,6 +13,7 @@ import {
 import { Wallet, CreditCard, DollarSign, CheckCircle, AlertCircle } from "lucide-react";
 import { useCurrentMember } from "@/lib/authHooks";
 import { createMemberUnitTransaction, getLatestUnitValuation } from "@/lib/ffaApi";
+import { Page } from "../components/Page";
 
 export default function MemberContribute() {
   const navigate = useNavigate();
@@ -145,12 +146,14 @@ export default function MemberContribute() {
   // Show loading state while checking authentication
   if (memberLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900 mx-auto mb-4"></div>
-          <p className="text-muted">Loading...</p>
+      <Page title="Make a Contribution">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading...</p>
+          </div>
         </div>
-      </div>
+      </Page>
     );
   }
 
@@ -160,36 +163,34 @@ export default function MemberContribute() {
   }
 
   return (
-    <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+    <Page 
+      title="Make a Contribution"
+      subtitle="Add funds to your investment account"
+    >
       <div className="max-w-3xl mx-auto space-y-6">
-        
-        <div>
-          <h1 className="text-3xl font-bold text-default mb-2">Make a Contribution</h1>
-          <p className="text-muted">Add funds to your investment account</p>
-        </div>
 
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="card p-4 border-l-4 border-red-500 flex items-start gap-3">
+            <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
+            <p className="text-red-400">{error}</p>
+          </div>
         )}
 
         {success && (
-          <Alert className="border-emerald-500 bg-emerald-50">
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
-            <AlertDescription className="text-emerald-900">{success}</AlertDescription>
-          </Alert>
+          <div className="card p-4 border-l-4 border-green-500 flex items-start gap-3 bg-green-500/10">
+            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+            <p className="text-green-600">{success}</p>
+          </div>
         )}
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-blue-900" />
+        <div className="card">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-xl font-semibold text-default flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
               Contribution Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </h2>
+          </div>
+          <div className="p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label>Select Account *</Label>
@@ -219,14 +220,14 @@ export default function MemberContribute() {
                 <Label>Contribution Amount *</Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted">$</span>
-                  <Input
+                  <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
                     placeholder="0.00"
-                    className="pl-8"
+                    className="input pl-8"
                     required
                   />
                 </div>
@@ -254,10 +255,10 @@ export default function MemberContribute() {
                 </Select>
               </div>
 
-              <div className="bg-primary-soft border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">Payment Instructions</h4>
+              <div className="bg-primary-soft border border-border rounded-lg p-4">
+                <h4 className="font-semibold text-default mb-2">Payment Instructions</h4>
                 {formData.payment_method === 'bank_transfer' && (
-                  <div className="text-sm text-blue-800 space-y-1">
+                  <div className="text-sm text-default space-y-1">
                     <p><strong>Account Name:</strong> FFA Investment Club</p>
                     <p><strong>Routing Number:</strong> 123456789</p>
                     <p><strong>Account Number:</strong> 987654321</p>
@@ -265,14 +266,14 @@ export default function MemberContribute() {
                   </div>
                 )}
                 {formData.payment_method === 'check' && (
-                  <div className="text-sm text-blue-800 space-y-1">
+                  <div className="text-sm text-default space-y-1">
                     <p>Make check payable to: <strong>FFA Investment Club</strong></p>
                     <p className="mt-2">Mail to:</p>
                     <p>FFA Investment Club<br/>123 Main Street<br/>Anytown, ST 12345</p>
                   </div>
                 )}
                 {formData.payment_method === 'wire' && (
-                  <div className="text-sm text-blue-800 space-y-1">
+                  <div className="text-sm text-default space-y-1">
                     <p><strong>Bank Name:</strong> First National Bank</p>
                     <p><strong>SWIFT Code:</strong> FIRSTUS33</p>
                     <p><strong>Account Number:</strong> 987654321</p>
@@ -281,42 +282,39 @@ export default function MemberContribute() {
                 )}
               </div>
 
-              <Button
+              <button
                 type="submit"
                 disabled={isProcessing || accounts.length === 0}
-                className="w-full bg-primary hover:bg-blue-800 text-lg py-6"
+                className="btn-primary w-full text-lg py-4 rounded-lg"
               >
                 {isProcessing ? 'Processing...' : `Submit $${formData.amount || '0.00'} Contribution`}
-              </Button>
+              </button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="border-none shadow-lg bg-bg">
-          <CardContent className="pt-6">
-            <h3 className="font-semibold text-default mb-3">How it works:</h3>
-            <ol className="space-y-2 text-sm text-default">
-              <li className="flex gap-2">
-                <span className="font-semibold text-blue-900">1.</span>
-                Submit your contribution request through this form
-              </li>
-              <li className="flex gap-2">
-                <span className="font-semibold text-blue-900">2.</span>
-                Transfer funds using the provided payment instructions
-              </li>
-              <li className="flex gap-2">
-                <span className="font-semibold text-blue-900">3.</span>
-                Admin will verify receipt and allocate units to your account
-              </li>
-              <li className="flex gap-2">
-                <span className="font-semibold text-blue-900">4.</span>
-                Your updated balance will appear in your dashboard within 1-2 business days
-              </li>
-            </ol>
-          </CardContent>
-        </Card>
-
+        <div className="card p-6">
+          <h3 className="font-semibold text-default mb-3">How it works:</h3>
+          <ol className="space-y-2 text-sm text-default">
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary">1.</span>
+              Submit your contribution request through this form
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary">2.</span>
+              Transfer funds using the provided payment instructions
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary">3.</span>
+              Admin will verify receipt and allocate units to your account
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-primary">4.</span>
+              Your updated balance will appear in your dashboard within 1-2 business days
+            </li>
+          </ol>
+        </div>
       </div>
-    </div>
+    </Page>
   );
 }

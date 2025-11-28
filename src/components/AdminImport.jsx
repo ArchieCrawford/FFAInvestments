@@ -1,38 +1,36 @@
 import React from 'react';
+import { Page } from './Page';
+import { FileText, Upload } from 'lucide-react';
 
 export default function AdminImport() {
   return (
-    <div className="app-page">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="app-heading-lg">Import Data</h2>
-      </div>
-      
-      <div className="app-card">
-        <div className="app-card-header">
-          <h5 className="app-card-title">Data Import Tools</h5>
-          <p className="app-card-subtitle">Bring in transactions from CSV or Excel files</p>
-        </div>
-        <div className="app-card-content">
-          <div className="app-grid cols-2">
-            <div className="app-card text-center">
-              <div className="app-card-content">
-                <i className="fas fa-file-csv fa-3x mb-3"></i>
-                <h6 className="app-heading-md">Import CSV</h6>
-                <p className="app-text-muted small">Upload transaction data from CSV files</p>
-                <button className="app-btn app-btn-outline">Choose File</button>
-              </div>
-            </div>
-            <div className="app-card text-center">
-              <div className="app-card-content">
-                <i className="fas fa-file-excel fa-3x mb-3"></i>
-                <h6 className="app-heading-md">Import Excel</h6>
-                <p className="app-text-muted small">Upload data from Excel spreadsheets</p>
-                <button className="app-btn app-btn-outline app-btn-success">Choose File</button>
-              </div>
-            </div>
+    <Page
+      title="Import Data"
+      subtitle="Bring in transactions from CSV or Excel files"
+    >
+      <div className="card p-6">
+        <h3 className="text-xl font-semibold text-default mb-6">Data Import Tools</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="card p-6 text-center">
+            <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-default mb-2">Import CSV</h4>
+            <p className="text-sm text-muted mb-4">Upload transaction data from CSV files</p>
+            <button className="btn-primary-soft">
+              <Upload className="w-4 h-4 mr-2 inline" />
+              Choose File
+            </button>
+          </div>
+          <div className="card p-6 text-center">
+            <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-default mb-2">Import Excel</h4>
+            <p className="text-sm text-muted mb-4">Upload data from Excel spreadsheets</p>
+            <button className="btn-primary">
+              <Upload className="w-4 h-4 mr-2 inline" />
+              Choose File
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }

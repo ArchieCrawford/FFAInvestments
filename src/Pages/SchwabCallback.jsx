@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi from '../services/schwabApi'
+import { Page } from '../components/Page'
 
 export default function SchwabCallback() {
   const [status, setStatus] = useState('processing')
@@ -52,15 +53,31 @@ export default function SchwabCallback() {
   }, [navigate])
 
   return (
-    <div className="app-page">
-      {status === 'processing' && <p>Completing Schwab login…</p>}
-      {status === 'success' && <p>Success. Redirecting…</p>}
-      {status === 'error' && (
-        <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
-          <strong>Schwab connection failed.</strong>
-          <div>{error}</div>
+    <Page title="Schwab OAuth Callback" subtitle="Completing secure login with Charles Schwab">
+      {status === 'processing' && (
+        <div className="card">
+          <div className="card-content">
+            <p>Completing Schwab login…</p>
+          </div>
         </div>
       )}
-    </div>
+      {status === 'success' && (
+        <div className="card">
+          <div className="card-content">
+            <p>Success. Redirecting…</p>
+          </div>
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="card">
+          <div className="card-content">
+            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
+              <strong>Schwab connection failed.</strong>
+              <div>{error}</div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Page>
   )
 }

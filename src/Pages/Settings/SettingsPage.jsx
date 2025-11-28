@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { Page } from '../../components/Page'
 
 const timezones = [
   'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'
@@ -45,12 +46,8 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="app-page">
+    <Page title="Settings" subtitle="Manage your profile and preferences">
       <div className="card">
-        <div className="card-header">
-          <p className="text-2xl font-bold text-default">Settings</p>
-          <p className="text-muted">Manage your profile and preferences</p>
-        </div>
         <form onSubmit={handleSave}>
           <div className="grid-2" style={{ gap: '1rem' }}>
             <div className="card" style={{ padding: '1rem' }}>
@@ -95,7 +92,7 @@ const SettingsPage = () => {
           </div>
         )}
       </div>
-    </div>
+    </Page>
   )
 }
 

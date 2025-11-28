@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
+import { Page } from '../components/Page';
 
 export default function EducationCatalog() {
   const { data: lessons = [], isLoading } = useQuery({
@@ -19,41 +20,26 @@ export default function EducationCatalog() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <Page title="📚 Education Center" subtitle="Loading education materials...">
+        <div className="card">
+          <div className="card-content text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-border mx-auto"></div>
             <p className="mt-4 text-muted">Loading education materials...</p>
           </div>
         </div>
-      </div>
+      </Page>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="bg-white border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-default mb-2">📚 Education Center</h1>
-              <p className="text-muted">Learn about investment concepts, unit values, and club management</p>
-            </div>
-            <Link 
-              to="/member/dashboard" 
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary hover:bg-primary/90 rounded-md transition-colors"
-            >
-              ← Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Page
+      title="📚 Education Center"
+      subtitle="Learn about investment concepts, unit values, and club management"
+      actions={<Link to="/member/dashboard" className="btn-primary-soft">← Back to Dashboard</Link>}
+    >
         
         {/* Featured Lesson */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg text-white p-8 mb-8">
+  <div className="bg-primary rounded-lg text-white p-8 mb-8">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center px-3 py-1 bg-white/20 rounded-full text-sm font-medium mb-3">
@@ -152,18 +138,20 @@ export default function EducationCatalog() {
           <div className="lg:col-span-3">
             
             {publishedLessons.length === 0 ? (
-              <div className="bg-white rounded-lg shadow-sm border border-border p-8 text-center">
+              <div className="card text-center">
+                <div className="card-content p-8">
                 <div className="text-6xl mb-4">📚</div>
                 <h3 className="text-xl font-bold text-default mb-2">No Lessons Available Yet</h3>
                 <p className="text-muted mb-6">
                   Our education content is being prepared. Check back soon for comprehensive lessons 
                   about investment concepts and club management.
                 </p>
-                <div className="bg-primary-soft border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800 text-sm">
+                  <div className="bg-primary-soft border border-border rounded-lg p-4">
+                    <p className="text-default text-sm">
                     💡 In the meantime, you can explore our featured Unit Value System guide above, 
                     which provides a complete explanation of how the club's unit pricing works.
                   </p>
+                </div>
                 </div>
               </div>
             ) : (
@@ -176,7 +164,7 @@ export default function EducationCatalog() {
                   if (trackLessons.length === 0) return null;
                   
                   return (
-                    <div key={track} className="bg-white rounded-lg shadow-sm border border-border">
+                    <div key={track} className="card">
                       <div className="border-b border-border bg-bg px-6 py-4">
                         <h2 className="text-xl font-bold text-default capitalize">
                           {track} Level Lessons
@@ -239,7 +227,7 @@ export default function EducationCatalog() {
             )}
 
             {/* Additional Educational Resources */}
-            <div className="bg-white rounded-lg shadow-sm border border-border mt-8">
+            <div className="card mt-8">
               <div className="border-b border-border bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4">
                 <h2 className="text-xl font-bold text-default flex items-center gap-2">
                   🎓 Interactive Learning Resources
@@ -362,7 +350,6 @@ export default function EducationCatalog() {
             
           </div>
         </div>
-      </div>
-    </div>
+    </Page>
   );
 }

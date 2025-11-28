@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
 import { format } from 'date-fns'
 import { useCurrentMember } from '@/lib/authHooks'
+import { Page } from '../components/Page'
 
 const SchwabRawData = () => {
   const { member, loading: memberLoading } = useCurrentMember();
@@ -257,7 +258,7 @@ const SchwabRawData = () => {
 
   // Protected route checks
   if (memberLoading) {
-    return <div className="card">Loading...</div>;
+    return <Page title="Schwab Raw API Data"><div className="card"><div className="card-content">Loading...</div></div></Page>;
   }
 
   if (!member) {
@@ -265,26 +266,15 @@ const SchwabRawData = () => {
   }
 
   return (
-  <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Schwab Raw API Data</h1>
-              <p className="text-gray-600 mt-2">
-                Test Schwab API endpoints and view raw responses for debugging
-              </p>
-            </div>
-            <button
-              onClick={() => navigate('/admin/schwab')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-            >
-              ← Back to Schwab
-            </button>
-          </div>
-        </div>
+    <Page
+      title="Schwab Raw API Data"
+      subtitle="Test Schwab API endpoints and view raw responses for debugging"
+      actions={
+        <button onClick={() => navigate('/admin/schwab')} className="btn-primary-soft">
+          ← Back to Schwab
+        </button>
+      }
+    >
 
   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
@@ -292,7 +282,8 @@ const SchwabRawData = () => {
           <div className="lg:col-span-1 space-y-6">
             {/* Account Selector */}
             {accountList.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="card">
+                <div className="card-content">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Selected Account</h3>
                 <select
                   value={selectedAccountNumber}
@@ -300,7 +291,7 @@ const SchwabRawData = () => {
                     setSelectedAccountNumber(e.target.value)
                     console.log('🎯 [SchwabRawData] Account selected:', e.target.value)
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="input w-full text-sm"
                 >
                   {accountList.map((acc) => (
                     <option key={acc.accountNumber} value={acc.accountNumber}>
@@ -308,20 +299,22 @@ const SchwabRawData = () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-muted mt-2">
                   This account will be used for endpoints with {'{accountNumber}'}
                 </p>
+                </div>
               </div>
             )}
             
             {/* Account List Export Section */}
             {accountList.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6 mb-4">
+              <div className="card mb-4">
+                <div className="card-content">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Account List</h3>
-                <div className="mb-2 text-xs text-gray-600">{accountList.length} account(s) loaded</div>
+                <div className="mb-2 text-xs text-muted">{accountList.length} account(s) loaded</div>
                 <div className="flex gap-2 mb-2">
                   <button
-                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                    className="btn-primary-soft text-sm"
                     onClick={() => {
                       const dataStr = JSON.stringify(accountList, null, 2);
                       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -336,7 +329,7 @@ const SchwabRawData = () => {
                     }}
                   >💾 Export JSON</button>
                   <button
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    className="btn-primary-soft text-sm"
                     onClick={() => {
                       // Convert to CSV
                       const header = ['accountNumber','accountType','accountId','displayName','status'];
@@ -378,11 +371,13 @@ const SchwabRawData = () => {
                     </tbody>
                   </table>
                 </div>
+                </div>
               </div>
             )}
             
             {/* Predefined Endpoints */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="card">
+              <div className="card-content">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Predefined Endpoints</h3>
               <div className="space-y-2">
                 {predefinedEndpoints.map((endpoint) => (
@@ -400,16 +395,18 @@ const SchwabRawData = () => {
                     />
                     <div>
                       <div className="text-sm font-medium text-gray-900">{endpoint.label}</div>
-                      <div className="text-xs text-gray-500">{endpoint.description}</div>
-                      <div className="text-xs text-blue-600 font-mono">{endpoint.value}</div>
+                      <div className="text-xs text-muted">{endpoint.description}</div>
+                      <div className="text-xs text-default font-mono">{endpoint.value}</div>
                     </div>
                   </label>
                 ))}
               </div>
+              </div>
             </div>
 
             {/* Custom Endpoint */}
-            <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="card">
+              <div className="card-content">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Custom Endpoint</h3>
               <div className="space-y-4">
                 <div>
@@ -424,14 +421,15 @@ const SchwabRawData = () => {
                       setSelectedEndpoint('')
                     }}
                     placeholder="/trader/v1/accounts or /marketdata/v1/quotes?symbols=AAPL"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="input w-full"
                   />
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted">
                   <p>• Use full path including query parameters</p>
                   <p>• {"{accountNumber}"} will be replaced with your first account</p>
                   <p>• Base URL (api.schwab.com) is automatically added</p>
                 </div>
+              </div>
               </div>
             </div>
 
@@ -443,7 +441,7 @@ const SchwabRawData = () => {
                 (!selectedEndpoint && !customEndpoint.trim()) ||
                 ((selectedEndpoint || customEndpoint).includes('{accountNumber}') && !selectedAccountNumber && accountList.length === 0)
               }
-              className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -457,7 +455,7 @@ const SchwabRawData = () => {
             
             {/* Warning when account number needed but not available */}
             {((selectedEndpoint || customEndpoint).includes('{accountNumber}') && !selectedAccountNumber && accountList.length === 0) && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs text-yellow-800">
+              <div className="bg-primary-soft border border-border rounded-lg p-3 text-xs text-default">
                 ⚠️ Please fetch Account List first to get account numbers
               </div>
             )}
@@ -482,19 +480,20 @@ const SchwabRawData = () => {
 
             {/* API Response */}
             {apiResponse && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="card">
+                <div className="card-content">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">API Response</h3>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => copyToClipboard(formatJson(apiResponse))}
-                      className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      className="btn-primary-soft text-sm"
                     >
                       📋 Copy
                     </button>
                     <button
                       onClick={downloadResponse}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      className="btn-primary-soft text-sm"
                     >
                       💾 Download
                     </button>
@@ -502,24 +501,24 @@ const SchwabRawData = () => {
                 </div>
                 
                 {/* Response Metadata */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-surface rounded-lg">
                   <div>
-                    <p className="text-xs text-gray-600">Endpoint</p>
-                    <p className="text-sm font-mono text-gray-900 break-all">{apiResponse.endpoint}</p>
+                    <p className="text-xs text-muted">Endpoint</p>
+                    <p className="text-sm font-mono text-default break-all">{apiResponse.endpoint}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Status</p>
-                    <p className="text-sm font-semibold text-green-600">{apiResponse.status}</p>
+                    <p className="text-xs text-muted">Status</p>
+                    <p className="text-sm font-semibold text-default">{apiResponse.status}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Timestamp</p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-xs text-muted">Timestamp</p>
+                    <p className="text-sm text-default">
                       {format(new Date(apiResponse.timestamp), 'HH:mm:ss')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-600">Size</p>
-                    <p className="text-sm text-gray-900">
+                    <p className="text-xs text-muted">Size</p>
+                    <p className="text-sm text-default">
                       {(JSON.stringify(apiResponse.data).length / 1024).toFixed(1)}KB
                     </p>
                   </div>
@@ -531,18 +530,20 @@ const SchwabRawData = () => {
                     {formatJson(apiResponse.data)}
                   </pre>
                 </div>
+                </div>
               </div>
             )}
 
             {/* Call History */}
             {history.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="card">
+                <div className="card-content">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent API Calls</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {history.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-surface"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
@@ -551,7 +552,7 @@ const SchwabRawData = () => {
                             {item.endpoint}
                           </p>
                         </div>
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <div className="flex items-center space-x-4 text-xs text-muted">
                           <span>{format(new Date(item.timestamp), 'MMM dd, HH:mm:ss')}</span>
                           <span className={item.success ? 'text-green-600' : 'text-red-600'}>
                             {item.status}
@@ -563,32 +564,34 @@ const SchwabRawData = () => {
                       </div>
                       <button
                         onClick={() => rerunFromHistory(item)}
-                        className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        className="ml-2 px-2 py-1 text-xs btn-primary-soft"
                       >
                         Re-run
                       </button>
                     </div>
                   ))}
                 </div>
+                </div>
               </div>
             )}
 
             {/* No Data State */}
             {!apiResponse && !isLoading && (
-              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <div className="card text-center">
+                <div className="card-content p-12">
                 <div className="text-6xl mb-4">🔧</div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No API Response</h3>
-                <p className="text-gray-600">
+                <p className="text-muted">
                   Select an endpoint and click "Execute API Call" to see the raw response data.
                 </p>
+                </div>
               </div>
             )}
 
           </div>
         </div>
 
-      </div>
-    </div>
+    </Page>
   )
 }
 

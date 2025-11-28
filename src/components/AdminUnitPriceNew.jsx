@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Plus, Edit2, Trash2, X } from 'lucide-react'
 import { getUnitPriceHistory } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext'
+import { Page } from './Page'
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat('en-US', {
@@ -91,132 +92,140 @@ const AdminUnitPriceNew = () => {
 
   if (loading) {
     return (
-      <div className="fullscreen-center">
-        <div className="spinner-page" />
-      </div>
+      <Page title="Unit Value System">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading unit prices...</p>
+          </div>
+        </div>
+      </Page>
     )
   }
 
-  return (
-    <div className="app-page">
-      {message && (
-        <div className="app-card" style={{ borderColor: message.type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)' }}>
-          <p style={{ color: message.type === 'error' ? '#fecaca' : '#bbf7d0' }}>{message.text}</p>
-        </div>
-      )}
+  const actions = isAdmin && (
+    <button className="btn-primary flex items-center gap-2" onClick={() => setEditingId(null)}>
+      <Plus className="w-4 h-4" />
+      New Entry
+    </button>
+  );
 
-      <div className="app-card">
-        <div className="app-card-header">
-          <div>
-            <p className="app-heading-lg">Unit Value System</p>
-            <p className="app-text-muted">Historical view of the club unit price</p>
+  return (
+    <Page
+      title="Unit Value System"
+      subtitle="Historical view of the club unit price"
+      actions={actions}
+    >
+      <div className="space-y-6">
+        {message && (
+          <div className={`card p-4 border-l-4 ${
+            message.type === 'error' ? 'border-red-500' : 'border-green-500 bg-green-500/10'
+          }`}>
+            <p className={message.type === 'error' ? 'text-red-400' : 'text-green-600'}>{message.text}</p>
           </div>
-          {isAdmin && (
-            <button className="app-btn app-btn-primary app-btn-pill" onClick={() => setEditingId(null)}>
-              <Plus size={16} className="mr-2" />
-              New Entry
-            </button>
+        )}
+
+        <div className="card">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <div className="card p-6">
+              <p className="text-sm text-muted mb-1">Current Unit Price</p>
+              <p className="text-3xl font-bold text-default mb-2">{currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}</p>
+              <p className="text-sm text-muted">{currentPrice ? `Updated ${formatDate(currentPrice.price_date)}` : 'No data yet'}</p>
+            </div>
+            <div className="card p-6">
+              <p className="text-sm text-muted mb-1">Change vs Previous</p>
+              {change ? (
+                <p className={`text-3xl font-bold mb-2 ${change.pct >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {change.pct >= 0 ? '+' : ''}
+                  {change.pct.toFixed(2)}%
+                </p>
+              ) : (
+                <p className="text-3xl font-bold text-muted mb-2">N/A</p>
+              )}
+            </div>
+            <div className="card p-6">
+              <p className="text-sm text-muted mb-1">History Entries</p>
+              <p className="text-3xl font-bold text-default mb-2">{unitPrices.length}</p>
+              <p className="text-sm text-muted">Stored in Supabase</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="p-6 border-b border-border">
+            <h3 className="text-2xl font-bold text-default">Price History</h3>
+          </div>
+          {unitPrices.length > 0 ? (
+            <>
+              <div className="p-6 overflow-x-auto">
+                <svg width="100%" height="220" viewBox="0 0 600 200" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="unitPriceGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="rgb(var(--color-primary))" stopOpacity="0.7" />
+                      <stop offset="100%" stopColor="rgb(var(--color-primary))" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={chartPath} fill="none" stroke="url(#unitPriceGradient)" strokeWidth="3" />
+                </svg>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-surface">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Unit Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Change</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Notes</th>
+                      {isAdmin && <th className="px-6 py-3"></th>}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {unitPrices.map((price, index) => {
+                      const prev = unitPrices[index + 1]
+                      const diff = prev ? price.unit_price - prev.unit_price : null
+                      const pct = prev ? (diff / prev.unit_price) * 100 : null
+                      return (
+                        <tr key={price.id} className="hover:bg-surface">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{formatDate(price.price_date)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-default">{formatCurrency(price.unit_price)}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${diff >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {pct !== null ? `${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">{price.notes || '—'}</td>
+                          {isAdmin && (
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <div className="flex gap-2">
+                                <button className="btn-primary-soft btn-sm" onClick={() => handleEdit(price)}>
+                                  <Edit2 size={16} />
+                                </button>
+                                <button className="btn-primary-soft btn-sm" onClick={() => handleDelete(price.id)}>
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="p-12 text-center">
+              <p className="text-muted">No unit prices recorded yet.</p>
+            </div>
           )}
         </div>
-        <div className="grid-3">
-          <div className="app-card" style={{ padding: '1.5rem' }}>
-            <p className="app-text-muted">Current Unit Price</p>
-            <p className="app-heading-lg">{currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}</p>
-            <p className="app-text-muted">{currentPrice ? `Updated ${formatDate(currentPrice.price_date)}` : 'No data yet'}</p>
-          </div>
-          <div className="app-card" style={{ padding: '1.5rem' }}>
-            <p className="app-text-muted">Change vs Previous</p>
-            {change ? (
-              <p className="app-heading-lg" style={{ color: change.pct >= 0 ? '#4ade80' : '#f87171' }}>
-                {change.pct >= 0 ? '+' : ''}
-                {change.pct.toFixed(2)}%
-              </p>
-            ) : (
-              <p className="app-heading-lg app-text-muted">N/A</p>
-            )}
-          </div>
-          <div className="app-card" style={{ padding: '1.5rem' }}>
-            <p className="app-text-muted">History Entries</p>
-            <p className="app-heading-lg">{unitPrices.length}</p>
-            <p className="app-text-muted">Stored in Supabase</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="app-card">
-        <div className="app-card-header">
-          <p className="app-heading-md">Price History</p>
-        </div>
-        {unitPrices.length > 0 ? (
-          <>
-            <div style={{ width: '100%', overflowX: 'auto' }}>
-              <svg width="100%" height="220" viewBox="0 0 600 200" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="unitPriceGradient" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(59,130,246,0.7)" />
-                    <stop offset="100%" stopColor="rgba(59,130,246,0)" />
-                  </linearGradient>
-                </defs>
-                <path d={chartPath} fill="none" stroke="url(#unitPriceGradient)" strokeWidth="3" />
-              </svg>
-            </div>
-            <div className="app-table-scroll" style={{ marginTop: '1rem' }}>
-              <table className="app-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Unit Price</th>
-                    <th>Change</th>
-                    <th>Notes</th>
-                    {isAdmin && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {unitPrices.map((price, index) => {
-                    const prev = unitPrices[index + 1]
-                    const diff = prev ? price.unit_price - prev.unit_price : null
-                    const pct = prev ? (diff / prev.unit_price) * 100 : null
-                    return (
-                      <tr key={price.id}>
-                        <td>{formatDate(price.price_date)}</td>
-                        <td>{formatCurrency(price.unit_price)}</td>
-                        <td style={{ color: diff >= 0 ? '#4ade80' : '#f87171' }}>
-                          {pct !== null ? `${diff >= 0 ? '+' : ''}${pct.toFixed(2)}%` : '—'}
-                        </td>
-                        <td>{price.notes || '—'}</td>
-                        {isAdmin && (
-                          <td style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleEdit(price)}>
-                              <Edit2 size={16} />
-                            </button>
-                            <button className="app-btn app-btn-outline app-btn-sm" onClick={() => handleDelete(price.id)}>
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        ) : (
-          <p className="app-text-muted">No unit prices recorded yet.</p>
+        {isAdmin && (
+          <div className="card p-6">
+            <h3 className="text-xl font-bold text-default mb-3">Unit prices are derived</h3>
+            <p className="text-muted">Unit prices are now calculated from member monthly balances and cannot be edited via this UI. Manage source balances or run the back-end process to adjust historical values.</p>
+          </div>
         )}
       </div>
-
-      {isAdmin && (
-        <div className="app-card">
-          <div className="app-card-header">
-            <p className="app-heading-md">Unit prices are derived</p>
-          </div>
-          <div className="app-card-content">
-            <p className="app-text-muted">Unit prices are now calculated from member monthly balances and cannot be edited via this UI. Manage source balances or run the back-end process to adjust historical values.</p>
-          </div>
-        </div>
-      )}
-    </div>
+    </Page>
   )
 }
 

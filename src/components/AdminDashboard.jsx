@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { Page } from '../components/Page'
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -38,19 +39,17 @@ export default function AdminDashboard() {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="card">
-        <div className="p-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-default">Admin Dashboard</h1>
-            <p className="text-muted mt-1">Club overview and quick actions</p>
-          </div>
-          <div className="flex gap-2">
-            <button className="btn-primary rounded-full px-4 py-2">+ Add Member</button>
-            <button className="btn-primary-soft border border-border rounded-full px-4 py-2">+ Record Transaction</button>
-          </div>
-        </div>
-      </div>
+    <Page 
+      title="Admin Dashboard"
+      subtitle="Club overview and quick actions"
+      actions={
+        <>
+          <button className="btn-primary rounded-full px-4 py-2">+ Add Member</button>
+          <button className="btn-primary-soft border border-border rounded-full px-4 py-2">+ Record Transaction</button>
+        </>
+      }
+    >
+      <div className="space-y-6">
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[
@@ -103,6 +102,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Page>
   );
 }

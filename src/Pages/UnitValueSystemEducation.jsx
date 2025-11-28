@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Page } from '../components/Page';
 
 export default function UnitValueSystemEducation() {
   // State for interactive calculator
@@ -127,35 +128,20 @@ export default function UnitValueSystemEducation() {
   const unitPrice = getUnitPrice();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-default mb-2">
-                📚 Unit Value System — Complete Guide
-              </h1>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <a href="/member/dashboard" className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-primary hover:bg-primary hover:bg-primary/90 rounded-md transition-colors">
-                ← Dashboard
-              </a>
-              <a href="/admin/education" className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors">
-                ⚙️ Admin Education
-              </a>
-              <a href="/education/catalog" className="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md transition-colors">
-                📊 Education Catalog
-              </a>
-            </div>
-          </div>
+    <Page
+      title="📚 Unit Value System — Complete Guide"
+      subtitle="Learn the unit system with interactive examples and calculators"
+      actions={(
+        <div className="flex flex-wrap gap-2">
+          <a href="/member/dashboard" className="btn-primary-soft">← Dashboard</a>
+          <a href="/admin/education" className="btn-primary-soft">⚙️ Admin Education</a>
+          <a href="/education/catalog" className="btn-primary-soft">📊 Education Catalog</a>
         </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      )}
+    >
         
         {/* What is a Unit - Simple Version */}
-        <div className="bg-white rounded-lg shadow-sm border border-border mb-8">
+        <div className="card mb-8">
           <div className="border-b border-border bg-bg px-6 py-4">
             <h2 className="text-xl font-bold text-default">🍪 What is a "Unit"? (Simple Version)</h2>
           </div>
@@ -179,7 +165,7 @@ export default function UnitValueSystemEducation() {
         </div>
 
         {/* Real FFA Investment Example */}
-        <div className="bg-white rounded-lg shadow-sm border border-border mb-8">
+        <div className="card mb-8">
           <div className="border-b border-border bg-bg px-6 py-4">
             <h2 className="text-xl font-bold text-default">📊 Real FFA Investment Example</h2>
           </div>
@@ -250,7 +236,7 @@ export default function UnitValueSystemEducation() {
         </div>
 
         {/* How Deposits & Withdrawals Work */}
-        <div className="bg-white rounded-lg shadow-sm border border-border mb-8">
+        <div className="card mb-8">
           <div className="border-b border-border bg-bg px-6 py-4">
             <h2 className="text-xl font-bold text-default">💰 How Deposits & Withdrawals Work</h2>
           </div>
@@ -298,7 +284,7 @@ export default function UnitValueSystemEducation() {
         </div>
 
         {/* Interactive Unit Math Playground */}
-        <div className="bg-white rounded-lg shadow-sm border border-border mb-8">
+        <div className="card mb-8">
           <div className="border-b border-border bg-bg px-6 py-4">
             <h2 className="text-xl font-bold text-default">🎮 Interactive Unit Math Playground</h2>
           </div>
@@ -317,7 +303,7 @@ export default function UnitValueSystemEducation() {
                   step="0.01" 
                   value={portfolioValue}
                   onChange={(e) => setPortfolioValue(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input w-full"
                 />
               </div>
               <div>
@@ -327,7 +313,7 @@ export default function UnitValueSystemEducation() {
                   step="0.01" 
                   value={totalUnits}
                   onChange={(e) => setTotalUnits(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input w-full"
                 />
               </div>
             </div>
@@ -362,11 +348,11 @@ export default function UnitValueSystemEducation() {
                   placeholder="Deposit amount (e.g., 5000)"
                   value={depositAmount}
                   onChange={(e) => setDepositAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md mb-3"
+                  className="input w-full mb-3"
                 />
                 <button 
                   onClick={handleDeposit}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  className="btn-primary w-full"
                 >
                   Process Deposit
                 </button>
@@ -385,11 +371,11 @@ export default function UnitValueSystemEducation() {
                   placeholder="Withdrawal amount (e.g., 3000)"
                   value={withdrawalAmount}
                   onChange={(e) => setWithdrawalAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md mb-3"
+                  className="input w-full mb-3"
                 />
                 <button 
                   onClick={handleWithdrawal}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  className="btn-primary w-full"
                 >
                   Process Withdrawal
                 </button>
@@ -410,18 +396,18 @@ export default function UnitValueSystemEducation() {
                   placeholder="Number of units (e.g., 100)"
                   value={unitsDelta}
                   onChange={(e) => setUnitsDelta(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md mb-3"
+                  className="input w-full mb-3"
                 />
                 <div className="flex gap-2">
                   <button 
                     onClick={handleAddUnits}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    className="btn-primary flex-1"
                   >
                     + Add Units
                   </button>
                   <button 
                     onClick={handleRemoveUnits}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    className="btn-primary flex-1"
                   >
                     − Remove Units
                   </button>
@@ -438,7 +424,7 @@ export default function UnitValueSystemEducation() {
                 <p className="text-muted mb-3">Restore original FFA values</p>
                 <button 
                   onClick={resetValues}
-                  className="w-full bg-slate-600 hover:bg-slate-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                  className="btn-primary w-full"
                 >
                   🔄 Reset to FFA Data
                 </button>
@@ -448,7 +434,7 @@ export default function UnitValueSystemEducation() {
         </div>
 
         {/* Unit System Rules of Thumb */}
-        <div className="bg-white rounded-lg shadow-sm border border-border">
+        <div className="card">
           <div className="border-b border-border bg-bg px-6 py-4">
             <h2 className="text-xl font-bold text-default">✅ Unit System Rules of Thumb</h2>
           </div>
@@ -499,8 +485,6 @@ export default function UnitValueSystemEducation() {
             </div>
           </div>
         </div>
-
-      </div>
-    </div>
+    </Page>
   );
 }

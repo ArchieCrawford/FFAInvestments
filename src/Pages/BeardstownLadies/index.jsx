@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './BeardstownLadies.css';
+import { Page } from '../Page';
 
 const BeardstownLadies = () => {
   const [checkedItems, setCheckedItems] = useState({});
@@ -54,8 +55,9 @@ const BeardstownLadies = () => {
   };
 
   return (
-    <div className="beardstown-container">
-      <div className="beardstown-wrap">
+    <Page title="📚 Beardstown Ladies Investment Guide" subtitle="Investment club wisdom from the famous Beardstown Ladies">
+      <div className="beardstown-container">
+        <div className="beardstown-wrap">
         {/* Table of Contents */}
         <nav className="beardstown-toc beardstown-card">
           <h2>On this page</h2>
@@ -354,7 +356,8 @@ const BeardstownLadies = () => {
           </section>
         </main>
       </div>
-    </div>
+      </div>
+    </Page>
   );
 };
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
-import AppLayout from '../components/AppLayout'
+import { Page } from '../components/Page'
 import SchwabInsights from './SchwabInsights'
 
 /**
@@ -20,6 +20,7 @@ const AdminSchwab = () => {
   const mounted = useRef(true)
   
   const navigate = useNavigate()
+  const showDebug = new URLSearchParams(window.location.search).get('debug') === '1'
 
   useEffect(() => {
     mounted.current = true
@@ -118,64 +119,55 @@ const AdminSchwab = () => {
   }
 
   return (
-    <AppLayout>
-      <div className="app-page">
+    <Page
+      title="Charles Schwab Integration"
+      subtitle={isAuthenticated ? `Connected${accounts.length ? ` • ${accounts.length} account${accounts.length !== 1 ? 's' : ''}` : ''}` : 'Not connected'}
+      actions={isAuthenticated ? (
+        <button 
+          className="btn-primary-soft border border-red-500 text-red-500"
+          onClick={handleDisconnect}
+        >
+          <i className="fas fa-unlink" style={{ marginRight: '0.5rem' }}></i>
+          Disconnect
+        </button>
+      ) : null}
+    >
       {/* Optional debug panel (?debug=1) */}
-      {(() => {
-        const params = new URLSearchParams(window.location.search)
-        if (params.get('debug') === '1') {
-          const tokenRaw = localStorage.getItem('schwab_tokens') || ''
-          const status = schwabApi.getAuthStatus?.()
-          return (
-            <div className="card mb-8" style={{ border: '1px dashed var(--app-border-muted)' }}>
-              <div className="card-header">
-                <h6 className="text-lg font-semibold text-default" style={{ display: 'flex', alignItems: 'center' }}>
-                  <i className="fas fa-bug" style={{ marginRight: '0.5rem' }}></i>
-                  Schwab Debug Panel
-                </h6>
-              </div>
-              <div className="card-content" style={{ fontSize: '0.75rem' }}>
-                <div><strong>Auth Status:</strong> {status ? JSON.stringify(status) : 'n/a'}</div>
-                <div style={{ marginTop: '0.5rem' }}><strong>Token (truncated):</strong> {tokenRaw.slice(0, 160)}{tokenRaw.length > 160 ? '…' : ''}</div>
-                <div style={{ marginTop: '0.5rem' }}><strong>Accounts loaded:</strong> {accounts.length}</div>
-                <div style={{ marginTop: '0.5rem' }}><strong>Error:</strong> {error || 'none'}</div>
-                <p style={{ marginTop: '0.5rem' }}>Remove <code>?debug=1</code> from URL to hide.</p>
-              </div>
-            </div>
-          )
-        }
-        return null
-      })()}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2>
-          <i className="fas fa-university" style={{ marginRight: '0.5rem' }}></i>
-          Charles Schwab Integration
-        </h2>
-        
-        {isAuthenticated && (
-          <button 
-            className="btn-primary-soft border border-red-500 text-red-500"
-            onClick={handleDisconnect}
-          >
-            <i className="fas fa-unlink" style={{ marginRight: '0.5rem' }}></i>
-            Disconnect
-          </button>
-        )}
-      </div>
+      {showDebug && (
+        <div className="card mb-8" style={{ border: '1px dashed var(--app-border-muted)' }}>
+          <div className="card-header">
+            <h6 className="text-lg font-semibold text-default" style={{ display: 'flex', alignItems: 'center' }}>
+              <i className="fas fa-bug" style={{ marginRight: '0.5rem' }}></i>
+              Schwab Debug Panel
+            </h6>
+          </div>
+          <div className="card-content" style={{ fontSize: '0.75rem' }}>
+            <div><strong>Auth Status:</strong> {schwabApi.getAuthStatus ? JSON.stringify(schwabApi.getAuthStatus()) : 'n/a'}</div>
+            <div style={{ marginTop: '0.5rem' }}><strong>Token (truncated):</strong> {(localStorage.getItem('schwab_tokens') || '').slice(0, 160)}{(localStorage.getItem('schwab_tokens') || '').length > 160 ? '…' : ''}</div>
+            <div style={{ marginTop: '0.5rem' }}><strong>Accounts loaded:</strong> {accounts.length}</div>
+            <div style={{ marginTop: '0.5rem' }}><strong>Error:</strong> {error || 'none'}</div>
+            <p style={{ marginTop: '0.5rem' }}>Remove <code>?debug=1</code> from URL to hide.</p>
+          </div>
+        </div>
+      )}
+      
 
       {/* Connection Status */}
       <div className="mb-4">
-        <div className={`${isAuthenticated ? 'bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-lg' : ''}`}>
-          <i className={`fas ${isAuthenticated ? 'fa-check-circle' : 'fa-info-circle'}`} style={{ marginRight: '0.75rem' }}></i>
-          <div>
-            <strong>Status:</strong> {isAuthenticated ? 'Connected to Charles Schwab' : 'Not connected to Charles Schwab'}
-            {isAuthenticated && accounts.length > 0 && (
-              <div className="mt-1">
-                <small>Found {accounts.length} account{accounts.length !== 1 ? 's' : ''}</small>
-              </div>
+        {isAuthenticated ? (
+          <div className="bg-green-500/10 border border-green-500 text-green-600 px-4 py-3 rounded-lg">
+            <i className="fas fa-check-circle" style={{ marginRight: '0.75rem' }}></i>
+            <strong>Status:</strong> Connected to Charles Schwab
+            {accounts.length > 0 && (
+              <div className="mt-1 text-sm">Found {accounts.length} account{accounts.length !== 1 ? 's' : ''}</div>
             )}
           </div>
-        </div>
+        ) : (
+          <div className="bg-primary-soft border border-border text-default px-4 py-3 rounded-lg">
+            <i className="fas fa-info-circle" style={{ marginRight: '0.75rem' }}></i>
+            <strong>Status:</strong> Not connected to Charles Schwab
+          </div>
+        )}
       </div>
 
       {error && (
@@ -302,9 +294,8 @@ const AdminSchwab = () => {
           </div>
         </div>
       )}
-      </div>
-    </AppLayout>
-  )
+    </Page>
+  );
 }
 
 export default AdminSchwab

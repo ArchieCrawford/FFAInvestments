@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Page } from '../components/Page';
 
 export default function PortfolioBuilder() {
   // Seed members with their unit counts from your FFA data
@@ -357,13 +358,15 @@ export default function PortfolioBuilder() {
   };
 
   return (
-    <>
+    <Page
+      title="Portfolio Builder"
+      subtitle="Interactive tool to simulate portfolio scenarios with unit calculations and real FFA member data"
+    >
       <style>{`
         .portfolio-builder-container {
           max-width: 1200px;
           margin: 0 auto;
           padding: 20px;
-          background: #f7f7f7;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
           min-height: 100vh;
         }
@@ -683,12 +686,6 @@ export default function PortfolioBuilder() {
       `}</style>
       
       <div className="portfolio-builder-container">
-        {/* Header */}
-        <div className="builder-header">
-          <h1>Investment Club – Unit Value Tracker</h1>
-          <p>Build and manage your investment club portfolio with automatic unit calculations and Excel export functionality.</p>
-        </div>
-
         {/* Portfolio Controls */}
         <div className="builder-controls">
           <div className="control-group">
@@ -872,6 +869,6 @@ export default function PortfolioBuilder() {
           <button className="btn" onClick={clearAll} style={{background: '#dc3545', color: 'white'}}>🗑️ Clear All</button>
         </div>
       </div>
-    </>
+    </Page>
   );
 }

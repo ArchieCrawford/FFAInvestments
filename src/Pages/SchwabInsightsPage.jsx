@@ -1,13 +1,15 @@
 import React from 'react';
-import AppLayout from '../components/AppLayout';
+import { Page } from '../components/Page';
 import SchwabInsights from './SchwabInsights';
 
 export default function SchwabInsightsPage() {
   return (
-    <AppLayout>
-      <div className="app-page">
-        <SchwabInsights />
+    <Page title="Schwab Insights" subtitle="Portfolio analytics and performance metrics">
+      <div className="card">
+        <div className="card-content">
+          <SchwabInsights />
+        </div>
       </div>
-    </AppLayout>
+    </Page>
   );
 }

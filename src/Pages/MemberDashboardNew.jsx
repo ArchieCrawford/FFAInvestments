@@ -14,6 +14,7 @@ import {
   Activity, BookOpen, Calendar, Target,
   ArrowUpRight, ArrowDownRight, Wallet
 } from 'lucide-react';
+import { Page } from '../components/Page'
 
 const MemberDashboard = () => {
   const [memberData, setMemberData] = useState(null);
@@ -136,128 +137,130 @@ const MemberDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading your portfolio...</div>
-      </div>
+      <Page title="My Dashboard">
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted mt-4">Loading your portfolio...</p>
+          </div>
+        </div>
+      </Page>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="bg-red-500/20 border border-red-500 rounded-lg p-6 text-red-400 max-w-md">
-          <h3 className="text-lg font-semibold mb-2">Access Error</h3>
-          <p>{error}</p>
+      <Page title="My Dashboard">
+        <div className="card p-6 border-l-4 border-red-500">
+          <h3 className="text-lg font-semibold text-red-400 mb-2">Access Error</h3>
+          <p className="text-muted">{error}</p>
         </div>
-      </div>
+      </Page>
     );
   }
 
   if (!memberData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
-        <div className="text-white text-xl">No member data available</div>
-      </div>
+      <Page title="My Dashboard">
+        <div className="card p-6">
+          <p className="text-muted">No member data available</p>
+        </div>
+      </Page>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {memberData.member_name || memberData.email || 'Member'}!
-          </h1>
-          <p className="text-blue-200">Here's your investment portfolio overview</p>
-        </div>
-
+    <Page 
+      title={`Welcome back, ${memberData.member_name || memberData.email || 'Member'}!`}
+      subtitle="Your investment portfolio overview"
+    >
+      <div className="space-y-6">
         {/* Main Portfolio Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Current Value */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Portfolio Value</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Portfolio Value</p>
+                <p className="text-2xl font-bold text-default">
                   {formatCurrency(memberData.calculated_current_value || memberData.current_value)}
                 </p>
               </div>
-              <Wallet className="w-8 h-8 text-blue-400" />
+              <Wallet className="w-8 h-8 text-primary" />
             </div>
           </div>
 
           {/* Units Owned */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Units Owned</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Units Owned</p>
+                <p className="text-2xl font-bold text-default">
                   {(memberData.current_units || 0).toFixed(4)}
                 </p>
               </div>
-              <Target className="w-8 h-8 text-green-400" />
+              <Target className="w-8 h-8 text-primary" />
             </div>
           </div>
 
           {/* Total Return */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Total Return</p>
-                <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-400' : 'text-red-400'}`}>
+                <p className="text-sm text-muted mb-1">Total Return</p>
+                <p className={`text-2xl font-bold ${isPositiveReturn ? 'text-green-500' : 'text-red-500'}`}>
                   {formatCurrency(memberData.total_gain_loss)}
                 </p>
-                <p className={`text-sm ${isPositiveReturn ? 'text-green-400' : 'text-red-400'}`}>
+                <p className={`text-sm ${isPositiveReturn ? 'text-green-500' : 'text-red-500'}`}>
                   {formatPercentage(memberData.return_percentage)}
                 </p>
               </div>
               {isPositiveReturn ? (
-                <TrendingUp className="w-8 h-8 text-green-400" />
+                <TrendingUp className="w-8 h-8 text-green-500" />
               ) : (
-                <TrendingDown className="w-8 h-8 text-red-400" />
+                <TrendingDown className="w-8 h-8 text-red-500" />
               )}
             </div>
           </div>
 
           {/* Total Contributed */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Total Contributed</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Total Contributed</p>
+                <p className="text-2xl font-bold text-default">
                   {formatCurrency(memberData.total_contributions)}
                 </p>
               </div>
-              <DollarSign className="w-8 h-8 text-purple-400" />
+              <DollarSign className="w-8 h-8 text-primary" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20 mb-8">
+        <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm text-blue-200 mb-1">Account value over time</p>
-              <p className="text-lg font-semibold text-white">Portfolio history</p>
+              <p className="text-sm text-muted mb-1">Account value over time</p>
+              <p className="text-lg font-semibold text-default">Portfolio history</p>
             </div>
           </div>
           {timelineChartData.length === 0 ? (
-            <p className="text-blue-200">No historical data available yet.</p>
+            <p className="text-muted">No historical data available yet.</p>
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timelineChartData}>
-                  <CartesianGrid stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="date" stroke="#cbd5f5" />
+                  <CartesianGrid stroke="rgb(var(--color-border))" />
+                  <XAxis dataKey="date" stroke="rgb(var(--color-text))" />
                   <YAxis
-                    stroke="#cbd5f5"
+                    stroke="rgb(var(--color-text))"
                     tickFormatter={(value) =>
                       `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                     }
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-                    labelStyle={{ color: '#e2e8f0' }}
+                    contentStyle={{ backgroundColor: 'rgb(var(--color-surface))', borderColor: 'rgb(var(--color-border))' }}
+                    labelStyle={{ color: 'rgb(var(--color-text))' }}
                     formatter={(value) =>
                       `$${Number(value).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -265,7 +268,7 @@ const MemberDashboard = () => {
                       })}`
                     }
                   />
-                  <Line type="monotone" dataKey="portfolio_value" stroke="#38bdf8" strokeWidth={3} dot={false} />
+                  <Line type="monotone" dataKey="portfolio_value" stroke="rgb(var(--color-primary))" strokeWidth={3} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -273,52 +276,52 @@ const MemberDashboard = () => {
         </div>
 
         {/* Secondary Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Current Unit Price */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Current Unit Price</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Current Unit Price</p>
+                <p className="text-xl font-bold text-default">
                   {formatCurrency(memberData.current_unit_price)}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted">
                   As of {formatDate(memberData.unit_price_date)}
                 </p>
               </div>
-              <Activity className="w-6 h-6 text-blue-400" />
+              <Activity className="w-6 h-6 text-primary" />
             </div>
           </div>
 
           {/* Ownership Percentage */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Club Ownership</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Club Ownership</p>
+                <p className="text-xl font-bold text-default">
                   {((memberData.ownership_percentage || 0) * 100).toFixed(2)}%
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted">
                   Of total club assets
                 </p>
               </div>
-              <Users className="w-6 h-6 text-green-400" />
+              <Users className="w-6 h-6 text-primary" />
             </div>
           </div>
 
           {/* Recent Transactions */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+          <div className="card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-blue-200 mb-1">Total Transactions</p>
-                <p className="text-xl font-bold text-white">
+                <p className="text-sm text-muted mb-1">Total Transactions</p>
+                <p className="text-xl font-bold text-default">
                   {memberData.total_transactions || 0}
                 </p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted">
                   Last: {formatDate(memberData.last_transaction_date)}
                 </p>
               </div>
-              <ArrowUpRight className="w-6 h-6 text-purple-400" />
+              <ArrowUpRight className="w-6 h-6 text-primary" />
             </div>
           </div>
         </div>
@@ -326,51 +329,51 @@ const MemberDashboard = () => {
         {/* Member Information */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Account Status */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Account Status</h3>
+          <div className="card p-6">
+            <h3 className="text-xl font-semibold text-default mb-4">Account Status</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Status</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                <span className="text-muted">Status</span>
+                <span className={`badge ${
                   memberData.is_active
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-red-500/20 text-red-400'
+                    ? 'bg-green-500/20 text-green-500'
+                    : 'bg-red-500/20 text-red-500'
                 }`}>
                   {memberData.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Email</span>
-                <span className="text-white font-semibold">
+                <span className="text-muted">Email</span>
+                <span className="text-default font-semibold">
                   {memberData.email || 'Not provided'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Member Name</span>
-                <span className="text-white font-semibold">{memberData.member_name}</span>
+                <span className="text-muted">Member Name</span>
+                <span className="text-default font-semibold">{memberData.member_name}</span>
               </div>
             </div>
           </div>
 
           {/* Education Progress */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Education Progress</h3>
+          <div className="card p-6">
+            <h3 className="text-xl font-semibold text-default mb-4">Education Progress</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Completed Lessons</span>
-                <span className="text-white font-semibold">
+                <span className="text-muted">Completed Lessons</span>
+                <span className="text-default font-semibold">
                   {memberData.completed_lessons || 0}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Time Spent Learning</span>
-                <span className="text-white font-semibold">
+                <span className="text-muted">Time Spent Learning</span>
+                <span className="text-default font-semibold">
                   {Math.round((memberData.total_time_spent || 0) / 60)} hours
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-200">Average Score</span>
-                <span className="text-white font-semibold">
+                <span className="text-muted">Average Score</span>
+                <span className="text-default font-semibold">
                   {memberData.average_score ? `${Math.round(memberData.average_score)}%` : 'N/A'}
                 </span>
               </div>
@@ -380,21 +383,21 @@ const MemberDashboard = () => {
 
         {/* Portfolio Timeline */}
         {memberData.last_report_date && (
-          <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-            <h3 className="text-xl font-semibold text-white mb-4">Latest Portfolio Report</h3>
+          <div className="card p-6">
+            <h3 className="text-xl font-semibold text-default mb-4">Latest Portfolio Report</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <p className="text-sm text-blue-200">Report Date</p>
-                <p className="text-lg font-semibold text-white">{formatDate(memberData.last_report_date)}</p>
+                <p className="text-sm text-muted">Report Date</p>
+                <p className="text-lg font-semibold text-default">{formatDate(memberData.last_report_date)}</p>
               </div>
               <div>
-                <p className="text-sm text-blue-200">Portfolio Value</p>
-                <p className="text-lg font-semibold text-white">{formatCurrency(memberData.latest_portfolio_value)}</p>
+                <p className="text-sm text-muted">Portfolio Value</p>
+                <p className="text-lg font-semibold text-default">{formatCurrency(memberData.latest_portfolio_value)}</p>
               </div>
               <div>
-                <p className="text-sm text-blue-200">Portfolio Growth</p>
+                <p className="text-sm text-muted">Portfolio Growth</p>
                 <p className={`text-lg font-semibold ${
-                  (memberData.portfolio_growth || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                  (memberData.portfolio_growth || 0) >= 0 ? 'text-green-500' : 'text-red-500'
                 }`}>
                   {formatPercentage(memberData.portfolio_growth)}
                 </p>
@@ -403,7 +406,7 @@ const MemberDashboard = () => {
           </div>
         )}
       </div>
-    </div>
+    </Page>
   );
 };
 
