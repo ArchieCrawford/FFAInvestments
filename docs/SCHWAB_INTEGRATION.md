@@ -7,15 +7,16 @@ The Charles Schwab integration has been successfully added to the FFA Investment
 
 ### 1. Main Schwab Connection Page (`/admin/schwab`)
 - OAuth authentication flow
-- Account connection status
-- List of connected accounts
-- Navigation to insights and raw data features
+- Clear connection status and reconnect button
+- Navigation to Insights and Org Balance history
+   - All data (accounts, positions, charts) now lives on Insights
 
 ### 2. Account Insights Dashboard (`/admin/schwab/insights`)
 - Portfolio metrics and performance analytics
-- Account balances and position details
+- Account balances and detailed position tables
 - Excel export functionality (equivalent to original account_insights.html)
 - Interactive charts and data visualization
+- Maintenance actions (e.g., Enrich Security Names)
 
 ### 3. Raw API Data Viewer (`/admin/schwab/raw-data`)
 - Debug interface for testing API endpoints
@@ -33,8 +34,8 @@ The Charles Schwab integration has been successfully added to the FFA Investment
 The Charles Schwab features are accessible through a dropdown menu in the admin sidebar:
 ```
 Charles Schwab
-├── Connection & Overview
-├── Account Insights  
+├── Integration (Connect/Login)
+├── Insights (Data & Charts)
 └── Raw Data Viewer
 ```
 
@@ -84,8 +85,8 @@ src/
 ├── services/
 │   └── schwabApi.js          # API service layer
 └── Pages/
-    ├── AdminSchwab.jsx       # Main connection page
-    ├── SchwabInsights.jsx    # Account insights dashboard
+   ├── AdminSchwab.jsx       # Main connection page (auth only)
+   ├── SchwabInsights.jsx    # Account insights dashboard (data)
     ├── SchwabRawData.jsx     # Raw data viewer
     └── SchwabCallback.jsx    # OAuth callback handler
 ```
