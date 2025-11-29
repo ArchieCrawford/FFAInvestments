@@ -23,6 +23,7 @@ import AdminSettings from './Pages/AdminSettings.jsx'
 import AdminMembers from './Pages/AdminMembers_Clean.jsx'
 import UserManagement from './Pages/UserManagement.jsx'
 import MemberDashboard from './Pages/MemberDashboard_Clean.jsx'
+import MemberDashboard_Debug from './Pages/MemberDashboard_Debug.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
 import MemberDirectory from './Pages/MemberDirectory.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
@@ -208,6 +209,13 @@ function App() {
             <ProtectedRoute>
               <Layout currentPageName="MemberDashboard">
                 <MemberDashboard />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/member/dashboard-debug" element={
+            <ProtectedRoute>
+              <Layout currentPageName="MemberDashboard_Debug">
+                <MemberDashboard_Debug />
               </Layout>
             </ProtectedRoute>
           } />
