@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useQuery } from '@tantml:parameter/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { Home, Mail, Calendar, DollarSign, Bell, TrendingUp, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
