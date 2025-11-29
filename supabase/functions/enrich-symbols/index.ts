@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,7 +8,7 @@ const finnhubApiKey = Deno.env.get("FINNHUB_API_KEY")!;
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-serve(async (_req) => {
+serve(async (_req: Request): Promise<Response> => {
   try {
     const { data: rows, error: rowsError } = await supabase
       .from("schwab_positions")
@@ -77,8 +78,9 @@ serve(async (_req) => {
     return new Response(JSON.stringify({ updated: updatedCount }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
