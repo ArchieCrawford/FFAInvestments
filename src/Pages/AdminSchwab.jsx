@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,60 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { Page } from "../components/Page";
+
+export function EnrichSymbolsButton() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleClick = async () => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const res = await fetch(
+        "https://<YOUR_PROJECT_REF>.functions.supabase.co/enrich-symbols",
+        {
+          method: "POST",
+          headers: {
+            // use anon key if your function checks auth, or leave off if public
+            // "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to run enrich-symbols");
+      }
+      setResult(data);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={handleClick}
+        disabled={loading}
+        className="bg-primary hover:bg-blue-800"
+      >
+        {loading ? "Enriching…" : "Enrich Security Names"}
+      </Button>
+      {result && (
+        <p className="text-sm text-muted">
+          Updated descriptions for {result.updated ?? 0} symbols.
+        </p>
+      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
+    </div>
+  );
+}
 
 async function fetchLatestSnapshots() {
   const { data, error } = await supabase
