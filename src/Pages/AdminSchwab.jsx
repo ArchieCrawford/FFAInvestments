@@ -30,6 +30,8 @@ export default function AdminSchwab() {
   const [authChecked, setAuthChecked] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [accountStatus, setAccountStatus] = useState({ checked: false, count: 0, details: [] });
+  const [checkingLive, setCheckingLive] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -63,6 +65,21 @@ export default function AdminSchwab() {
       setAuthError('Failed to initiate Schwab connection.');
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const checkLiveAccounts = async () => {
+    // Always fetch live data from Schwab API; do not use cached database values.
+    setCheckingLive(true);
+    try {
+      const accounts = await schwabApi.getAccounts();
+      const count = Array.isArray(accounts) ? accounts.length : 0;
+      setAccountStatus({ checked: true, count, details: accounts || [] });
+    } catch (err) {
+      // If live check fails, reflect status but do not fallback to cached data.
+      setAccountStatus({ checked: true, count: 0, details: [] });
+    } finally {
+      setCheckingLive(false);
     }
   };
 
@@ -129,6 +146,38 @@ export default function AdminSchwab() {
             </Link>
           </div>
         </div>
+
+        {/* Live status widget: always fetch directly from Schwab API */}
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-default">Connection Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted">
+                {checkingLive
+                  ? 'Checking live account list…'
+                  : accountStatus.checked
+                    ? `Live accounts found: ${accountStatus.count}`
+                    : 'Status not checked yet'}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={checkLiveAccounts} disabled={checkingLive} className="gap-2">
+                  {checkingLive ? 'Checking…' : 'Check Live Status'}
+                </Button>
+                <Button onClick={handleConnect} variant="outline" className="gap-2">
+                  Reconnect
+                </Button>
+              </div>
+            </div>
+            {accountStatus.details && accountStatus.details.length > 0 && (
+              <div className="text-xs text-muted">
+                Showing first account: {accountStatus.details[0]?.securitiesAccount?.accountNumber || accountStatus.details[0]?.accountNumber || accountStatus.details[0]?.accountId || '—'}
+              </div>
+            )}
+            <p className="text-xs text-muted">Note: This status uses the live Schwab API directly—no cached database values.</p>
+          </CardContent>
+        </Card>
 
         <Card className="border-none shadow-lg">
           <CardHeader>
