@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,35 +25,77 @@ export default function AdminUsers() {
   const [formData, setFormData] = useState({
     full_name: "",
     email: "",
-    role: "user",
+    role: "member",
     phone: "",
     address: "",
     date_of_birth: "",
     kyc_status: "pending",
-    member_since: new Date().toISOString().split('T')[0],
+    member_since: new Date().toISOString().split("T")[0],
     education_track: "beginner",
+    notes: "",
   });
 
   const queryClient = useQueryClient();
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list('-created_date'),
+    queryKey: ["members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("*")
+        .order("full_name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const createMutation = useMutation({
-    mutationFn: (userData) => base44.entities.User.create(userData),
+    mutationFn: async (userData) => {
+      const payload = {
+        full_name: userData.full_name,
+        member_name: userData.full_name,
+        email: userData.email,
+        role: userData.role,
+        phone: userData.phone,
+        address: userData.address,
+        date_of_birth: userData.date_of_birth || null,
+        kyc_status: userData.kyc_status,
+        join_date: userData.member_since,
+        education_track: userData.education_track,
+        notes: userData.notes || null,
+      };
+      const { error } = await supabase.from("members").insert(payload);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
       setIsDialogOpen(false);
       resetForm();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, userData }) => base44.entities.User.update(id, userData),
+    mutationFn: async ({ id, userData }) => {
+      const payload = {
+        full_name: userData.full_name,
+        member_name: userData.full_name,
+        role: userData.role,
+        phone: userData.phone,
+        address: userData.address,
+        date_of_birth: userData.date_of_birth || null,
+        kyc_status: userData.kyc_status,
+        join_date: userData.member_since,
+        education_track: userData.education_track,
+        notes: userData.notes || null,
+      };
+      const { error } = await supabase
+        .from("members")
+        .update(payload)
+        .eq("id", id);
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
       setIsDialogOpen(false);
       setEditingUser(null);
       resetForm();
@@ -64,13 +106,14 @@ export default function AdminUsers() {
     setFormData({
       full_name: "",
       email: "",
-      role: "user",
+      role: "member",
       phone: "",
       address: "",
       date_of_birth: "",
       kyc_status: "pending",
-      member_since: new Date().toISOString().split('T')[0],
+      member_since: new Date().toISOString().split("T")[0],
       education_track: "beginner",
+      notes: "",
     });
   };
 
@@ -86,45 +129,51 @@ export default function AdminUsers() {
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
-      full_name: user.full_name || "",
+      full_name: user.full_name || user.member_name || "",
       email: user.email || "",
-      role: user.role || "user",
+      role: user.role || "member",
       phone: user.phone || "",
       address: user.address || "",
       date_of_birth: user.date_of_birth || "",
       kyc_status: user.kyc_status || "pending",
-      member_since: user.member_since || "",
+      member_since: user.join_date || "",
       education_track: user.education_track || "beginner",
       notes: user.notes || "",
     });
     setIsDialogOpen(true);
   };
 
-  const filteredUsers = users.filter(user =>
-    user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((user) => {
+    const name = (user.full_name || user.member_name || "").toLowerCase();
+    const email = (user.email || "").toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || email.includes(term);
+  });
 
   const getKYCIcon = (status) => {
     switch (status) {
-      case 'approved': return <CheckCircle className="w-4 h-4 text-emerald-600" />;
-      case 'rejected': return <XCircle className="w-4 h-4 text-red-600" />;
-      default: return <Clock className="w-4 h-4 text-amber-600" />;
+      case "approved":
+        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+      case "rejected":
+        return <XCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-amber-600" />;
     }
   };
 
   return (
     <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
-        
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-default mb-2">Member Management</h1>
+            <h1 className="text-3xl font-bold text-default mb-2">
+              Member Management
+            </h1>
             <p className="text-muted">Manage club members and permissions</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button 
+              <Button
                 className="bg-primary hover:bg-blue-800 gap-2"
                 onClick={() => {
                   setEditingUser(null);
@@ -137,7 +186,9 @@ export default function AdminUsers() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingUser ? 'Edit Member' : 'Add New Member'}</DialogTitle>
+                <DialogTitle>
+                  {editingUser ? "Edit Member" : "Add New Member"}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -145,7 +196,12 @@ export default function AdminUsers() {
                     <Label>Full Name *</Label>
                     <Input
                       value={formData.full_name}
-                      onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          full_name: e.target.value,
+                        })
+                      }
                       required
                     />
                   </div>
@@ -154,7 +210,9 @@ export default function AdminUsers() {
                     <Input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       required
                       disabled={!!editingUser}
                     />
@@ -163,13 +221,15 @@ export default function AdminUsers() {
                     <Label>Role</Label>
                     <Select
                       value={formData.role}
-                      onValueChange={(value) => setFormData({...formData, role: value})}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, role: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">Member</SelectItem>
+                        <SelectItem value="member">Member</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
@@ -178,7 +238,9 @@ export default function AdminUsers() {
                     <Label>Phone</Label>
                     <Input
                       value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -186,7 +248,12 @@ export default function AdminUsers() {
                     <Input
                       type="date"
                       value={formData.date_of_birth}
-                      onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          date_of_birth: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -194,14 +261,21 @@ export default function AdminUsers() {
                     <Input
                       type="date"
                       value={formData.member_since}
-                      onChange={(e) => setFormData({...formData, member_since: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          member_since: e.target.value,
+                        })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>KYC Status</Label>
                     <Select
                       value={formData.kyc_status}
-                      onValueChange={(value) => setFormData({...formData, kyc_status: value})}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, kyc_status: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -217,14 +291,18 @@ export default function AdminUsers() {
                     <Label>Education Track</Label>
                     <Select
                       value={formData.education_track}
-                      onValueChange={(value) => setFormData({...formData, education_track: value})}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, education_track: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="intermediate">
+                          Intermediate
+                        </SelectItem>
                         <SelectItem value="advanced">Advanced</SelectItem>
                       </SelectContent>
                     </Select>
@@ -234,23 +312,34 @@ export default function AdminUsers() {
                   <Label>Address</Label>
                   <Input
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Notes</Label>
                   <Input
                     value={formData.notes || ""}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
                     placeholder="Internal notes about this member"
                   />
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" className="bg-primary hover:bg-blue-800">
-                    {editingUser ? 'Update Member' : 'Add Member'}
+                  <Button
+                    type="submit"
+                    className="bg-primary hover:bg-blue-800"
+                  >
+                    {editingUser ? "Update Member" : "Add Member"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -288,32 +377,55 @@ export default function AdminUsers() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">Loading...</TableCell>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8"
+                      >
+                        Loading...
+                      </TableCell>
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-muted"
+                      >
                         No members found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredUsers.map(user => (
+                    filteredUsers.map((user) => (
                       <TableRow key={user.id} className="hover:bg-bg">
-                        <TableCell className="font-semibold">{user.full_name}</TableCell>
-                        <TableCell className="text-muted">{user.email}</TableCell>
+                        <TableCell className="font-semibold">
+                          {user.full_name || user.member_name}
+                        </TableCell>
+                        <TableCell className="text-muted">
+                          {user.email}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          <Badge
+                            variant={
+                              user.role === "admin" ? "default" : "secondary"
+                            }
+                          >
                             {user.role}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {getKYCIcon(user.kyc_status)}
-                            <span className="capitalize text-sm">{user.kyc_status}</span>
+                            <span className="capitalize text-sm">
+                              {user.kyc_status}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          {user.member_since ? format(new Date(user.member_since), 'MMM dd, yyyy') : '-'}
+                          {user.join_date
+                            ? format(
+                                new Date(user.join_date),
+                                "MMM dd, yyyy"
+                              )
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <Button
@@ -334,7 +446,6 @@ export default function AdminUsers() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

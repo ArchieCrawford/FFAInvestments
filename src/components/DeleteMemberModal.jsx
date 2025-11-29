@@ -1,36 +1,53 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 
 export default function DeleteMemberModal({ member, show, onClose, onDeleted }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState('');
 
   const handleDelete = async () => {
-    if (confirmText !== member?.name) {
+    if (confirmText !== member?.name && confirmText !== member?.full_name) {
       alert('Please type the member name exactly to confirm deletion');
       return;
     }
 
     setDeleting(true);
     try {
-      await base44.entities.User.delete(member.id);
-      onDeleted();
+      const memberId = member.id;
+
+      await supabase.from('member_unit_transactions').delete().eq('member_id', memberId);
+      await supabase.from('member_monthly_balances').delete().eq('member_id', memberId);
+      await supabase.from('member_accounts').delete().eq('member_id', memberId);
+
+      const { error: memberError } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
+
+      if (memberError) {
+        throw memberError;
+      }
+
+      if (onDeleted) onDeleted();
       onClose();
       setConfirmText('');
     } catch (error) {
-      alert('Failed to delete member: ' + error.message);
+      alert('Failed to delete member: ' + (error.message || 'Unknown error'));
     } finally {
       setDeleting(false);
     }
   };
 
   if (!show || !member) return null;
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
-    }).format(amount);
+    }).format(amount || 0);
   };
+
+  const displayName = member.name || member.full_name || '';
 
   return (
     <div className="modal-backdrop">
@@ -54,7 +71,7 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
 
             <div className="app-card">
               <div className="app-card-content">
-                <h6 className="app-heading-md">{member.name}</h6>
+                <h6 className="app-heading-md">{displayName}</h6>
                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   <div>
                     <small className="app-text-muted">Email:</small><br/>
@@ -62,22 +79,28 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
                   </div>
                   <div>
                     <small className="app-text-muted">Role:</small><br/>
-                    <span className={`app-pill`}>{member.role}</span>
+                    <span className="app-pill">{member.role || 'member'}</span>
                   </div>
                 </div>
                 <hr/>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div>
                     <small className="app-text-muted">Portfolio Value:</small><br/>
-                    <strong className="text-success">{formatCurrency(member.currentBalance || 0)}</strong>
+                    <strong className="text-success">
+                      {formatCurrency(member.currentBalance ?? member.current_value ?? 0)}
+                    </strong>
                   </div>
                   <div>
                     <small className="app-text-muted">Total Units:</small><br/>
-                    <strong>{member.totalUnits?.toFixed(4) || '0.0000'}</strong>
+                    <strong>
+                      {(member.totalUnits ?? member.current_units ?? 0).toFixed(4)}
+                    </strong>
                   </div>
                   <div>
                     <small className="app-text-muted">Status:</small><br/>
-                    <span className="app-pill">{member.status}</span>
+                    <span className="app-pill">
+                      {member.status || member.membership_status || 'unknown'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -87,7 +110,7 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
               <h6>What will be deleted:</h6>
               <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
                 <li><i className="fas fa-check text-danger me-2"></i>Member profile and account information</li>
-                <li><i className="fas fa-check text-danger me-2"></i>All portfolio timeline history</li>
+                <li><i className="fas fa-check text-danger me-2"></i>All portfolio timeline and balance history</li>
                 <li><i className="fas fa-check text-danger me-2"></i>Investment records and performance data</li>
                 <li><i className="fas fa-check text-danger me-2"></i>Access credentials and permissions</li>
               </ul>
@@ -95,14 +118,14 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
 
             <div className="mt-4">
               <label className="fw-bold">
-                Type "<code>{member.name}</code>" to confirm deletion:
+                Type "<code>{displayName}</code>" to confirm deletion:
               </label>
               <input
                 type="text"
                 className="app-input"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
-                placeholder={`Type "${member.name}" here`}
+                placeholder={`Type "${displayName}" here`}
                 autoComplete="off"
               />
               <div className="app-text-muted">
@@ -119,7 +142,7 @@ export default function DeleteMemberModal({ member, show, onClose, onDeleted }) 
               type="button"
               className="app-btn app-btn-destructive"
               onClick={handleDelete}
-              disabled={deleting || confirmText !== member.name}
+              disabled={deleting || confirmText !== displayName}
             >
               {deleting ? (
                 <>

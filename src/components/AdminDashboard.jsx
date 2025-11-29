@@ -1,72 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Page } from '../components/Page'
-import { createClient } from '@supabase/supabase-js';
-
-// Minimal Supabase client initializer. Assumes env vars are set via Vite.
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+import { useDashboard } from '../lib/queries'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    totalAUM: 0,
-    activeAccounts: 0,
-    unitPrice: 0
-  });
+  const { data, isLoading, error } = useDashboard();
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  if (isLoading) {
+    return (
+      <Page title="Admin Dashboard" subtitle="Club overview and quick actions">
+        <div className="text-center py-12 text-muted">Loading dashboard...</div>
+      </Page>
+    );
+  }
 
-  const loadStats = async () => {
-    try {
-      // Prefer a canonical RPC if available
-      const rpc = await supabase.rpc('api_get_dashboard');
+  if (error) {
+    return (
+      <Page title="Admin Dashboard" subtitle="Club overview and quick actions">
+        <div className="card p-6 bg-red-50 border-red-200">
+          <div className="text-red-800">Error loading dashboard: {error.message}</div>
+        </div>
+      </Page>
+    );
+  }
 
-      if (!rpc.error && rpc.data) {
-        const d = rpc.data;
-        setStats({
-          totalMembers: d.total_members ?? 0,
-          totalAUM: d.total_aum ?? 0,
-          activeAccounts: d.active_accounts ?? 0,
-          unitPrice: d.current_unit_value ?? 0,
-        });
-        return;
-      }
-
-      // Fallback: query canonical tables directly
-      const [{ data: members, error: membersErr }, { data: accounts, error: accountsErr }] = await Promise.all([
-        supabase.from('members').select('id,status'),
-        supabase.from('member_accounts').select('member_id,current_balance')
-      ]);
-
-      if (membersErr) throw membersErr;
-      if (accountsErr) throw accountsErr;
-
-      const totalAUM = (accounts ?? []).reduce((sum, acc) => sum + (acc.current_balance ?? 0), 0);
-      const activeAccounts = (members ?? []).filter(m => m.status === 'active').length;
-
-      // Latest unit valuation
-      const { data: valuationRows, error: valErr } = await supabase
-        .from('club_unit_valuations')
-        .select('unit_value, valuation_date')
-        .order('valuation_date', { ascending: false })
-        .limit(1);
-      if (valErr) throw valErr;
-      const unitValue = valuationRows && valuationRows.length > 0 ? (valuationRows[0].unit_value ?? 0) : 0;
-
-      setStats({
-        totalMembers: (members ?? []).length,
-        totalAUM,
-        activeAccounts,
-        unitPrice: unitValue,
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
+  const stats = {
+    totalMembers: data?.total_members ?? 0,
+    totalAUM: data?.total_aum ?? 0,
+    activeAccounts: data?.active_accounts ?? 0,
+    unitPrice: data?.current_unit_value ?? 0,
   };
+
+
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);

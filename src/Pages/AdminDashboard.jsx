@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -8,106 +7,134 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Users, Wallet, DollarSign, TrendingUp, AlertCircle,
-  CheckCircle, Clock, Plus, ArrowRight
+  Clock, Plus, ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "../lib/supabase";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function AdminDashboard() {
-  const [orgHistory, setOrgHistory] = useState([])
-  const [orgHistoryLoading, setOrgHistoryLoading] = useState(true)
-  const [orgHistoryError, setOrgHistoryError] = useState(null)
+  const [orgHistory, setOrgHistory] = useState([]);
+  const [orgHistoryLoading, setOrgHistoryLoading] = useState(true);
+  const [orgHistoryError, setOrgHistoryError] = useState(null);
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("*");
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => base44.entities.Account.list(),
+    queryKey: ["accounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_accounts")
+        .select("*");
+      if (error) throw error;
+      return data || [];
+    },
   });
 
-  const { data: unitPrices = [] } = useQuery({
-    queryKey: ['unit-prices'],
-    queryFn: () => base44.entities.UnitPrice.list('-price_date', 1),
+  const { data: latestUnitPrice } = useQuery({
+    queryKey: ["latest-unit-price"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("unit_prices")
+        .select("*")
+        .order("price_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data || null;
+    },
   });
 
-  // Legacy Base44 recent ledger removed. Consider replacing with Supabase member_unit_transactions.
-  const recentLedger = [];
-
-  const latestUnitPrice = unitPrices[0];
-  const totalAUM = latestUnitPrice?.total_aum || 0;
-  const totalMembers = users.filter(u => u.role === 'user').length;
-  const activeAccounts = accounts.filter(a => a.status === 'active').length;
-  const pendingKYC = users.filter(u => u.kyc_status === 'pending').length;
+  const { data: recentLedger = [], isLoading: recentLedgerLoading } = useQuery({
+    queryKey: ["recent-ledger"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_unit_transactions")
+        .select("*")
+        .order("entry_date", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   useEffect(() => {
-    let active = true
+    let active = true;
     const loadHistory = async () => {
-      setOrgHistoryLoading(true)
-      setOrgHistoryError(null)
+      setOrgHistoryLoading(true);
+      setOrgHistoryError(null);
       try {
         const { data, error } = await supabase
-          .from('org_balance_history')
+          .from("org_balance_history")
           .select(`
             balance_date,
             total_value
           `)
-          .order('balance_date', { ascending: true })
-        if (error) throw error
-        if (active) setOrgHistory(data || [])
+          .order("balance_date", { ascending: true });
+        if (error) throw error;
+        if (active) setOrgHistory(data || []);
       } catch (err) {
         if (active) {
-          setOrgHistory([])
-          setOrgHistoryError(err.message || 'Unable to load club history')
+          setOrgHistory([]);
+          setOrgHistoryError(err.message || "Unable to load club history");
         }
       } finally {
-        if (active) setOrgHistoryLoading(false)
+        if (active) setOrgHistoryLoading(false);
       }
-    }
-    loadHistory()
+    };
+    loadHistory();
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
   const orgHistoryData = useMemo(() => {
-    return (orgHistory || []).map(entry => ({
-      date: entry.balance_date ? format(new Date(entry.balance_date), 'MMM yyyy') : 'Unknown',
+    return (orgHistory || []).map((entry) => ({
+      date: entry.balance_date ? format(new Date(entry.balance_date), "MMM yyyy") : "Unknown",
       total_value: Number(entry.total_value) || 0,
-    }))
-  }, [orgHistory])
+    }));
+  }, [orgHistory]);
 
   const latestOrgSnapshot = useMemo(() => {
-    if (!orgHistory || orgHistory.length === 0) return null
-    const last = orgHistory[orgHistory.length - 1]
-    const totalValue = Number(last.total_value) || 0
-    const dateLabel = last.balance_date ? format(new Date(last.balance_date), 'MMM dd, yyyy') : '—'
-    return { totalValue, dateLabel }
-  }, [orgHistory])
+    if (!orgHistory || orgHistory.length === 0) return null;
+    const last = orgHistory[orgHistory.length - 1];
+    const totalValue = Number(last.total_value) || 0;
+    const dateLabel = last.balance_date ? format(new Date(last.balance_date), "MMM dd, yyyy") : "—";
+    return { totalValue, dateLabel };
+  }, [orgHistory]);
+
+  const totalAUM = latestUnitPrice?.total_aum || 0;
+  const totalMembers = members.length;
+  const activeAccounts = accounts.filter((a) => a.status === "active").length;
+  const pendingKYC = members.filter((m) => m.kyc_status === "pending").length;
 
   const tasks = [
     pendingKYC > 0 && { 
-      type: 'warning', 
-      title: `${pendingKYC} pending KYC approval${pendingKYC > 1 ? 's' : ''}`,
-      action: 'Review Members',
-      link: createPageUrl("AdminUsers")
+      type: "warning", 
+      title: `${pendingKYC} pending KYC approval${pendingKYC > 1 ? "s" : ""}`,
+      action: "Review Members",
+      link: createPageUrl("AdminUsers"),
     },
     !latestUnitPrice?.is_finalized && {
-      type: 'info',
-      title: 'Unit price not finalized for current period',
-      action: 'Finalize Now',
-      link: createPageUrl("AdminUnitPrice")
+      type: "info",
+      title: "Unit price not finalized for current period",
+      action: "Finalize Now",
+      link: createPageUrl("AdminUnitPrice"),
     },
   ].filter(Boolean);
 
   return (
     <div className="p-6 lg:p-8 bg-bg min-h-screen">
       <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold text-default mb-2">Admin Dashboard</h1>
@@ -129,18 +156,23 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="border-none shadow-lg bg-primary text-white">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium opacity-90">Assets Under Management</CardTitle>
+                <CardTitle className="text-sm font-medium opacity-90">
+                  Assets Under Management
+                </CardTitle>
                 <DollarSign className="w-5 h-5 opacity-80" />
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                ${totalAUM.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                $
+                {totalAUM.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </div>
             </CardContent>
           </Card>
@@ -148,7 +180,9 @@ export default function AdminDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-muted">Total Members</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">
+                  Total Members
+                </CardTitle>
                 <Users className="w-5 h-5 text-primary" />
               </div>
             </CardHeader>
@@ -160,7 +194,9 @@ export default function AdminDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-muted">Active Accounts</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">
+                  Active Accounts
+                </CardTitle>
                 <Wallet className="w-5 h-5 text-emerald-600" />
               </div>
             </CardHeader>
@@ -178,10 +214,13 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-default">
-                ${latestUnitPrice?.price?.toFixed(4) || '0.00'}
+                ${latestUnitPrice?.price?.toFixed(4) || "0.00"}
               </div>
-              <Badge variant={latestUnitPrice?.is_finalized ? "default" : "outline"} className="mt-2">
-                {latestUnitPrice?.is_finalized ? 'Finalized' : 'Pending'}
+              <Badge
+                variant={latestUnitPrice?.is_finalized ? "default" : "outline"}
+                className="mt-2"
+              >
+                {latestUnitPrice?.is_finalized ? "Finalized" : "Pending"}
               </Badge>
             </CardContent>
           </Card>
@@ -189,15 +228,25 @@ export default function AdminDashboard() {
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-muted">Charles Schwab Positions</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">
+                  Charles Schwab Positions
+                </CardTitle>
                 <DollarSign className="w-5 h-5 text-indigo-600" />
               </div>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="text-3xl font-bold text-default">
-                ${latestOrgSnapshot ? latestOrgSnapshot.totalValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '0'}
+                $
+                {latestOrgSnapshot
+                  ? latestOrgSnapshot.totalValue.toLocaleString("en-US", {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })
+                  : "0"}
               </div>
-              <p className="text-sm text-muted">As of {latestOrgSnapshot?.dateLabel || '—'}</p>
+              <p className="text-sm text-muted">
+                As of {latestOrgSnapshot?.dateLabel || "—"}
+              </p>
               <Link to="/admin/schwab">
                 <Button className="mt-2 w-full gap-2">
                   View Schwab Positions <ArrowRight className="w-4 h-4" />
@@ -209,7 +258,9 @@ export default function AdminDashboard() {
 
         <Card className="border-none shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-default">Club total portfolio value over time</CardTitle>
+            <CardTitle className="text-lg font-bold text-default">
+              Club total portfolio value over time
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {orgHistoryLoading ? (
@@ -226,7 +277,11 @@ export default function AdminDashboard() {
                     <XAxis dataKey="date" stroke="#475569" />
                     <YAxis
                       stroke="#475569"
-                      tickFormatter={(value) => `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                      tickFormatter={(value) =>
+                        `$${Number(value).toLocaleString(undefined, {
+                          maximumFractionDigits: 0,
+                        })}`
+                      }
                     />
                     <Tooltip
                       formatter={(value) =>
@@ -236,7 +291,13 @@ export default function AdminDashboard() {
                         })}`
                       }
                     />
-                    <Line type="monotone" dataKey="total_value" stroke="#2563eb" strokeWidth={3} dot={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="total_value"
+                      stroke="#2563eb"
+                      strokeWidth={3}
+                      dot={false}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -244,7 +305,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Tasks & Alerts */}
         {tasks.length > 0 && (
           <Card className="border-none shadow-lg border-l-4 border-l-amber-500">
             <CardHeader>
@@ -255,17 +315,19 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {tasks.map((task, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="flex items-center justify-between p-4 rounded-lg bg-bg border border-border"
                 >
                   <div className="flex items-center gap-3">
-                    {task.type === 'warning' ? (
+                    {task.type === "warning" ? (
                       <AlertCircle className="w-5 h-5 text-amber-600" />
                     ) : (
                       <Clock className="w-5 h-5 text-blue-600" />
                     )}
-                    <span className="font-medium text-default">{task.title}</span>
+                    <span className="font-medium text-default">
+                      {task.title}
+                    </span>
                   </div>
                   <Link to={task.link}>
                     <Button variant="outline" size="sm" className="gap-2">
@@ -278,38 +340,62 @@ export default function AdminDashboard() {
           </Card>
         )}
 
-        {/* Recent Activity */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-default">Recent Transactions</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">
+                Recent Transactions
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentLedger.length === 0 ? (
-                <p className="text-muted text-center py-8">No recent transactions</p>
+              {recentLedgerLoading ? (
+                <p className="text-muted text-center py-8">
+                  Loading recent transactions…
+                </p>
+              ) : recentLedger.length === 0 ? (
+                <p className="text-muted text-center py-8">
+                  No recent transactions
+                </p>
               ) : (
                 <div className="space-y-3">
-                  {recentLedger.map(entry => (
-                    <div 
+                  {recentLedger.map((entry) => (
+                    <div
                       key={entry.id}
                       className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-bg transition-all"
                     >
                       <div>
                         <p className="font-semibold text-default capitalize">
-                          {entry.entry_type.replace('_', ' ')}
+                          {entry.entry_type?.replace("_", " ")}
                         </p>
-                        <p className="text-sm text-muted">{entry.memo || 'No memo'}</p>
+                        <p className="text-sm text-muted">
+                          {entry.memo || "No memo"}
+                        </p>
                         <p className="text-xs text-muted mt-1">
-                          {format(new Date(entry.entry_date), 'MMM dd, yyyy')}
+                          {entry.entry_date
+                            ? format(
+                                new Date(entry.entry_date),
+                                "MMM dd, yyyy"
+                              )
+                            : "—"}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className={`font-bold ${entry.amount >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                          {entry.amount >= 0 ? '+' : ''}${Math.abs(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <p
+                          className={`font-bold ${
+                            entry.amount >= 0
+                              ? "text-emerald-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {entry.amount >= 0 ? "+" : "-"}$
+                          {Math.abs(entry.amount).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                          })}
                         </p>
                         {entry.units_delta !== 0 && (
                           <p className="text-xs text-muted">
-                            {entry.units_delta > 0 ? '+' : ''}{entry.units_delta.toFixed(4)} units
+                            {entry.units_delta > 0 ? "+" : ""}
+                            {Number(entry.units_delta).toFixed(4)} units
                           </p>
                         )}
                       </div>
@@ -322,37 +408,54 @@ export default function AdminDashboard() {
 
           <Card className="border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-lg font-bold text-default">Quick Actions</CardTitle>
+              <CardTitle className="text-lg font-bold text-default">
+                Quick Actions
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
               <Link to={createPageUrl("AdminUsers")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
+                <Button
+                  variant="outline"
+                  className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300"
+                >
                   <Users className="w-6 h-6" />
                   <span className="text-sm font-medium">Manage Members</span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminAccounts")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
+                <Button
+                  variant="outline"
+                  className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300"
+                >
                   <Wallet className="w-6 h-6" />
                   <span className="text-sm font-medium">Manage Accounts</span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminLedger")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
+                <Button
+                  variant="outline"
+                  className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300"
+                >
                   <DollarSign className="w-6 h-6" />
-                  <span className="text-sm font-medium">Record Transaction</span>
+                  <span className="text-sm font-medium">
+                    Record Transaction
+                  </span>
                 </Button>
               </Link>
               <Link to={createPageUrl("AdminUnitPrice")}>
-                <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300">
+                <Button
+                  variant="outline"
+                  className="w-full h-20 flex flex-col items-center justify-center gap-2 hover:bg-primary-soft hover:border-blue-300"
+                >
                   <TrendingUp className="w-6 h-6" />
-                  <span className="text-sm font-medium">Update Unit Price</span>
+                  <span className="text-sm font-medium">
+                    Update Unit Price
+                  </span>
                 </Button>
               </Link>
             </CardContent>
           </Card>
         </div>
-
       </div>
     </div>
   );

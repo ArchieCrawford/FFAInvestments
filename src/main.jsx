@@ -1,8 +1,19 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App.jsx";
 import "./index.css";
 import { ThemeProvider } from "./ThemeProvider.jsx";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
 
 // Optional ErrorBoundary (if you want to keep it)
 class ErrorBoundary extends React.Component {
@@ -70,10 +81,12 @@ console.log("🚀 Starting FFA Investments application...");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </ThemeProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );

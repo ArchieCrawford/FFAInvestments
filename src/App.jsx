@@ -17,11 +17,10 @@ import AdminLedger from './components/AdminLedger.jsx'
 import AdminUnitPrice from './components/AdminUnitPriceNew.jsx'
 import AdminEducation from './Pages/AdminEducation.jsx'
 import AdminImport from './components/AdminImport.jsx'
-import AdminMemberManagement from './components/AdminMemberManagement.jsx'
 import AdminSettings from './Pages/AdminSettings.jsx'
-import AdminMembers from './Pages/AdminMembers.jsx'
+import AdminMembers from './Pages/AdminMembers_Clean.jsx'
 import UserManagement from './Pages/UserManagement.jsx'
-import MemberDashboard from './Pages/MemberDashboardNew.jsx'
+import MemberDashboard from './Pages/MemberDashboard_Clean.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
 import MemberDirectory from './Pages/MemberDirectory.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
@@ -51,28 +50,11 @@ import ResetPassword from './Pages/ResetPassword.jsx'
 import AdminDues from './Pages/AdminDues/index.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
 
-import { base44 } from './api/base44Client.js'
 
 const queryClient = new QueryClient()
-
-// Initialize app data on startup
-const initializeAppData = async () => {
-  try {
-    // Ensure member data is loaded
-    await base44.entities.User.list();
-    console.log('App initialized with member data');
-  } catch (error) {
-    console.error('Failed to initialize app data:', error);
-  }
-};
-
 function App() {
-  useEffect(() => {
-    initializeAppData();
-  }, []);
-
   return (
-    <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <Router>
@@ -153,13 +135,6 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminImport">
                 <AdminImport />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/manage-members" element={
-            <ProtectedRoute requireAdmin={true}>
-              <Layout currentPageName="AdminMemberManagement">
-                <AdminMemberManagement />
               </Layout>
             </ProtectedRoute>
           } />

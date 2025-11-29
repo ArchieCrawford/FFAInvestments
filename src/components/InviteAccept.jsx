@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 
 export default function InviteAccept() {
   const { token } = useParams();
@@ -20,16 +20,23 @@ export default function InviteAccept() {
   }, [token]);
 
   const validateInvite = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const members = JSON.parse(localStorage.getItem('members') || '[]');
-      const member = members.find(m => m.inviteToken === token && m.status === 'invited');
-      
-      if (!member) {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .eq('invite_token', token)
+        .eq('membership_status', 'invited')
+        .single();
+
+      if (error || !data) {
         setError('Invalid or expired invitation link');
       } else {
-        setInviteData(member);
+        setInviteData(data);
       }
-    } catch (error) {
+    } catch (err) {
       setError('Failed to validate invitation');
     } finally {
       setLoading(false);
@@ -38,7 +45,7 @@ export default function InviteAccept() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -54,33 +61,66 @@ export default function InviteAccept() {
       return;
     }
 
+    if (!inviteData) {
+      alert('Invitation data missing');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      // Update member status and set password
-      await base44.entities.User.update(inviteData.id, {
-        status: 'active',
-        password: formData.password, // In real app, this would be hashed
-        inviteToken: null,
-        activatedAt: new Date().toISOString()
+      let userId = null;
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: inviteData.email,
+        password: formData.password
       });
 
-      // Auto-login the user
-      localStorage.setItem('user', JSON.stringify({
-        ...inviteData,
-        status: 'active'
-      }));
+      if (signUpError) {
+        if (signUpError.message.toLowerCase().includes('already registered')) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: inviteData.email,
+            password: formData.password
+          });
+
+          if (signInError || !signInData.user) {
+            throw signInError || new Error('Failed to log in existing account');
+          }
+
+          userId = signInData.user.id;
+        } else {
+          throw signUpError;
+        }
+      } else {
+        if (!signUpData.user) {
+          throw new Error('Sign up succeeded but no user returned');
+        }
+        userId = signUpData.user.id;
+      }
+
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          membership_status: 'active',
+          invite_token: null,
+          activated_at: new Date().toISOString(),
+          profile_user_id: userId
+        })
+        .eq('id', inviteData.id);
+
+      if (updateError) {
+        throw updateError;
+      }
 
       alert('Account activated successfully! Welcome to FFA Investments!');
-      
-      // Redirect based on role
+
       if (inviteData.role === 'admin') {
         navigate('/admin/dashboard');
       } else {
-        navigate(`/member/${inviteData.id}/dashboard`);
+        navigate('/member/dashboard');
       }
-    } catch (error) {
-      alert('Failed to activate account: ' + error.message);
+    } catch (err) {
+      alert('Failed to activate account: ' + (err && err.message ? err.message : 'Unknown error'));
     } finally {
       setSubmitting(false);
     }
@@ -123,8 +163,8 @@ export default function InviteAccept() {
 
           <div className="app-alert app-alert-info">
             <i className="fas fa-info-circle me-2"></i>
-            <strong>Hello {inviteData?.name}!</strong><br/>
-            You've been invited to join as a <strong>{inviteData?.role}</strong>.
+            <strong>Hello {inviteData?.name || inviteData?.member_name}!</strong><br />
+            You've been invited to join as a <strong>{inviteData?.role || 'member'}</strong>.
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -145,9 +185,9 @@ export default function InviteAccept() {
                 type="password"
                 className="app-input"
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="Enter a secure password"
-                minLength="6"
+                minLength={6}
                 required
               />
               <div className="app-text-muted">Password must be at least 6 characters long</div>
@@ -159,9 +199,9 @@ export default function InviteAccept() {
                 type="password"
                 className="app-input"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 placeholder="Confirm your password"
-                minLength="6"
+                minLength={6}
                 required
               />
             </div>
@@ -171,7 +211,7 @@ export default function InviteAccept() {
                 <input
                   type="checkbox"
                   checked={formData.agreedToTerms}
-                  onChange={(e) => setFormData({...formData, agreedToTerms: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, agreedToTerms: e.target.checked })}
                   required
                 />
                 <span>
@@ -180,9 +220,9 @@ export default function InviteAccept() {
               </label>
             </div>
 
-            <button 
-              type="submit" 
-              className="app-btn app-btn-primary w-100" 
+            <button
+              type="submit"
+              className="app-btn app-btn-primary w-100"
               style={{ marginBottom: '0.75rem' }}
               disabled={submitting}
             >

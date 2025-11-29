@@ -29,6 +29,33 @@ export async function getMembers() {
   return data || []
 }
 
+export async function getCompleteMemberProfiles() {
+  const { data, error } = await supabase
+    .from('complete_member_profiles')
+    .select('*')
+  if (error) throw error
+  return data || []
+}
+
+export async function getLatestSchwabSnapshot() {
+  const { data, error } = await supabase
+    .from('schwab_account_snapshots')
+    .select('*')
+    .order('snapshot_date', { ascending: false })
+    .limit(1)
+  if (error) throw error
+  return data && data.length > 0 ? data[0] : null
+}
+
+export async function getSchwabPositionsForDate(dateStr) {
+  const { data, error } = await supabase
+    .from('schwab_positions')
+    .select('*')
+    .eq('as_of_date', dateStr)
+  if (error) throw error
+  return data || []
+}
+
 export async function getMemberAccounts() {
   const { data, error } = await supabase
     .from('member_accounts')
@@ -55,12 +82,26 @@ export async function getCurrentMemberAccount() {
   return data || null
 }
 
-export async function getMemberTimeline(memberId) {
-  const { data, error } = await supabase.rpc('api_get_member_timeline', {
-    member_id_in: memberId,
-  })
+export async function getMemberTimelineByName(memberName) {
+  const { data, error } = await supabase
+    .from('ffa_timeline')
+    .select('*')
+    .eq('member_name', memberName)
+    .order('report_date', { ascending: true })
   if (error) throw error
-  return data
+  return data || []
+}
+
+export const getMemberTimeline = getMemberTimelineByName;
+
+export async function getMemberAccountByEmail(email) {
+  const { data, error } = await supabase
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .eq('email', email)
+    .maybeSingle()
+  if (error && error.code !== 'PGRST116') throw error
+  return data || null
 }
 
 export async function getOrgBalanceHistory() {
@@ -76,29 +117,24 @@ export async function getOrgBalanceHistory() {
 
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase
-    .from('club_unit_valuations')
-    .select('valuation_date, unit_value, total_units_outstanding, total_value')
-    .order('valuation_date', { ascending: true })
+    .from('unit_prices')
+    .select('*')
+    .order('price_date', { ascending: true })
   if (error) throw error
-  return (data || []).map(r => ({
-    id: r.valuation_date,
-    price_date: r.valuation_date,
-    unit_price: r.unit_value,
-    total_units_outstanding: r.total_units_outstanding,
-    total_value: r.total_value
-  }))
+  return data || []
 }
 
-export async function getLatestUnitValuation() {
+export async function getLatestUnitPrice() {
   const { data, error } = await supabase
-    .from('club_unit_valuations')
-    .select('valuation_date, unit_value, total_units_outstanding, total_value')
-    .order('valuation_date', { ascending: false })
+    .from('unit_prices')
+    .select('*')
+    .order('price_date', { ascending: false })
     .limit(1)
-    .maybeSingle()
-  if (error && error.code !== 'PGRST116') throw error
-  return data || null
+  if (error) throw error
+  return data && data.length > 0 ? data[0] : null
 }
+
+export const getLatestUnitValuation = getLatestUnitPrice;
 
 export async function createMemberUnitTransaction(params) {
   const insertObj = {
@@ -120,13 +156,7 @@ export async function createMemberUnitTransaction(params) {
   return data;
 }
 
-export async function getMemberDues(memberId) {
-  console.warn('getMemberDues is deprecated. Use getMemberTimeline() instead.');
-  if (memberId) {
-    return getMemberTimeline(memberId);
-  }
-  throw new Error('getMemberDues without memberId is not supported. Use getMemberTimeline() with a specific member_id.');
-}
+
 
 export async function getMemberFeed({ limit = 20, cursor = null } = {}) {
   const { data, error } = await supabase.rpc('api_get_member_feed', {
@@ -254,12 +284,18 @@ export async function deletePostComment(commentId) {
 export default {
   getDashboard,
   getMembers,
+  getCompleteMemberProfiles,
   getMemberAccounts,
   getCurrentMemberAccount,
+  getMemberTimelineByName,
   getMemberTimeline,
+  getMemberAccountByEmail,
   getOrgBalanceHistory,
   getUnitPriceHistory,
-  getMemberDues,
+  getLatestUnitPrice,
+  getLatestUnitValuation,
+  getLatestSchwabSnapshot,
+  getSchwabPositionsForDate,
   getMemberFeed,
   createMemberPost,
   deleteMemberPost,

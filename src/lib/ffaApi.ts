@@ -16,9 +16,11 @@ const MEMBER_ACCOUNT_FIELDS = `
 
 export async function getDashboard(asOfDate: string) {
   const { data, error } = await supabase.rpc('api_get_dashboard')
-  // Debug logging in dev or when ?debug=1 is present
-  const isDebug = (typeof window !== 'undefined' && window.location.search.includes('debug=1'))
-    || (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV)
+  const isDebug =
+    (typeof window !== 'undefined' && window.location.search.includes('debug=1')) ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as any).env &&
+      (import.meta as any).env.DEV)
   if (isDebug) {
     console.debug('[RPC] api_get_dashboard result', { data, error })
   }
@@ -44,61 +46,77 @@ export async function getMemberAccounts() {
   return data || []
 }
 
+export async function getMemberAccountByEmail(email: string) {
+  const { data, error } = await supabase
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .eq('email', email)
+    .limit(1)
+    .maybeSingle()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return data || null
+}
+
 export async function getCurrentMemberAccount() {
   const { data: authData, error: authError } = await supabase.auth.getUser()
   if (authError) throw authError
   const user = authData?.user
   if (!user) return null
-
-  const { data, error } = await supabase
-    .from('member_accounts')
-    .select(MEMBER_ACCOUNT_FIELDS)
-    .eq('email', user.email)
-    .limit(1)
-    .maybeSingle()
-
-  if (error && error.code !== 'PGRST116') throw error
-  return data || null
+  return getMemberAccountByEmail(user.email as string)
 }
 
 export async function getMemberTimeline(memberId: string) {
   const { data, error } = await supabase.rpc('api_get_member_timeline', {
     member_id_in: memberId,
   })
-  const isDebug = (typeof window !== 'undefined' && window.location.search.includes('debug=1'))
-    || (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV)
+  const isDebug =
+    (typeof window !== 'undefined' && window.location.search.includes('debug=1')) ||
+    (typeof import.meta !== 'undefined' &&
+      (import.meta as any).env &&
+      (import.meta as any).env.DEV)
   if (isDebug) {
-    console.debug('[RPC] api_get_member_timeline result', { memberId, dataLength: Array.isArray(data) ? data.length : null, error })
+    console.debug('[RPC] api_get_member_timeline result', {
+      memberId,
+      dataLength: Array.isArray(data) ? data.length : null,
+      error,
+    })
   }
   if (error) throw error
   return data
 }
 
+export async function getMemberTimelineByName(memberName: string) {
+  const { data, error } = await supabase
+    .from('ffa_timeline')
+    .select('*')
+    .eq('member_name', memberName)
+    .order('report_date', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
 export async function getOrgBalanceHistory() {
   const { data, error } = await supabase
     .from('org_balance_history')
-    .select(
-      'balance_date, stock_value, schwab_cash, schwab_mm, credit_union_cash, total_value'
-    )
+    .select('balance_date, stock_value, schwab_cash, schwab_mm, credit_union_cash, total_value')
     .order('balance_date', { ascending: true })
   if (error) throw error
-  return data
+  return data || []
 }
 
-// Replaced unit_prices table usage with club_unit_valuations
+// Uses club_unit_valuations and normalizes to legacy unit_prices shape
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase
     .from('club_unit_valuations')
     .select('valuation_date, unit_value, total_units_outstanding, total_value')
     .order('valuation_date', { ascending: true })
   if (error) throw error
-  // Normalize shape to previous consumer expectation
-  return (data || []).map(r => ({
+  return (data || []).map((r: any) => ({
     id: r.valuation_date,
     price_date: r.valuation_date,
     unit_price: r.unit_value,
     total_units_outstanding: r.total_units_outstanding,
-    total_value: r.total_value
+    total_value: r.total_value,
   }))
 }
 
@@ -113,38 +131,86 @@ export async function getLatestUnitValuation() {
   return data || null
 }
 
-// DEPRECATED: Use getMemberTimeline() instead which uses the canonical RPC
-export async function getMemberDues(memberId?: string) {
-  console.warn('getMemberDues is deprecated. Use getMemberTimeline() instead.');
-  if (memberId) {
-    return getMemberTimeline(memberId);
+export async function getLatestUnitPrice() {
+  const latest = await getLatestUnitValuation()
+  if (!latest) return null
+  return {
+    id: latest.valuation_date,
+    price_date: latest.valuation_date,
+    unit_price: latest.unit_value,
+    total_units_outstanding: latest.total_units_outstanding,
+    total_value: latest.total_value,
   }
-  throw new Error('getMemberDues without memberId is not supported. Use getMemberTimeline() with a specific member_id.');
 }
 
-export async function getMemberFeed({ limit = 20, cursor = null }: { limit?: number; cursor?: string | null } = {}) {
+export async function getMemberDues(memberId?: string) {
+  console.warn('getMemberDues is deprecated. Use getMemberTimeline() instead.')
+  if (memberId) {
+    return getMemberTimeline(memberId)
+  }
+  throw new Error(
+    'getMemberDues without memberId is not supported. Use getMemberTimeline() with a specific member_id.'
+  )
+}
+
+export async function getMemberFeed({
+  limit = 20,
+  cursor = null,
+}: {
+  limit?: number
+  cursor?: string | null
+} = {}) {
   const { data, error } = await supabase.rpc('api_get_member_feed', {
     limit_count: limit,
     cursor_timestamp: cursor || null,
   })
   if (error) throw error
-
   const posts = data || []
-  const nextCursor = posts.length > 0 ? posts[posts.length - 1].next_cursor_timestamp || null : null
+  const nextCursor =
+    posts.length > 0 ? posts[posts.length - 1].next_cursor_timestamp || null : null
   return { posts, nextCursor }
 }
 
-// Member unit transactions (contributions/withdrawals)
-export type MemberUnitTxType = 'contribution' | 'withdrawal' | 'adjustment' | 'distribution';
+export async function getCompleteMemberProfiles() {
+  const { data, error } = await supabase.from('complete_member_profiles').select('*')
+  if (error) throw error
+  return data || []
+}
+
+export async function getLatestSchwabSnapshot() {
+  const { data, error } = await supabase
+    .from('schwab_account_snapshots')
+    .select('*')
+    .order('snapshot_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return data || null
+}
+
+export async function getSchwabPositionsForDate(dateStr: string) {
+  const { data, error } = await supabase
+    .from('schwab_positions')
+    .select('*')
+    .eq('as_of_date', dateStr)
+  if (error) throw error
+  return data || []
+}
+
+export type MemberUnitTxType =
+  | 'contribution'
+  | 'withdrawal'
+  | 'adjustment'
+  | 'distribution'
 
 export async function createMemberUnitTransaction(params: {
-  member_id: string;
-  tx_date: string; // YYYY-MM-DD
-  tx_type: MemberUnitTxType;
-  cash_amount: number; // positive for contributions, negative for withdrawals
-  unit_value_at_tx?: number | null;
-  units_delta?: number | null; // positive for contributions once allocated, negative for withdrawals
-  notes?: string | null;
+  member_id: string
+  tx_date: string
+  tx_type: MemberUnitTxType
+  cash_amount: number
+  unit_value_at_tx?: number | null
+  units_delta?: number | null
+  notes?: string | null
 }) {
   const insertObj = {
     member_id: params.member_id,
@@ -154,18 +220,30 @@ export async function createMemberUnitTransaction(params: {
     unit_value_at_tx: params.unit_value_at_tx ?? null,
     units_delta: params.units_delta ?? null,
     notes: params.notes ?? null,
-    created_at: new Date().toISOString()
-  };
+    created_at: new Date().toISOString(),
+  }
   const { data, error } = await supabase
     .from('member_unit_transactions')
     .insert(insertObj)
     .select('*')
-    .maybeSingle();
-  if (error) throw error;
-  return data;
+    .maybeSingle()
+  if (error) throw error
+  return data
 }
 
-export async function createMemberPost({ content, imageUrl = null, linkUrl = null, visibility = 'members', authorId }: { content: string; imageUrl?: string | null; linkUrl?: string | null; visibility?: string; authorId?: string }) {
+export async function createMemberPost({
+  content,
+  imageUrl = null,
+  linkUrl = null,
+  visibility = 'members',
+  authorId,
+}: {
+  content: string
+  imageUrl?: string | null
+  linkUrl?: string | null
+  visibility?: string
+  authorId?: string
+}) {
   let resolvedAuthor = authorId
   if (!resolvedAuthor) {
     const { data: userData, error: userErr } = await supabase.auth.getUser()
@@ -174,7 +252,6 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
     if (!user) throw new Error('Not authenticated')
     resolvedAuthor = user.id
   }
-
   const insertObj = {
     author_id: resolvedAuthor,
     content,
@@ -182,7 +259,6 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
     link_url: linkUrl,
     visibility,
   }
-
   const { data, error } = await supabase
     .from('member_posts')
     .insert([insertObj])
@@ -193,10 +269,7 @@ export async function createMemberPost({ content, imageUrl = null, linkUrl = nul
 }
 
 export async function deleteMemberPost(postId: string) {
-  const { data, error } = await supabase
-    .from('member_posts')
-    .delete()
-    .eq('id', postId)
+  const { data, error } = await supabase.from('member_posts').delete().eq('id', postId)
   if (error) throw error
   return data
 }
@@ -206,7 +279,6 @@ export async function likeMemberPost(postId: string) {
   if (userErr) throw userErr
   const user = userData?.user
   if (!user) throw new Error('Not authenticated')
-
   const likeObj = { post_id: postId, member_id: user.id }
   try {
     const { data, error } = await supabase
@@ -215,7 +287,10 @@ export async function likeMemberPost(postId: string) {
       .select()
       .single()
     if (error) {
-      if (error?.code === '23505' || (error?.details && error.details.includes('already exists'))) {
+      if (
+        error?.code === '23505' ||
+        (error?.details && error.details.includes('already exists'))
+      ) {
         return { success: true }
       }
       throw error
@@ -232,7 +307,6 @@ export async function unlikeMemberPost(postId: string) {
   if (userErr) throw userErr
   const user = userData?.user
   if (!user) throw new Error('Not authenticated')
-
   const { data, error } = await supabase
     .from('member_post_likes')
     .delete()
@@ -248,15 +322,20 @@ export async function getPostComments(postId: string) {
     .eq('post_id', postId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return data
+  return data || []
 }
 
-export async function createPostComment({ postId, content }: { postId: string; content: string }) {
+export async function createPostComment({
+  postId,
+  content,
+}: {
+  postId: string
+  content: string
+}) {
   const { data: userData, error: userErr } = await supabase.auth.getUser()
   if (userErr) throw userErr
   const user = userData?.user
   if (!user) throw new Error('Not authenticated')
-
   const insertObj = { post_id: postId, author_id: user.id, content }
   const { data, error } = await supabase
     .from('member_post_comments')
@@ -280,12 +359,20 @@ export default {
   getDashboard,
   getMembers,
   getMemberAccounts,
+  getMemberAccountByEmail,
   getCurrentMemberAccount,
   getMemberTimeline,
+  getMemberTimelineByName,
   getOrgBalanceHistory,
   getUnitPriceHistory,
+  getLatestUnitValuation,
+  getLatestUnitPrice,
   getMemberDues,
   getMemberFeed,
+  getCompleteMemberProfiles,
+  getLatestSchwabSnapshot,
+  getSchwabPositionsForDate,
+  createMemberUnitTransaction,
   createMemberPost,
   deleteMemberPost,
   likeMemberPost,

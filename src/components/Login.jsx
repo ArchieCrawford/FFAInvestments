@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -11,11 +11,33 @@ export default function Login() {
     setLoading(true);
     
     try {
-      // Use actual authentication
-      const user = await base44.auth.login(email, password);
-      window.location.reload();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const user = data.user;
+      if (!user) {
+        throw new Error('No user returned from login');
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!profileError && profile?.role === 'admin') {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/member/dashboard';
+      }
     } catch (error) {
-      alert('Login failed: ' + error.message);
+      alert('Login failed: ' + (error.message || 'Unknown error'));
       setLoading(false);
     }
   };
@@ -75,9 +97,7 @@ export default function Login() {
           
           <div className="text-center mt-4">
             <small className="text-muted">
-              <strong>Admin Login:</strong><br/>
-              admin@ffa.com / admin123<br/>
-              archie.crawford1@gmail.com / archie123
+              This app uses your Supabase login. Contact an admin if you don't have access yet.
             </small>
           </div>
         </div>

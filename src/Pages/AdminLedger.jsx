@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { createMemberUnitTransaction, getLatestUnitValuation } from "@/lib/ffaApi";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
-import { Plus, Search, Download, Upload, Filter } from "lucide-react";
+import { Plus, Search, Download, Filter } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AdminLedger() {
@@ -24,8 +24,8 @@ export default function AdminLedger() {
   const [filterType, setFilterType] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    account_id: "",
-    entry_date: new Date().toISOString().split('T')[0],
+    member_id: "",
+    entry_date: new Date().toISOString().split("T")[0],
     entry_type: "contribution",
     amount: 0,
     units_delta: 0,
@@ -36,53 +36,73 @@ export default function AdminLedger() {
   const queryClient = useQueryClient();
 
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ['ledger-entries'],
-    queryFn: () => base44.entities.LedgerEntry.list('-entry_date'),
+    queryKey: ["ledger-entries"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_unit_transactions")
+        .select("*")
+        .order("entry_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => base44.entities.Account.list(),
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, member_name")
+        .order("full_name", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
   });
 
   const { data: unitPrice } = useQuery({
-    queryKey: ['latest-unit-price'],
+    queryKey: ["latest-unit-price"],
     queryFn: async () => {
-      const prices = await base44.entities.UnitPrice.list('-price_date', 1);
-      return prices[0];
+      const { data, error } = await supabase
+        .from("unit_prices")
+        .select("*")
+        .order("price_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data || null;
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (entryData) => {
-      // Map AdminLedger form to canonical member_unit_transactions
       const latest = await getLatestUnitValuation();
       const unitValue = latest?.unit_value ?? null;
       const txTypeMap = {
-        contribution: 'contribution',
-        withdrawal: 'withdrawal',
-        fee: 'adjustment',
-        distribution: 'distribution',
-        trade: 'adjustment',
-        unit_allocation: 'allocation',
-        adjustment: 'adjustment',
+        contribution: "contribution",
+        withdrawal: "withdrawal",
+        fee: "adjustment",
+        distribution: "distribution",
+        trade: "adjustment",
+        unit_allocation: "allocation",
+        adjustment: "adjustment",
       };
-      const tx_type = txTypeMap[entryData.entry_type] || 'adjustment';
+      const tx_type = txTypeMap[entryData.entry_type] || "adjustment";
       const cash_amount = Number(entryData.amount) || 0;
       const units_delta = Number(entryData.units_delta) || 0;
+
       await createMemberUnitTransaction({
-        member_id: entryData.account_id, // NOTE: replace with actual member_id when account->member mapping exists
+        member_id: entryData.member_id,
         tx_date: entryData.entry_date,
         tx_type,
         cash_amount,
         unit_value_at_tx: unitValue,
         units_delta,
-        notes: entryData.memo || ''
+        notes: entryData.memo || "",
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ledger-entries'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ["ledger-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -90,8 +110,8 @@ export default function AdminLedger() {
 
   const resetForm = () => {
     setFormData({
-      account_id: "",
-      entry_date: new Date().toISOString().split('T')[0],
+      member_id: "",
+      entry_date: new Date().toISOString().split("T")[0],
       entry_type: "contribution",
       amount: 0,
       units_delta: 0,
@@ -102,51 +122,68 @@ export default function AdminLedger() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.member_id) return;
     createMutation.mutate(formData);
   };
 
-  const handleExportCSV = () => {
-    const csv = [
-      ['Date', 'Account', 'Type', 'Amount', 'Units Delta', 'Unit Price', 'Memo'],
-      ...filteredEntries.map(entry => {
-        const account = accounts.find(a => a.id === entry.account_id);
-        return [
-          entry.entry_date,
-          account?.name || 'Unknown',
-          entry.entry_type,
-          entry.amount,
-          entry.units_delta,
-          entry.unit_price_at_entry,
-          entry.memo || ''
-        ];
-      })
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ledger-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  };
-
-  const filteredEntries = entries.filter(entry => {
-    const matchesSearch = entry.memo?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || entry.entry_type === filterType;
+  const filteredEntries = entries.filter((entry) => {
+    const matchesSearch = (entry.memo || "")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesType =
+      filterType === "all" || entry.entry_type === filterType;
     return matchesSearch && matchesType;
   });
+
+  const handleExportCSV = () => {
+    const header = [
+      "Date",
+      "Member",
+      "Type",
+      "Amount",
+      "Units Delta",
+      "Unit Price",
+      "Memo",
+    ];
+    const rows = filteredEntries.map((entry) => {
+      const member = members.find((m) => m.id === entry.member_id);
+      const name = member?.full_name || member?.member_name || "Unknown";
+      return [
+        entry.entry_date,
+        name,
+        entry.entry_type,
+        entry.amount,
+        entry.units_delta,
+        entry.unit_price_at_entry,
+        entry.memo || "",
+      ];
+    });
+
+    const csv =
+      [header, ...rows]
+        .map((row) => row.join(","))
+        .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ledger-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+  };
 
   return (
     <div className="p-6 lg:p-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
-        
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-default mb-2">Ledger Management</h1>
+            <h1 className="text-3xl font-bold text-default mb-2">
+              Ledger Management
+            </h1>
             <p className="text-muted">Record and manage all transactions</p>
           </div>
           <div className="flex gap-3">
-            <Button 
+            <Button
               variant="outline"
               onClick={handleExportCSV}
               className="gap-2"
@@ -156,7 +193,7 @@ export default function AdminLedger() {
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button 
+                <Button
                   className="bg-primary hover:bg-blue-800 gap-2"
                   onClick={resetForm}
                 >
@@ -171,19 +208,20 @@ export default function AdminLedger() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2 col-span-2">
-                      <Label>Account *</Label>
+                      <Label>Member *</Label>
                       <Select
-                        value={formData.account_id}
-                        onValueChange={(value) => setFormData({...formData, account_id: value})}
-                        required
+                        value={formData.member_id}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, member_id: value })
+                        }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select account" />
+                          <SelectValue placeholder="Select member" />
                         </SelectTrigger>
                         <SelectContent>
-                          {accounts.map(account => (
-                            <SelectItem key={account.id} value={account.id}>
-                              {account.name}
+                          {members.map((m) => (
+                            <SelectItem key={m.id} value={String(m.id)}>
+                              {m.full_name || m.member_name || `Member #${m.id}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -194,7 +232,12 @@ export default function AdminLedger() {
                       <Input
                         type="date"
                         value={formData.entry_date}
-                        onChange={(e) => setFormData({...formData, entry_date: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            entry_date: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -202,19 +245,29 @@ export default function AdminLedger() {
                       <Label>Transaction Type *</Label>
                       <Select
                         value={formData.entry_type}
-                        onValueChange={(value) => setFormData({...formData, entry_type: value})}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, entry_type: value })
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="contribution">Contribution</SelectItem>
+                          <SelectItem value="contribution">
+                            Contribution
+                          </SelectItem>
                           <SelectItem value="withdrawal">Withdrawal</SelectItem>
                           <SelectItem value="fee">Fee</SelectItem>
-                          <SelectItem value="distribution">Distribution</SelectItem>
+                          <SelectItem value="distribution">
+                            Distribution
+                          </SelectItem>
                           <SelectItem value="trade">Trade</SelectItem>
-                          <SelectItem value="unit_allocation">Unit Allocation</SelectItem>
-                          <SelectItem value="adjustment">Adjustment</SelectItem>
+                          <SelectItem value="unit_allocation">
+                            Unit Allocation
+                          </SelectItem>
+                          <SelectItem value="adjustment">
+                            Adjustment
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -224,7 +277,12 @@ export default function AdminLedger() {
                         type="number"
                         step="0.01"
                         value={formData.amount}
-                        onChange={(e) => setFormData({...formData, amount: parseFloat(e.target.value)})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            amount: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="Use negative for withdrawals"
                         required
                       />
@@ -235,7 +293,12 @@ export default function AdminLedger() {
                         type="number"
                         step="0.0001"
                         value={formData.units_delta}
-                        onChange={(e) => setFormData({...formData, units_delta: parseFloat(e.target.value)})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            units_delta: parseFloat(e.target.value) || 0,
+                          })
+                        }
                         placeholder="Change in units"
                       />
                     </div>
@@ -245,23 +308,38 @@ export default function AdminLedger() {
                         type="number"
                         step="0.0001"
                         value={formData.unit_price_at_entry}
-                        onChange={(e) => setFormData({...formData, unit_price_at_entry: parseFloat(e.target.value)})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            unit_price_at_entry:
+                              parseFloat(e.target.value) || 0,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2 col-span-2">
                       <Label>Memo</Label>
                       <Input
                         value={formData.memo}
-                        onChange={(e) => setFormData({...formData, memo: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({ ...formData, memo: e.target.value })
+                        }
                         placeholder="Description of transaction"
                       />
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-primary hover:bg-blue-800">
+                    <Button
+                      type="submit"
+                      className="bg-primary hover:bg-blue-800"
+                    >
                       Record Transaction
                     </Button>
                   </DialogFooter>
@@ -296,7 +374,9 @@ export default function AdminLedger() {
                     <SelectItem value="fee">Fees</SelectItem>
                     <SelectItem value="distribution">Distributions</SelectItem>
                     <SelectItem value="trade">Trades</SelectItem>
-                    <SelectItem value="unit_allocation">Unit Allocations</SelectItem>
+                    <SelectItem value="unit_allocation">
+                      Unit Allocations
+                    </SelectItem>
                     <SelectItem value="adjustment">Adjustments</SelectItem>
                   </SelectContent>
                 </Select>
@@ -309,7 +389,7 @@ export default function AdminLedger() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Account</TableHead>
+                    <TableHead>Member</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Units Δ</TableHead>
@@ -320,45 +400,87 @@ export default function AdminLedger() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">Loading...</TableCell>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        Loading...
+                      </TableCell>
                     </TableRow>
                   ) : filteredEntries.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted">
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-8 text-muted"
+                      >
                         No transactions found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredEntries.map(entry => {
-                      const account = accounts.find(a => a.id === entry.account_id);
+                    filteredEntries.map((entry) => {
+                      const member = members.find(
+                        (m) => m.id === entry.member_id
+                      );
+                      const name =
+                        member?.full_name ||
+                        member?.member_name ||
+                        "Unknown";
                       return (
                         <TableRow key={entry.id} className="hover:bg-bg">
                           <TableCell className="font-medium">
-                            {format(new Date(entry.entry_date), 'MMM dd, yyyy')}
+                            {entry.entry_date
+                              ? format(
+                                  new Date(entry.entry_date),
+                                  "MMM dd, yyyy"
+                                )
+                              : "—"}
                           </TableCell>
                           <TableCell className="font-semibold">
-                            {account?.name || 'Unknown'}
+                            {name}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {entry.entry_type.replace('_', ' ')}
+                            <Badge
+                              variant="outline"
+                              className="capitalize"
+                            >
+                              {entry.entry_type?.replace("_", " ")}
                             </Badge>
                           </TableCell>
-                          <TableCell className={`font-bold ${entry.amount >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {entry.amount >= 0 ? '+' : ''}${Math.abs(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          <TableCell
+                            className={`font-bold ${
+                              entry.amount >= 0
+                                ? "text-emerald-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {entry.amount >= 0 ? "+" : ""}
+                            $
+                            {Math.abs(entry.amount).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                            })}
                           </TableCell>
                           <TableCell className="font-mono text-sm">
                             {entry.units_delta !== 0 ? (
-                              <span className={entry.units_delta > 0 ? 'text-emerald-600' : 'text-red-600'}>
-                                {entry.units_delta > 0 ? '+' : ''}{entry.units_delta.toFixed(4)}
+                              <span
+                                className={
+                                  entry.units_delta > 0
+                                    ? "text-emerald-600"
+                                    : "text-red-600"
+                                }
+                              >
+                                {entry.units_delta > 0 ? "+" : ""}
+                                {Number(entry.units_delta).toFixed(4)}
                               </span>
-                            ) : '-'}
+                            ) : (
+                              "-"
+                            )}
                           </TableCell>
                           <TableCell className="font-mono text-sm text-muted">
-                            {entry.unit_price_at_entry ? `$${entry.unit_price_at_entry.toFixed(4)}` : '-'}
+                            {entry.unit_price_at_entry
+                              ? `$${Number(
+                                  entry.unit_price_at_entry
+                                ).toFixed(4)}`
+                              : "-"}
                           </TableCell>
                           <TableCell className="text-muted max-w-xs truncate">
-                            {entry.memo || '-'}
+                            {entry.memo || "-"}
                           </TableCell>
                         </TableRow>
                       );
@@ -369,7 +491,6 @@ export default function AdminLedger() {
             </div>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

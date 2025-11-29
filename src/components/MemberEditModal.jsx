@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 
 export default function MemberEditModal({ member, show, onClose, onSaved }) {
   const [formData, setFormData] = useState({
@@ -17,13 +17,13 @@ export default function MemberEditModal({ member, show, onClose, onSaved }) {
   useEffect(() => {
     if (member) {
       setFormData({
-        name: member.name || '',
+        name: member.name || member.full_name || '',
         email: member.email || '',
         role: member.role || 'member',
-        status: member.status || 'pending_invite',
-        totalUnits: member.totalUnits || 0,
-        currentBalance: member.currentBalance || 0,
-        totalContribution: member.totalContribution || 0
+        status: member.status || member.membership_status || 'pending_invite',
+        totalUnits: member.totalUnits || member.current_units || 0,
+        currentBalance: member.currentBalance || member.current_value || 0,
+        totalContribution: member.totalContribution || member.total_contributions || 0
       });
     }
   }, [member]);
@@ -53,11 +53,43 @@ export default function MemberEditModal({ member, show, onClose, onSaved }) {
 
   const handleSave = async () => {
     if (!validateForm()) return;
+    if (!member) return;
 
     setSaving(true);
     try {
-      await base44.entities.User.update(member.id, formData);
-      onSaved();
+      const basicUpdatePromise = supabase
+        .from('members')
+        .update({
+          full_name: formData.name,
+          email: formData.email || null,
+          role: formData.role,
+          membership_status: formData.status
+        })
+        .eq('id', member.id);
+
+      const financialUpdatePromise = supabase
+        .from('member_accounts')
+        .upsert(
+          {
+            member_id: member.id,
+            member_name: formData.name,
+            email: formData.email || null,
+            current_units: formData.totalUnits,
+            current_value: formData.currentBalance,
+            total_contributions: formData.totalContribution
+          },
+          { onConflict: 'member_id' }
+        );
+
+      const [{ error: basicError }, { error: financialError }] = await Promise.all([
+        basicUpdatePromise,
+        financialUpdatePromise
+      ]);
+
+      if (basicError) throw basicError;
+      if (financialError) throw financialError;
+
+      if (onSaved) onSaved();
       onClose();
     } catch (error) {
       alert('Failed to update member: ' + error.message);
@@ -67,11 +99,21 @@ export default function MemberEditModal({ member, show, onClose, onSaved }) {
   };
 
   const handleRoleChange = async (newRole) => {
-    if (window.confirm(`Are you sure you want to change ${member.name}'s role to ${newRole}?`)) {
+    if (!member) return;
+
+    if (window.confirm(`Are you sure you want to change ${member.name || member.full_name}'s role to ${newRole}?`)) {
       try {
-        await base44.entities.User.update(member.id, { role: newRole });
+        const { error } = await supabase
+          .from('members')
+          .update({ role: newRole })
+          .eq('id', member.id);
+
+        if (error) {
+          throw error;
+        }
+
         setFormData({ ...formData, role: newRole });
-        onSaved();
+        if (onSaved) onSaved();
       } catch (error) {
         alert('Failed to update role: ' + error.message);
       }
