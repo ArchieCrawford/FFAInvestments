@@ -1,10 +1,21 @@
 import React, { useMemo, useState } from 'react'
-import { useCompleteMemberProfiles } from '../lib/queries'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
 import { Users, DollarSign, Target } from 'lucide-react'
 import { Page } from '../components/Page'
 
 const AdminMembers = () => {
-  const { data: profiles, isLoading, error } = useCompleteMemberProfiles();
+  const { data: profiles, isLoading, error } = useQuery({
+    queryKey: ['members'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .order('member_name', { ascending: true })
+      if (error) throw error
+      return data || []
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -17,8 +28,8 @@ const AdminMembers = () => {
         profile.email?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'all' || 
-        (statusFilter === 'active' && profile.membership_status === 'active') ||
-        (statusFilter === 'inactive' && profile.membership_status !== 'active');
+        (statusFilter === 'active' && (profile.is_active === true || profile.membership_status === 'active')) ||
+        (statusFilter === 'inactive' && (profile.is_active === false || profile.membership_status !== 'active'));
       
       return matchesSearch && matchesStatus;
     });
@@ -29,9 +40,9 @@ const AdminMembers = () => {
     
     return {
       total: profiles.length,
-      active: profiles.filter(p => p.membership_status === 'active').length,
-      totalValue: profiles.reduce((sum, p) => sum + (p.current_value || 0), 0),
-      totalUnits: profiles.reduce((sum, p) => sum + (p.current_units || 0), 0),
+      active: profiles.filter(p => p.is_active === true || p.membership_status === 'active').length,
+      totalValue: profiles.reduce((sum, p) => sum + (p.total_value || p.current_value || 0), 0),
+      totalUnits: profiles.reduce((sum, p) => sum + (p.total_units || p.current_units || 0), 0),
     };
   }, [profiles]);
 
@@ -164,18 +175,18 @@ const AdminMembers = () => {
                       <td className="p-4 font-medium text-default">{profile.full_name || profile.member_name || 'N/A'}</td>
                       <td className="p-4 text-muted">{profile.email || 'N/A'}</td>
                       <td className="p-4 text-right font-mono">
-                        {(profile.current_units || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        {(profile.total_units || profile.current_units || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </td>
                       <td className="p-4 text-right font-medium">
-                        {formatCurrency(profile.current_value)}
+                        {formatCurrency(profile.total_value || profile.current_value)}
                       </td>
                       <td className="p-4 text-center">
                         <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                          profile.membership_status === 'active' 
+                          profile.is_active === true || profile.membership_status === 'active'
                             ? 'bg-green-100 text-green-800' 
                             : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {profile.membership_status || 'unknown'}
+                          {profile.is_active ? 'active' : (profile.membership_status || 'inactive')}
                         </span>
                       </td>
                     </tr>
