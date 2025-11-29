@@ -18,8 +18,8 @@ export default function MemberContribute() {
     payment_method: "bank_transfer",
   });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
 
   const queryClient = useQueryClient();
 

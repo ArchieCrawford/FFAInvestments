@@ -29,7 +29,8 @@ export const InviteMemberButton = ({ member }: InviteMemberButtonProps) => {
         alert(`Invite sent to ${data.to_email}`)
       }
     } catch (err) {
-      alert(`Failed to send invite: ${err.message}`)
+      const msg = err instanceof Error ? err.message : String(err)
+      alert(`Failed to send invite: ${msg}`)
     } finally {
       setLoading(false)
     }
