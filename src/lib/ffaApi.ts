@@ -172,7 +172,16 @@ export async function getMemberFeed({
 }
 
 export async function getCompleteMemberProfiles() {
-  const { data, error } = await supabase.from('complete_member_profiles').select('*')
+  const { data, error } = await supabase
+    .from('members')
+    .select(`
+      *,
+      member_accounts (
+        current_units,
+        current_value,
+        total_contributions
+      )
+    `)
   if (error) throw error
   return data || []
 }

@@ -61,7 +61,7 @@ export function useMemberTimelineByName(memberName) {
 
 export function useCompleteMemberProfiles() {
   return useQuery({
-    queryKey: ['complete_member_profiles'],
+    queryKey: ['members_with_accounts'],
     queryFn: getCompleteMemberProfiles,
   })
 }

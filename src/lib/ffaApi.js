@@ -31,8 +31,15 @@ export async function getMembers() {
 
 export async function getCompleteMemberProfiles() {
   const { data, error } = await supabase
-    .from('complete_member_profiles')
-    .select('*')
+    .from('members')
+    .select(`
+      *,
+      member_accounts (
+        current_units,
+        current_value,
+        total_contributions
+      )
+    `)
   if (error) throw error
   return data || []
 }

@@ -25,8 +25,15 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('complete_member_profiles')
-        .select('*')
+        .from('members')
+        .select(`
+          *,
+          member_accounts (
+            current_units,
+            current_value,
+            total_contributions
+          )
+        `)
         .order('full_name', { ascending: true });
 
       if (error) {
@@ -34,19 +41,13 @@ export default function AdminUsers() {
       }
 
       const mapped = (data || []).map((row) => ({
-        id: row.member_id || row.id,
+        id: row.id,
         name: row.full_name || row.member_name || 'Unknown',
         email: row.email || null,
         role: row.role || 'member',
         status: row.membership_status || 'active',
-        currentBalance:
-          row.current_value ??
-          row.portfolio_value ??
-          0,
-        totalUnits:
-          row.current_units ??
-          row.total_units ??
-          0,
+        currentBalance: row.member_accounts?.[0]?.current_value ?? 0,
+        totalUnits: row.member_accounts?.[0]?.current_units ?? 0,
         joinDate: row.join_date || row.created_at || new Date().toISOString(),
       }));
 
