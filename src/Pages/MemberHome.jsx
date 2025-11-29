@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useQuery } from '@tantml:parameter/react-query'
 import { supabase } from '../lib/supabase'
 import { Home, Mail, Calendar, DollarSign, Bell, TrendingUp, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -7,9 +8,6 @@ import { Page } from '../components/Page'
 
 const MemberHome = () => {
   const { user, profile } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [settings, setSettings] = useState(null)
   const navigate = useNavigate()
 
   const DEFAULTS = {
@@ -24,58 +22,30 @@ const MemberHome = () => {
     dues_info: 'Membership dues are $50 per semester. Payment options available through the portal.'
   }
 
-  useEffect(() => {
-    if (user) {
-      fetchSettings()
-    }
-  }, [user])
-
-  const fetchSettings = async () => {
-    setLoading(true)
-    setError('')
-    
-    try {
+  const { data: settings, isLoading: loading, error } = useQuery({
+    queryKey: ['club_settings'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('club_settings')
         .select('club_name, tagline, homepage_message, welcome_message, dues_info, contact_email, meeting_schedule, announcements')
         .limit(1)
         .maybeSingle()
-
-      if (error) {
-        setError(error.message)
-      } else {
-        const normalizedMeeting =
-          (!data?.meeting_schedule || data?.meeting_schedule === LEGACY.meeting_schedule)
-            ? DEFAULTS.meeting_schedule
-            : data.meeting_schedule
-
-        const normalizedEmail =
-          (!data?.contact_email || data?.contact_email.toLowerCase() === LEGACY.contact_email.toLowerCase())
-            ? DEFAULTS.contact_email
-            : data.contact_email
-
-        const normalizedDues =
-          (!data?.dues_info || data?.dues_info === LEGACY.dues_info)
-            ? DEFAULTS.dues_info
-            : data.dues_info
-
-        setSettings({
-          club_name: data?.club_name || 'FFA Investments',
-          tagline: data?.tagline || 'Where futures begin and wealth grows',
-          homepage_message: data?.homepage_message || 'Welcome to the FFA Investments member portal.',
-          welcome_message: data?.welcome_message || 'Welcome back!',
-          dues_info: normalizedDues,
-          contact_email: normalizedEmail,
-          meeting_schedule: normalizedMeeting,
-          announcements: data?.announcements || ''
-        })
+      if (error) throw error
+      
+      const normalizedMeeting =
+        (!data?.meeting_schedule || data?.meeting_schedule === LEGACY.meeting_schedule)
+          ? DEFAULTS.meeting_schedule
+          : data.meeting_schedule
+      
+      return {
+        ...data,
+        meeting_schedule: normalizedMeeting,
+        contact_email: data?.contact_email || DEFAULTS.contact_email,
+        dues_info: data?.dues_info || DEFAULTS.dues_info
       }
-    } catch (err) {
-      setError('Failed to load dashboard information')
-    } finally {
-      setLoading(false)
-    }
-  }
+    },
+    enabled: !!user
+  })
 
   if (!user) {
     return (
@@ -107,7 +77,7 @@ const MemberHome = () => {
       <Page title="Member Home">
         <div className="card p-6">
           <div className="text-red-400">
-            <span>{error}</span>
+            <span>{error.message || 'Failed to load dashboard information'}</span>
           </div>
         </div>
       </Page>

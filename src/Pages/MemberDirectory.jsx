@@ -1,34 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query'
 import { getMembers } from '../lib/ffaApi'
 import { Users, Mail, Phone, Search, UserCheck } from 'lucide-react';
 import EmailModal from '../components/EmailModal.jsx';
 import { Page } from '../components/Page'
 
 const MemberDirectory = () => {
-  const [members, setMembers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data: members = [], isLoading: loading, error } = useQuery({
+    queryKey: ['members'],
+    queryFn: getMembers
+  })
   const [searchTerm, setSearchTerm] = useState('')
   const [copiedEmail, setCopiedEmail] = useState(null)
   const [emailRecipient, setEmailRecipient] = useState(null)
-
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getMembers()
-      setMembers(data || [])
-    } catch (error) {
-      console.error('Error fetching members:', error);
-      setError(error.message || 'Unable to load members')
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const normalizedMembers = useMemo(() => {
     return members.map((member) => {
