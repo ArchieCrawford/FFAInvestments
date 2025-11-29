@@ -11,6 +11,8 @@ import AuthTest from './components/AuthTest.jsx'
 import AuthCallback from './components/AuthCallback.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './components/AdminDashboard.jsx'
+import AdminDashboard_Debug from './Pages/AdminDashboard_Debug.jsx'
+import DebugDataProbe from './DebugDataProbe.jsx'
 import AdminUsers from './components/AdminUsersNew.jsx'
 import AdminAccounts from './components/AdminAccounts.jsx'
 import AdminLedger from './components/AdminLedger.jsx'
@@ -80,6 +82,18 @@ function App() {
               <Layout currentPageName="AdminDashboard">
                 <AdminDashboard />
               </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/dashboard-debug" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminDashboard_Debug">
+                <AdminDashboard_Debug />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/debug-data" element={
+            <ProtectedRoute>
+              <DebugDataProbe />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={
