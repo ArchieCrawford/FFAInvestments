@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -8,12 +8,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, ArrowRight } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function MemberDashboard() {
   const navigate = useNavigate();
   const { member, loading: memberLoading } = useCurrentMember();
+
+  const [selectedPositionsDate, setSelectedPositionsDate] = useState("latest");
 
   useEffect(() => {
     if (!memberLoading && !member) {
@@ -21,7 +38,10 @@ export default function MemberDashboard() {
     }
   }, [memberLoading, member, navigate]);
 
-  const { data: timeline = [], isLoading: timelineLoading } = useQuery({
+  const {
+    data: timeline = [],
+    isLoading: timelineLoading,
+  } = useQuery({
     queryKey: ["member-timeline", member?.member_id],
     enabled: !!member,
     queryFn: async () => {
@@ -30,6 +50,25 @@ export default function MemberDashboard() {
         .select("*")
         .eq("member_id", member.member_id)
         .order("report_date", { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const {
+    data: positions = [],
+    isLoading: positionsLoading,
+  } = useQuery({
+    queryKey: ["member-positions", member?.member_id],
+    enabled: !!member,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("v_member_positions_as_of")
+        .select("*")
+        .eq("member_id", member.member_id)
+        .order("as_of_date", { ascending: true });
+
       if (error) throw error;
       return data || [];
     },
@@ -37,17 +76,77 @@ export default function MemberDashboard() {
 
   const latest = timeline.length > 0 ? timeline[timeline.length - 1] : null;
 
-  const portfolioValue = latest ? Number(latest.portfolio_value || 0) : 0;
-  const totalUnits = latest ? Number(latest.total_units || 0) : 0;
-  const totalContribution = latest ? Number(latest.total_contribution || 0) : 0;
+  const portfolioValue = latest ? Number(latest.portfolio_value || latest.value || 0) : 0;
+  const totalUnits = latest ? Number(latest.total_units || latest.units || 0) : 0;
+  const totalContribution = latest
+    ? Number(latest.total_contribution || latest.contributions || 0)
+    : 0;
   const unitValue = totalUnits > 0 ? portfolioValue / totalUnits : 0;
   const lastGrowthAmount = latest ? Number(latest.growth_amount || 0) : 0;
   const lastGrowthPct = latest ? Number(latest.growth_pct || 0) : 0;
+  const ownershipPct =
+    latest && latest.ownership_pct != null ? Number(latest.ownership_pct) : null;
 
-  const chartData = timeline.map(entry => ({
-    date: entry.report_date ? format(new Date(entry.report_date), "MMM yy") : "",
-    value: Number(entry.portfolio_value || 0),
+  const chartData = timeline.map((entry) => ({
+    date: entry.report_date
+      ? format(new Date(entry.report_date), "MMM yy")
+      : entry.for_month
+      ? format(new Date(entry.for_month), "MMM yy")
+      : "",
+    value: Number(entry.portfolio_value || entry.value || 0),
   }));
+
+  const positionDates = useMemo(() => {
+    const dates = Array.from(
+      new Set(
+        positions
+          .map((p) => p.as_of_date)
+          .filter(Boolean)
+      )
+    );
+    return dates.sort((a, b) => new Date(a) - new Date(b));
+  }, [positions]);
+
+  const latestPositionsDate =
+    positionDates.length > 0 ? positionDates[positionDates.length - 1] : null;
+
+  const effectivePositionsDate =
+    selectedPositionsDate === "latest" ? latestPositionsDate : selectedPositionsDate;
+
+  const positionsForSelectedDate = useMemo(() => {
+    if (!effectivePositionsDate) return [];
+    return positions.filter((p) => p.as_of_date === effectivePositionsDate);
+  }, [positions, effectivePositionsDate]);
+
+  const totalValueForSelectedDate = positionsForSelectedDate.reduce((sum, p) => {
+    const v =
+      p.position_value ??
+      p.market_value ??
+      p.position_market_value ??
+      p.value ??
+      0;
+    return sum + Number(v || 0);
+  }, 0);
+
+  const positionsTableRows = positionsForSelectedDate.map((p) => {
+    const rawValue =
+      p.position_value ??
+      p.market_value ??
+      p.position_market_value ??
+      p.value ??
+      0;
+    const value = Number(rawValue || 0);
+    const pctOfMember =
+      totalValueForSelectedDate > 0 ? (value / totalValueForSelectedDate) * 100 : 0;
+
+    return {
+      symbol: p.symbol,
+      description: p.description || p.security_name || "",
+      units: Number(p.units || p.quantity || p.long_quantity || 0),
+      value,
+      pctOfMember,
+    };
+  });
 
   if (memberLoading) {
     return (
@@ -101,8 +200,16 @@ export default function MemberDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                ${portfolioValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                $
+                {portfolioValue.toLocaleString("en-US", {
+                  maximumFractionDigits: 0,
+                })}
               </div>
+              {ownershipPct != null && (
+                <p className="text-xs mt-2 opacity-90">
+                  Ownership of club: {(ownershipPct * 100).toFixed(2)}%
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -114,7 +221,10 @@ export default function MemberDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-default">
-                ${totalContribution.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                $
+                {totalContribution.toLocaleString("en-US", {
+                  maximumFractionDigits: 0,
+                })}
               </div>
             </CardContent>
           </Card>
@@ -182,10 +292,9 @@ export default function MemberDashboard() {
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
-                    <CartesianGrid stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" />
+                    <CartesianGrid />
+                    <XAxis dataKey="date" />
                     <YAxis
-                      stroke="#64748b"
                       tickFormatter={(v) =>
                         `$${Number(v).toLocaleString("en-US", {
                           maximumFractionDigits: 0,
@@ -202,12 +311,94 @@ export default function MemberDashboard() {
                     <Line
                       type="monotone"
                       dataKey="value"
-                      stroke="#2563eb"
                       strokeWidth={3}
                       dot={false}
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-lg">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="text-lg font-bold text-default">
+              Your positions
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted">As of</span>
+              <Select
+                value={selectedPositionsDate}
+                onValueChange={setSelectedPositionsDate}
+                disabled={positionDates.length === 0}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select date" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="latest">Latest</SelectItem>
+                  {positionDates.map((d) => (
+                    <SelectItem key={d} value={d}>
+                      {format(new Date(d), "MMM dd, yyyy")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {positionsLoading ? (
+              <p className="text-muted">Loading positions…</p>
+            ) : positionsTableRows.length === 0 ? (
+              <p className="text-muted">
+                No positions found for the selected date.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="py-2 pr-4">Symbol</th>
+                      <th className="py-2 pr-4">Description</th>
+                      <th className="py-2 pr-4 text-right">Units</th>
+                      <th className="py-2 pr-4 text-right">Value</th>
+                      <th className="py-2 pr-0 text-right">% of portfolio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {positionsTableRows.map((row) => (
+                      <tr key={row.symbol} className="border-b border-border/60">
+                        <td className="py-2 pr-4 font-semibold">
+                          {row.symbol}
+                        </td>
+                        <td className="py-2 pr-4 text-muted">
+                          {row.description || "—"}
+                        </td>
+                        <td className="py-2 pr-4 text-right font-mono">
+                          {row.units.toFixed(4)}
+                        </td>
+                        <td className="py-2 pr-4 text-right font-mono">
+                          $
+                          {row.value.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </td>
+                        <td className="py-2 pr-0 text-right">
+                          {row.pctOfMember.toFixed(2)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="text-xs text-muted mt-2 text-right">
+                  Total: $
+                  {totalValueForSelectedDate.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
               </div>
             )}
           </CardContent>
