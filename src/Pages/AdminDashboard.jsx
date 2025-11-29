@@ -135,12 +135,13 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 lg:p-8 bg-bg min-h-screen">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-default mb-2">Admin Dashboard</h1>
-            <p className="text-muted">Manage your investment club</p>
+            <h1 className="text-3xl lg:text-4xl font-bold text-default tracking-tight mb-2">Admin Dashboard</h1>
+            <p className="text-muted text-sm">Club overview and quick actions</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Link to={createPageUrl("AdminUsers")}>
               <Button className="bg-primary hover:bg-primary gap-2">
                 <Plus className="w-4 h-4" />
@@ -155,9 +156,9 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-none shadow-lg bg-primary text-white">
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+          <Card className="border-none shadow-lg bg-primary text-white relative overflow-hidden">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium opacity-90">
@@ -167,7 +168,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-3xl font-bold leading-tight">
                 $
                 {totalAUM.toLocaleString("en-US", {
                   minimumFractionDigits: 0,
@@ -176,8 +177,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-none shadow-lg">
+          <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium text-muted">
@@ -187,11 +187,10 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-default">{totalMembers}</div>
+              <div className="text-3xl font-bold text-default leading-tight">{totalMembers}</div>
             </CardContent>
           </Card>
-
-          <Card className="border-none shadow-lg">
+          <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium text-muted">
@@ -201,11 +200,10 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-default">{activeAccounts}</div>
+              <div className="text-3xl font-bold text-default leading-tight">{activeAccounts}</div>
             </CardContent>
           </Card>
-
-          <Card className="border-none shadow-lg">
+          <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium text-muted">Unit Price</CardTitle>
@@ -213,7 +211,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-default">
+              <div className="text-3xl font-bold text-default leading-tight">
                 ${latestUnitPrice?.price?.toFixed(4) || "0.00"}
               </div>
               <Badge
@@ -224,8 +222,11 @@ export default function AdminDashboard() {
               </Badge>
             </CardContent>
           </Card>
+        </div>
 
-          <Card className="border-none shadow-lg">
+        {/* Schwab Summary */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <Card className="border-none shadow-lg xl:col-span-1">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-sm font-medium text-muted">

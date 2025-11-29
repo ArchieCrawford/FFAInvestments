@@ -144,67 +144,95 @@ const MemberDirectory = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredMembers.map((member) => (
-            <div className="card p-6" key={member.id}>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-lg font-semibold text-default">{member.displayName || 'Member'}</p>
-                  {member.member_name && member.member_name !== member.displayName && (
-                    <p className="text-sm text-muted">{member.member_name}</p>
-                  )}
-                </div>
-                <span className={`badge ${member.status === 'active' ? 'bg-green-500/20 text-green-500' : 'bg-primary-soft text-primary'}`}>
-                  {member.status === 'active' ? 'Active' : 'Member'}
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {member.email ? (
-                    <>
-                      <span className="inline-flex items-center gap-2 text-sm">
-                        <Mail size={16} className="text-muted" />
-                        <span className="text-default">{member.email}</span>
-                      </span>
-                      <button
-                        className="btn-primary-soft border border-border text-xs px-3 py-1 rounded-full"
-                        type="button"
-                        onClick={() => handleCopyEmail(member.email)}
-                      >
-                        Copy
-                      </button>
-                      <button
-                        className="btn-primary text-xs px-3 py-1 rounded-full"
-                        type="button"
-                        onClick={() => handleOpenEmail(member)}
-                      >
-                        Email
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-sm text-muted">Email unavailable</span>
-                  )}
-                </div>
-                {copiedEmail === member.email && (
-                  <p className="text-xs text-primary">Email copied to clipboard</p>
+        {/* List View */}
+        <div className="card p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-bg border-b border-border">
+                <tr className="text-left">
+                  <th className="px-4 py-3 font-medium text-muted w-56">Member</th>
+                  <th className="px-4 py-3 font-medium text-muted">Email</th>
+                  <th className="px-4 py-3 font-medium text-muted w-32">Status</th>
+                  <th className="px-4 py-3 font-medium text-muted w-32">Phone</th>
+                  <th className="px-4 py-3 font-medium text-muted w-40">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((member) => {
+                  const showAltName = member.member_name && member.member_name !== member.displayName;
+                  return (
+                    <tr key={member.id} className="border-b border-border last:border-b-0 hover:bg-primary-soft/40 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-default">{member.displayName || 'Member'}</span>
+                          {showAltName && (
+                            <span className="text-xs text-muted">{member.member_name}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {member.email ? (
+                          <span className="inline-flex items-center gap-2">
+                            <Mail size={14} className="text-muted" />
+                            <span className="text-default break-all">{member.email}</span>
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                        {copiedEmail === member.email && (
+                          <span className="ml-2 text-xs text-primary">Copied</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${member.status === 'active' ? 'bg-green-500/15 text-green-600' : 'bg-primary-soft text-primary'}`}>{member.status === 'active' ? 'Active' : 'Member'}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {member.phone ? (
+                          <a href={`tel:${member.phone}`} className="text-default hover:text-primary flex items-center gap-2">
+                            <Phone size={14} className="text-muted" /> {member.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          {member.email && (
+                            <>
+                              <button
+                                className="btn-primary-soft border border-border text-xs px-3 py-1 rounded-full"
+                                type="button"
+                                onClick={() => handleCopyEmail(member.email)}
+                              >
+                                Copy
+                              </button>
+                              <button
+                                className="btn-primary text-xs px-3 py-1 rounded-full"
+                                type="button"
+                                onClick={() => handleOpenEmail(member)}
+                              >
+                                Email
+                              </button>
+                            </>
+                          )}
+                          {!member.email && (
+                            <span className="text-xs text-muted">No email</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredMembers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-12 text-center text-muted">
+                      No members match your search.
+                    </td>
+                  </tr>
                 )}
-                {member.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone size={16} className="text-muted" />
-                    <a href={`tel:${member.phone}`} className="text-default hover:text-primary">
-                      {member.phone}
-                    </a>
-                  </div>
-                )}
-                {!member.phone && member.email && (
-                  <p className="text-xs text-muted">
-                    Contact via email
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {filteredMembers.length === 0 && !error && (
