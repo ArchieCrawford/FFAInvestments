@@ -29,7 +29,6 @@ import {
 export default function MemberDashboard() {
   const navigate = useNavigate();
   const { member, loading: memberLoading } = useCurrentMember();
-
   const [selectedPositionsDate, setSelectedPositionsDate] = useState("latest");
 
   useEffect(() => {
@@ -41,36 +40,44 @@ export default function MemberDashboard() {
   const {
     data: timeline = [],
     isLoading: timelineLoading,
+    error: timelineError,
   } = useQuery({
-    queryKey: ["member-timeline", member?.member_id],
+    queryKey: ["member-timeline", member?.member_id, member?.id],
     enabled: !!member,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("member_monthly_balances")
-        .select("*")
-        .eq("member_id", member.member_id)
-        .order("report_date", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
+      const idsToTry = [member.member_id, member.id].filter(Boolean);
+      for (const id of idsToTry) {
+        const { data, error } = await supabase
+          .from("member_monthly_balances")
+          .select("*")
+          .eq("member_id", id)
+          .order("report_date", { ascending: true });
+        if (error) throw error;
+        if (data && data.length > 0) return data;
+      }
+      return [];
     },
   });
 
   const {
     data: positions = [],
     isLoading: positionsLoading,
+    error: positionsError,
   } = useQuery({
-    queryKey: ["member-positions", member?.member_id],
+    queryKey: ["member-positions", member?.member_id, member?.id],
     enabled: !!member,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_member_positions_as_of")
-        .select("*")
-        .eq("member_id", member.member_id)
-        .order("as_of_date", { ascending: true });
-
-      if (error) throw error;
-      return data || [];
+      const idsToTry = [member.member_id, member.id].filter(Boolean);
+      for (const id of idsToTry) {
+        const { data, error } = await supabase
+          .from("v_member_positions_as_of")
+          .select("*")
+          .eq("member_id", id)
+          .order("as_of_date", { ascending: true });
+        if (error) throw error;
+        if (data && data.length > 0) return data;
+      }
+      return [];
     },
   });
 
@@ -171,6 +178,13 @@ export default function MemberDashboard() {
       subtitle="View your investment performance"
     >
       <div className="max-w-6xl mx-auto space-y-6">
+        {(timelineError || positionsError) && (
+          <div className="card p-4 border-l-4 border-red-500 text-sm text-red-500">
+            {timelineError && <div>Timeline error: {timelineError.message}</div>}
+            {positionsError && <div>Positions error: {positionsError.message}</div>}
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-default">
