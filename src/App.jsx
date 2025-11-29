@@ -40,6 +40,7 @@ import AdminPanel from './Pages/AdminPanel.jsx'
 import SchwabInsightsPage from './Pages/SchwabInsightsPage.jsx'
 import SchwabRawData from './Pages/SchwabRawData.jsx'
 import SchwabCallback from './Pages/SchwabCallback.jsx'
+import AdminOrgBalance from './Pages/AdminOrgBalance.jsx'
 
 // Education Components
 import BeardstownLadies from './Pages/BeardstownLadies/index.jsx'
@@ -179,6 +180,13 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminSchwab">
                 <AdminSchwab />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/org-balance" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminOrgBalance">
+                <AdminOrgBalance />
               </Layout>
             </ProtectedRoute>
           } />

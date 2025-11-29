@@ -16,6 +16,7 @@ const adminNav = [
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
   { title: "Unit Price", url: createPageUrl("AdminUnitPrice"), icon: "fas fa-chart-line" },
   { title: "Portfolio Builder", url: "/admin/portfolio-builder", icon: "fas fa-briefcase" },
+  { title: "Org Balance", url: "/admin/org-balance", icon: "fas fa-chart-area" },
   { 
     title: "Education", 
     icon: "fas fa-graduation-cap", 
