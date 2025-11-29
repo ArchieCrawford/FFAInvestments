@@ -5,41 +5,54 @@ import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Users, Wallet, DollarSign, TrendingUp, AlertCircle,
-  Clock, Plus, ArrowRight
+import {
+  Users,
+  Wallet,
+  DollarSign,
+  TrendingUp,
+  AlertCircle,
+  Clock,
+  Plus,
+  ArrowRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "../lib/supabase";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 export default function AdminDashboard() {
   const [orgHistory, setOrgHistory] = useState([]);
   const [orgHistoryLoading, setOrgHistoryLoading] = useState(true);
   const [orgHistoryError, setOrgHistoryError] = useState(null);
 
+  // Members (org-wide headcount, KYC, etc.)
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members")
-        .select("*");
+      const { data, error } = await supabase.from("members").select("*");
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Member accounts (for "Active Accounts" card)
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("member_accounts")
-        .select("*");
+      const { data, error } = await supabase.from("member_accounts").select("*");
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Latest unit price snapshot for club
   const { data: latestUnitPrice } = useQuery({
     queryKey: ["latest-unit-price"],
     queryFn: async () => {
@@ -54,19 +67,26 @@ export default function AdminDashboard() {
     },
   });
 
-  const { data: recentLedger = [], isLoading: recentLedgerLoading } = useQuery({
+  // Recent canonical ledger entries from member_unit_transactions
+  const {
+    data: recentLedger = [],
+    isLoading: recentLedgerLoading,
+    error: recentLedgerError,
+  } = useQuery({
     queryKey: ["recent-ledger"],
     queryFn: async () => {
+      // NOTE: using tx_date / tx_type / cash_amount / notes from new schema
       const { data, error } = await supabase
         .from("member_unit_transactions")
-        .select("*")
-        .order("entry_date", { ascending: false })
+        .select("id, member_id, tx_date, tx_type, cash_amount, units_delta, unit_value_at_tx, notes")
+        .order("tx_date", { ascending: false })
         .limit(5);
       if (error) throw error;
       return data || [];
     },
   });
 
+  // Org-level historical AUM curve from org_balance_history
   useEffect(() => {
     let active = true;
     const loadHistory = async () => {
@@ -75,11 +95,9 @@ export default function AdminDashboard() {
       try {
         const { data, error } = await supabase
           .from("org_balance_history")
-          .select(`
-            balance_date,
-            total_value
-          `)
+          .select("balance_date, total_value")
           .order("balance_date", { ascending: true });
+
         if (error) throw error;
         if (active) setOrgHistory(data || []);
       } catch (err) {
@@ -99,7 +117,9 @@ export default function AdminDashboard() {
 
   const orgHistoryData = useMemo(() => {
     return (orgHistory || []).map((entry) => ({
-      date: entry.balance_date ? format(new Date(entry.balance_date), "MMM yyyy") : "Unknown",
+      date: entry.balance_date
+        ? format(new Date(entry.balance_date), "MMM yyyy")
+        : "Unknown",
       total_value: Number(entry.total_value) || 0,
     }));
   }, [orgHistory]);
@@ -108,7 +128,9 @@ export default function AdminDashboard() {
     if (!orgHistory || orgHistory.length === 0) return null;
     const last = orgHistory[orgHistory.length - 1];
     const totalValue = Number(last.total_value) || 0;
-    const dateLabel = last.balance_date ? format(new Date(last.balance_date), "MMM dd, yyyy") : "—";
+    const dateLabel = last.balance_date
+      ? format(new Date(last.balance_date), "MMM dd, yyyy")
+      : "—";
     return { totalValue, dateLabel };
   }, [orgHistory]);
 
@@ -118,9 +140,11 @@ export default function AdminDashboard() {
   const pendingKYC = members.filter((m) => m.kyc_status === "pending").length;
 
   const tasks = [
-    pendingKYC > 0 && { 
-      type: "warning", 
-      title: `${pendingKYC} pending KYC approval${pendingKYC > 1 ? "s" : ""}`,
+    pendingKYC > 0 && {
+      type: "warning",
+      title: `${pendingKYC} pending KYC approval${
+        pendingKYC > 1 ? "s" : ""
+      }`,
       action: "Review Members",
       link: createPageUrl("AdminUsers"),
     },
@@ -138,7 +162,9 @@ export default function AdminDashboard() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-default tracking-tight mb-2">Admin Dashboard</h1>
+            <h1 className="text-3xl lg:text-4xl font-bold text-default tracking-tight mb-2">
+              Admin Dashboard
+            </h1>
             <p className="text-muted text-sm">Club overview and quick actions</p>
           </div>
           <div className="flex gap-3 flex-wrap">
@@ -156,6 +182,7 @@ export default function AdminDashboard() {
             </Link>
           </div>
         </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           <Card className="border-none shadow-lg bg-primary text-white relative overflow-hidden">
@@ -177,6 +204,7 @@ export default function AdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
           <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -187,9 +215,12 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-default leading-tight">{totalMembers}</div>
+              <div className="text-3xl font-bold text-default leading-tight">
+                {totalMembers}
+              </div>
             </CardContent>
           </Card>
+
           <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
@@ -200,13 +231,18 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-default leading-tight">{activeAccounts}</div>
+              <div className="text-3xl font-bold text-default leading-tight">
+                {activeAccounts}
+              </div>
             </CardContent>
           </Card>
+
           <Card className="border-none shadow-lg flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
-                <CardTitle className="text-sm font-medium text-muted">Unit Price</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted">
+                  Unit Price
+                </CardTitle>
                 <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
             </CardHeader>
@@ -224,7 +260,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Schwab Summary */}
+        {/* Schwab Summary – driven by org_balance_history snapshot */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <Card className="border-none shadow-lg xl:col-span-1">
             <CardHeader className="pb-3">
@@ -257,6 +293,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Org portfolio over time */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-default">
@@ -306,6 +343,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Tasks */}
         {tasks.length > 0 && (
           <Card className="border-none shadow-lg border-l-4 border-l-amber-500">
             <CardHeader>
@@ -341,6 +379,7 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {/* Recent transactions + quick actions */}
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="border-none shadow-lg">
             <CardHeader>
@@ -352,6 +391,10 @@ export default function AdminDashboard() {
               {recentLedgerLoading ? (
                 <p className="text-muted text-center py-8">
                   Loading recent transactions…
+                </p>
+              ) : recentLedgerError ? (
+                <p className="text-red-500 text-center py-8">
+                  Failed to load transactions
                 </p>
               ) : recentLedger.length === 0 ? (
                 <p className="text-muted text-center py-8">
@@ -366,34 +409,34 @@ export default function AdminDashboard() {
                     >
                       <div>
                         <p className="font-semibold text-default capitalize">
-                          {entry.entry_type?.replace("_", " ")}
+                          {entry.tx_type?.replace("_", " ")}
                         </p>
                         <p className="text-sm text-muted">
-                          {entry.memo || "No memo"}
+                          {entry.notes || "No memo"}
                         </p>
                         <p className="text-xs text-muted mt-1">
-                          {entry.entry_date
-                            ? format(
-                                new Date(entry.entry_date),
-                                "MMM dd, yyyy"
-                              )
+                          {entry.tx_date
+                            ? format(new Date(entry.tx_date), "MMM dd, yyyy")
                             : "—"}
                         </p>
                       </div>
                       <div className="text-right">
                         <p
                           className={`font-bold ${
-                            entry.amount >= 0
+                            entry.cash_amount >= 0
                               ? "text-emerald-600"
                               : "text-red-600"
                           }`}
                         >
-                          {entry.amount >= 0 ? "+" : "-"}$
-                          {Math.abs(entry.amount).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                          })}
+                          {entry.cash_amount >= 0 ? "+" : "-"}$
+                          {Math.abs(entry.cash_amount || 0).toLocaleString(
+                            "en-US",
+                            {
+                              minimumFractionDigits: 2,
+                            }
+                          )}
                         </p>
-                        {entry.units_delta !== 0 && (
+                        {entry.units_delta && entry.units_delta !== 0 && (
                           <p className="text-xs text-muted">
                             {entry.units_delta > 0 ? "+" : ""}
                             {Number(entry.units_delta).toFixed(4)} units
