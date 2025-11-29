@@ -1,301 +1,263 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import schwabApi, { SchwabAPIError } from '../services/schwabApi'
-import { Page } from '../components/Page'
-import SchwabInsights from './SchwabInsights'
+import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "../lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  DollarSign,
+  LineChart,
+  ListOrdered,
+  RefreshCw
+} from "lucide-react";
+import { format } from "date-fns";
+import { Page } from "../components/Page";
 
-/**
- * Charles Schwab Admin Integration Page
- * 
- * This page is only accessible to admin users and provides:
- * - OAuth connection to Charles Schwab
- * - Account overview and management
- * - Navigation to insights and raw data features
- */
-const AdminSchwab = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [error, setError] = useState('')
-  const [accounts, setAccounts] = useState([])
-  const mounted = useRef(true)
-  
-  const navigate = useNavigate()
-  const showDebug = new URLSearchParams(window.location.search).get('debug') === '1'
+async function fetchLatestSnapshots() {
+  const { data, error } = await supabase
+    .from("schwab_account_snapshots")
+    .select("snapshot_date, account_number, current_liquidation_value, total_cash")
+    .order("snapshot_date", { ascending: false });
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
 
-  useEffect(() => {
-    mounted.current = true
-    ;(async () => {
-      await checkConnection()
-    })()
-    return () => {
-      mounted.current = false
-    }
-  }, [])
+  const latestDate = data[0].snapshot_date;
+  return data.filter(row => row.snapshot_date === latestDate);
+}
 
-  const checkConnection = async () => {
-    try {
-      setIsLoading(true)
-      setError('')
-      const raw = localStorage.getItem('schwab_tokens')
-      console.log('AdminSchwab: stored schwab_tokens:', raw)
-      const status = schwabApi.getAuthStatus?.()
-      console.log('AdminSchwab: auth status snapshot:', status)
-      const authed = status?.authenticated || !!raw
-      if (!mounted.current) return
-      setIsAuthenticated(authed)
-      if (authed) {
-        await loadAccounts()
-      }
-    } catch (e) {
-      console.error('checkConnection failed:', e)
-      if (!mounted.current) return
-      setError('Failed to check Schwab connection.')
-      setIsAuthenticated(false)
-    } finally {
-      if (mounted.current) setIsLoading(false)
-    }
-  }
+async function fetchLatestPositions() {
+  const { data, error } = await supabase
+    .from("schwab_positions")
+    .select("*")
+    .order("snapshot_date", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
 
-  const loadAccounts = async () => {
-    try {
-      console.log('AdminSchwab: loading accounts…')
-      const res = await schwabApi.getAccounts()
-      const list = Array.isArray(res) ? res : Array.isArray(res?.accounts) ? res.accounts : []
-      const normalized = list.map(a => ({
-        id: a.securitiesAccount?.accountNumber ?? a.accountNumber ?? a.accountId ?? a.account_id ?? a.account_number ?? a.hashValue ?? a.id ?? 'unknown',
-        type: a.securitiesAccount?.type ?? a.type ?? a.accountType ?? 'Investment Account',
-        isActive: a.securitiesAccount?.isActive ?? a.isActive ?? a.active ?? true,
-        raw: a
-      }))
-      if (!mounted.current) return
-      setAccounts(normalized)
-      console.log('AdminSchwab: loaded accounts:', normalized.length)
-    } catch (e) {
-      console.error('loadAccounts failed:', e)
-      if (e instanceof SchwabAPIError) {
-        if (e.status === 401 || e.code === 'invalid_grant' || e.code === 'token_expired') {
-          if (mounted.current) {
-            setError('Your Schwab session expired. Please reconnect.')
-            setIsAuthenticated(false)
-            setAccounts([])
-          }
-          return
-        }
-        if (mounted.current) {
-          setError(`Schwab API error: ${e.message || 'Unable to load accounts.'}`)
-        }
-      } else {
-        if (mounted.current) {
-          setError('Failed to load account information.')
-        }
-      }
-    }
-  }
+  const latestTs = data[0].snapshot_date;
+  return data.filter(row => row.snapshot_date === latestTs);
+}
 
-  const handleConnect = async () => {
-    try {
-      setError('')
-      setIsLoading(true)
-      const authUrl = await schwabApi.getAuthorizationUrl()
-      console.log('Redirecting to Schwab auth URL (backend provided):', authUrl)
-      window.location.href = authUrl
-    } catch (e) {
-      console.error('getAuthorizationUrl failed:', e)
-      setError('Failed to initiate Schwab connection.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+export default function AdminSchwab() {
+  const {
+    data: snapshots = [],
+    isLoading: loadingSnapshots,
+    refetch: refetchSnapshots
+  } = useQuery({
+    queryKey: ["schwab-account-snapshots"],
+    queryFn: fetchLatestSnapshots
+  });
 
-  const handleDisconnect = () => {
-    try {
-      schwabApi.logout?.()
-    } catch (e) {
-      console.warn('logout warning:', e)
-    }
-    setIsAuthenticated(false)
-    setAccounts([])
-    setError('')
-  }
+  const {
+    data: positions = [],
+    isLoading: loadingPositions,
+    refetch: refetchPositions
+  } = useQuery({
+    queryKey: ["schwab-positions"],
+    queryFn: fetchLatestPositions
+  });
+
+  const latestSnapshotDate = useMemo(() => {
+    if (!snapshots.length) return null;
+    return snapshots[0].snapshot_date;
+  }, [snapshots]);
+
+  const totalLiquidation = useMemo(() => {
+    return snapshots.reduce(
+      (sum, row) => sum + Number(row.current_liquidation_value || 0),
+      0
+    );
+  }, [snapshots]);
+
+  const totalCash = useMemo(() => {
+    return snapshots.reduce(
+      (sum, row) => sum + Number(row.total_cash || 0),
+      0
+    );
+  }, [snapshots]);
+
+  const accountCount = snapshots.length;
+
+  const topPositions = useMemo(() => {
+    const bySymbol = new Map();
+    positions.forEach(p => {
+      const key = p.symbol || p.description || "UNKNOWN";
+      const existing = bySymbol.get(key) || {
+        symbol: p.symbol,
+        description: p.description,
+        market_value: 0,
+        long_quantity: 0
+      };
+      existing.market_value += Number(p.market_value || 0);
+      existing.long_quantity += Number(p.long_quantity || 0);
+      bySymbol.set(key, existing);
+    });
+    return Array.from(bySymbol.values()).sort(
+      (a, b) => b.market_value - a.market_value
+    );
+  }, [positions]);
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchSnapshots(), refetchPositions()]);
+  };
 
   return (
     <Page
-      title="Charles Schwab Integration"
-      subtitle={isAuthenticated ? `Connected${accounts.length ? ` • ${accounts.length} account${accounts.length !== 1 ? 's' : ''}` : ''}` : 'Not connected'}
-      actions={isAuthenticated ? (
-        <button 
-          className="btn-primary-soft border border-red-500 text-red-500"
-          onClick={handleDisconnect}
-        >
-          <i className="fas fa-unlink" style={{ marginRight: '0.5rem' }}></i>
-          Disconnect
-        </button>
-      ) : null}
+      title="Schwab Accounts & Positions"
+      subtitle="View brokerage balances and holdings synced from Charles Schwab"
     >
-      {/* Optional debug panel (?debug=1) */}
-      {showDebug && (
-        <div className="card mb-8" style={{ border: '1px dashed var(--app-border-muted)' }}>
-          <div className="card-header">
-            <h6 className="text-lg font-semibold text-default" style={{ display: 'flex', alignItems: 'center' }}>
-              <i className="fas fa-bug" style={{ marginRight: '0.5rem' }}></i>
-              Schwab Debug Panel
-            </h6>
-          </div>
-          <div className="card-content" style={{ fontSize: '0.75rem' }}>
-            <div><strong>Auth Status:</strong> {schwabApi.getAuthStatus ? JSON.stringify(schwabApi.getAuthStatus()) : 'n/a'}</div>
-            <div style={{ marginTop: '0.5rem' }}><strong>Token (truncated):</strong> {(localStorage.getItem('schwab_tokens') || '').slice(0, 160)}{(localStorage.getItem('schwab_tokens') || '').length > 160 ? '…' : ''}</div>
-            <div style={{ marginTop: '0.5rem' }}><strong>Accounts loaded:</strong> {accounts.length}</div>
-            <div style={{ marginTop: '0.5rem' }}><strong>Error:</strong> {error || 'none'}</div>
-            <p style={{ marginTop: '0.5rem' }}>Remove <code>?debug=1</code> from URL to hide.</p>
-          </div>
-        </div>
-      )}
-      
-
-      {/* Connection Status */}
-      <div className="mb-4">
-        {isAuthenticated ? (
-          <div className="bg-green-500/10 border border-green-500 text-green-600 px-4 py-3 rounded-lg">
-            <i className="fas fa-check-circle" style={{ marginRight: '0.75rem' }}></i>
-            <strong>Status:</strong> Connected to Charles Schwab
-            {accounts.length > 0 && (
-              <div className="mt-1 text-sm">Found {accounts.length} account{accounts.length !== 1 ? 's' : ''}</div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-primary-soft border border-border text-default px-4 py-3 rounded-lg">
-            <i className="fas fa-info-circle" style={{ marginRight: '0.75rem' }}></i>
-            <strong>Status:</strong> Not connected to Charles Schwab
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="mb-4">
-          <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
-            <i className="fas fa-exclamation-triangle" style={{ marginRight: '0.5rem' }}></i>
-            {error}
-          </div>
-        </div>
-      )}
-
-      {/* Account Information */}
-        {isAuthenticated && accounts.length > 0 && (
-        <div className="mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="text-lg font-semibold text-default">
-                <i className="fas fa-wallet" style={{ marginRight: '0.5rem' }}></i>
-                Connected Accounts
-              </h5>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <LineChart className="w-6 h-6 text-primary" />
             </div>
-            <div className="card-content">
-              <div className="grid gap-3 md:grid-cols-2">
-                {accounts.map(acc => (
-                  <div key={acc.id} className="card">
-                    <div className="card-content">
-                      <h6 className="text-xl font-semibold text-default">{acc.type}</h6>
-                      <p>
-                        <strong>Account ID:</strong> {acc.id}<br />
-                        <strong>Status:</strong> {acc.isActive ? 'Active' : 'Inactive'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Feature Navigation + Insights */}
-      {isAuthenticated && (
-        <div className="mb-4">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="text-lg font-semibold text-default">
-                <i className="fas fa-tools" style={{ marginRight: '0.5rem' }}></i>
-                Charles Schwab Features
-              </h5>
-            </div>
-            <div className="card-content">
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="card h-100">
-                  <div className="card-content text-center">
-                    <i className="fas fa-chart-pie fa-3x mb-3"></i>
-                    <h5 className="text-xl font-semibold text-default">Account Insights</h5>
-                    <p>View portfolio analytics, performance metrics, and export data to Excel.</p>
-                    <div style={{ marginTop: 24 }}>
-                      <SchwabInsights />
-                    </div>
-                  </div>
-                </div>
-                <div className="card h-100">
-                  <div className="card-content text-center">
-                    <i className="fas fa-code fa-3x mb-3"></i>
-                    <h5 className="text-xl font-semibold text-default">Raw Data Viewer</h5>
-                    <p>Debug API calls, test endpoints, and view raw response data.</p>
-                    <button 
-                      className="btn-primary-soft border border-border"
-                      onClick={() => navigate('/admin/schwab/raw-data')}
-                    >
-                      <i className="fas fa-database" style={{ marginRight: '0.5rem' }}></i>
-                      View Raw Data
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Connection Setup */}
-      {!isAuthenticated && (
-        <div className="card">
-          <div className="card-header">
-            <h5 className="text-lg font-semibold text-default">
-              <i className="fas fa-link" style={{ marginRight: '0.5rem' }}></i>
-              Connect to Charles Schwab
-            </h5>
-          </div>
-          <div className="card-content">
-            <div className="text-center">
-              <i className="fas fa-university fa-4x mb-4"></i>
-              <h4>Connect Your Charles Schwab Account</h4>
-              <p className="lead mb-4">
-                Securely connect to Charles Schwab to access account data, portfolio insights, and trading information.
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-default">
+                Schwab Overview
+              </h1>
+              <p className="text-muted text-sm">
+                Snapshot of linked brokerage accounts and current positions
               </p>
-              
-              <button 
-                className="btn-primary text-lg px-8 py-3"
-                onClick={handleConnect}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="spinner-inline" style={{ marginRight: '0.5rem' }} role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-external-link-alt" style={{ marginRight: '0.5rem' }}></i>
-                    Connect to Charles Schwab
-                  </>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleRefresh}
+            disabled={loadingSnapshots || loadingPositions}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-none shadow-lg bg-primary text-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Total Schwab Value
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                ${totalLiquidation.toLocaleString("en-US", {
+                  maximumFractionDigits: 0
+                })}
+              </div>
+              <p className="text-xs opacity-80 mt-1">
+                Current liquidation value across all accounts
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted flex items-center gap-2">
+                <ListOrdered className="w-4 h-4 text-primary" />
+                Accounts
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-default">
+                {accountCount}
+              </div>
+              <p className="text-xs text-muted mt-1">
+                With latest snapshot on{" "}
+                {latestSnapshotDate
+                  ? format(new Date(latestSnapshotDate), "MMM dd, yyyy")
+                  : "—"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-lg">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+                Total Cash
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-default">
+                ${totalCash.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+              </div>
+              <p className="text-xs text-muted mt-1">
+                Cash and money markets across Schwab accounts
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-default">
+              Top Positions (by market value)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loadingPositions ? (
+              <div className="text-center py-8 text-muted">Loading positions…</div>
+            ) : topPositions.length === 0 ? (
+              <div className="text-center py-8 text-muted">
+                No positions found in latest snapshot.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Symbol</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Market Value</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {topPositions.slice(0, 50).map(row => (
+                      <TableRow key={row.symbol || row.description}>
+                        <TableCell>
+                          {row.symbol ? (
+                            <Badge variant="outline">{row.symbol}</Badge>
+                          ) : (
+                            <span className="text-muted">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-md truncate">
+                          {row.description || "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {row.long_quantity.toFixed(4)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          ${row.market_value.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {topPositions.length > 50 && (
+                  <p className="text-xs text-muted text-center mt-3">
+                    Showing top 50 of {topPositions.length} positions
+                  </p>
                 )}
-              </button>
-              
-              <p className="text-muted mt-3">
-                <small>You'll be redirected to Charles Schwab for secure authentication</small>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </Page>
   );
 }
-
-export default AdminSchwab
