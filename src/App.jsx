@@ -51,6 +51,7 @@ import ResetPassword from './Pages/ResetPassword.jsx'
 // Admin Components  
 import AdminDues from './Pages/AdminDues/index.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
+import AdminSeedUnitValuation from './Pages/AdminSeedUnitValuation.jsx'
 
 
 const queryClient = new QueryClient()
@@ -264,6 +265,13 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminDues">
                 <AdminDues />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/seed-unit" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminSeedUnitValuation">
+                <AdminSeedUnitValuation />
               </Layout>
             </ProtectedRoute>
           } />
