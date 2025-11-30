@@ -104,24 +104,27 @@ export async function captureSchwabSnapshot() {
       
       // Extract balance fields from Schwab API response
       const currentBalances = accountDetails.securitiesAccount?.currentBalances ?? {}
-            const { data: snapshotRecord, error: snapshotError } = await supabase
-        .from('schwab_account_snapshots')
-        .insert({
-          account_id: accountRecord.id,
-          snapshot_date: today,
-          liquidation_value: currentBalances.liquidationValue ?? null,
-          cash_balance: currentBalances.cashBalance ?? null,
-          cash_available_for_trading: currentBalances.cashAvailableForTrading ?? null,
-          cash_available_for_withdrawal: currentBalances.cashAvailableForWithdrawal ?? null,
-          long_market_value: currentBalances.longMarketValue ?? null,
-          short_market_value: currentBalances.shortMarketValue ?? null,
-          equity: currentBalances.equity ?? null,
-          margin_balance: currentBalances.marginBalance ?? null,
-          buying_power: currentBalances.buyingPower ?? null,
-          raw_json: accountDetails
-        })
-        .select()
-        .single()
+      const { data: snapshotRecord, error: snapshotError } = await supabase
+    .from('schwab_account_snapshots')
+    .insert({
+      account_id: accountRecord.id,
+      account_number: accountNumber,
+      snapshot_date: today,
+      liquidation_value: currentBalances.liquidationValue ?? null,
+      current_liquidation_value: currentBalances.liquidationValue ?? null,
+      cash_balance: currentBalances.cashBalance ?? null,
+      money_market_fund: currentBalances.moneyMarketFund ?? null,
+      long_stock_value: null,
+      long_option_value: currentBalances.longOptionMarketValue ?? null,
+      mutual_fund_value: currentBalances.mutualFundValue ?? null,
+      long_marginable_value: null,
+      long_non_marginable_value: currentBalances.longNonMarginableMarketValue ?? null,
+      total_cash: currentBalances.totalCash ?? null,
+      raw_json: accountDetails
+    })
+    .select()
+    .single()
+
       
       console.log(`📊 [captureSchwabSnapshot] Insert snapshot result for ${accountNumber}:`, { data: snapshotRecord, error: snapshotError })
       
