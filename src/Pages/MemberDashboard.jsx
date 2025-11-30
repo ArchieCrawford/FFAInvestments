@@ -1,311 +1,198 @@
-import React, { useEffect, useMemo } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { useCurrentMember } from "@/lib/authHooks";
-import { Page } from "../components/Page";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, ArrowRight } from "lucide-react";
+// src/Pages/MemberDashboard.jsx
+
+import React from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
   YAxis,
-  Tooltip,
   CartesianGrid,
-} from "recharts";
-import { format } from "date-fns";
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
-export default function MemberDashboard() {
-  const navigate = useNavigate();
-  const { member, loading: memberLoading } = useCurrentMember();
+const fetchMemberHistory = async ({ memberId, memberName }) => {
+  let query = supabase
+    .from('member_growth_over_time')
+    .select('*')
+    .order('report_month', { ascending: true })
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!memberLoading && !member) {
-      navigate("/login", { replace: true });
-    }
-  }, [memberLoading, member, navigate]);
+  if (memberId) {
+    query = query.eq('member_id', memberId)
+  } else {
+    query = query.eq('member_name', memberName)
+  }
 
-  const memberEmail = member?.email || member?.member_email;
+  const { data, error } = await query
 
+  if (error) throw error
+  return data
+}
+
+const MemberDashboard = ({ memberId, memberName }) => {
   const {
-    data: timeline = [],
-    isLoading: timelineLoading,
-    error: timelineError,
-  } = useQuery({
-    queryKey: ["member-timeline", memberEmail],
-    enabled: !!memberEmail,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("v_member_positions_as_of")
-        .select("*")
-        .eq("member_email", memberEmail)
-        .order("as_of_date", { ascending: true });
+    data: history,
+    isLoading,
+    isError,
+  } = useQuery(
+    ['member_growth', memberId || memberName],
+    () => fetchMemberHistory({ memberId, memberName }),
+    { enabled: Boolean(memberId || memberName) }
+  )
 
-      if (error) {
-        console.error("[MemberDashboard] Timeline query error:", error);
-        throw error;
-      }
-      return data || [];
-    },
-  });
-
-  const latest = useMemo(
-    () => (timeline.length > 0 ? timeline[timeline.length - 1] : null),
-    [timeline]
-  );
-
-  const portfolioValue = latest ? Number(latest.current_value || 0) : 0;
-  const totalUnits = latest ? Number(latest.current_units || 0) : 0;
-  const totalContribution = latest ? Number(latest.total_contribution || 0) : 0;
-  const unitValue = totalUnits > 0 ? portfolioValue / totalUnits : 0;
-  const lastGrowthAmount = latest ? Number(latest.growth_amount || 0) : 0;
-  const lastGrowthPct = latest ? Number(latest.growth_pct || 0) : 0;
-  const ownershipPct = latest ? Number(latest.ownership_percentage || 0) : 0;
-
-  const chartData = useMemo(
-    () =>
-      timeline.map((entry) => ({
-        date: entry.as_of_date
-          ? format(new Date(entry.as_of_date), "MMM yy")
-          : "",
-        value: Number(entry.current_value || 0),
-      })),
-    [timeline]
-  );
-
-  // Loading auth
-  if (memberLoading) {
+  if (isLoading) {
     return (
-      <Page title="Member Dashboard">
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            <p className="text-muted mt-4">Loading...</p>
-          </div>
-        </div>
-      </Page>
-    );
+      <div className="p-6">
+        <div className="text-sm font-semibold">Loading your dashboard…</div>
+      </div>
+    )
   }
 
-  if (!member) {
-    return null;
+  if (isError || !history || history.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="text-sm font-semibold">
+          No valuation history available yet.
+        </div>
+      </div>
+    )
   }
+
+  const latest = history[history.length - 1]
+
+  const totalValue = latest.portfolio_value || 0
+  const totalUnits = latest.total_units || 0
+  const totalContribution = latest.total_contribution || 0
+  const growthAmount = latest.growth_amount || 0
+  const growthPct = latest.growth_pct || 0
 
   return (
-    <Page
-      title="Member Dashboard"
-      subtitle="View your investment performance"
-    >
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-default">
-              Welcome, {member.full_name || member.member_name || "Member"}
-            </h1>
-            <p className="text-muted">
-              Member since{" "}
-              {member.join_date
-                ? format(new Date(member.join_date), "MMM dd, yyyy")
-                : "—"}
-            </p>
-          </div>
-          <Link to="/member/contribute">
-            <Button className="bg-primary hover:bg-primary gap-2">
-              <DollarSign className="w-4 h-4" />
-              Make a Contribution
-            </Button>
-          </Link>
-        </div>
-
-        {/* Timeline error (view / RLS / data issues) */}
-        {timelineError && (
-          <div className="card p-4 border-l-4 border-red-500 flex items-start gap-3">
-            <ArrowRight className="h-4 w-4 text-red-500 mt-0.5" />
-            <p className="text-red-400">
-              We couldn&apos;t load your history. Admin may need to backfill
-              member_monthly_balances or v_member_positions_as_of.
-            </p>
-          </div>
-        )}
-
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Portfolio Value */}
-          <Card className="border-none shadow-lg bg-primary text-white">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">
-                Portfolio Value
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                $
-                {portfolioValue.toLocaleString("en-US", {
-                  maximumFractionDigits: 0,
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Contributions */}
-          <Card className="border-none shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted">
-                Total Contributions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-default">
-                $
-                {totalContribution.toLocaleString("en-US", {
-                  maximumFractionDigits: 0,
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Units + Unit Value */}
-          <Card className="border-none shadow-lg">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted">
-                Units Owned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-default">
-                {totalUnits.toFixed(4)}
-              </div>
-              <p className="text-xs text-muted mt-1">
-                Unit value: ${unitValue.toFixed(4)}
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Last Period Change + Ownership */}
-          <Card className="border-none shadow-lg">
-            <CardHeader className="pb-2 flex justify-between items-center">
-              <CardTitle className="text-sm font-medium text-muted">
-                Last Period Change
-              </CardTitle>
-              <TrendingUp className="w-4 h-4 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {lastGrowthAmount >= 0 ? "+" : "-"}$
-                {Math.abs(lastGrowthAmount).toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                })}
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge
-                  variant="outline"
-                  className={
-                    lastGrowthPct > 0
-                      ? "border-emerald-500 text-emerald-600"
-                      : lastGrowthPct < 0
-                      ? "border-red-500 text-red-600"
-                      : ""
-                  }
-                >
-                  {lastGrowthPct >= 0 ? "+" : ""}
-                  {(lastGrowthPct * 100).toFixed(2)}%
-                </Badge>
-                <Badge variant="outline">
-                  Ownership: {(ownershipPct * 100).toFixed(2)}%
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Chart */}
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-default flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
-              Portfolio value over time
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {timelineLoading ? (
-              <p className="text-muted">Loading performance data…</p>
-            ) : chartData.length === 0 ? (
-              <p className="text-muted">
-                No history available yet. Admin may need to import your legacy
-                balances or allocate units.
-              </p>
-            ) : (
-              <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid stroke="#e2e8f0" />
-                    <XAxis dataKey="date" stroke="#64748b" />
-                    <YAxis
-                      stroke="#64748b"
-                      tickFormatter={(v) =>
-                        `$${Number(v).toLocaleString("en-US", {
-                          maximumFractionDigits: 0,
-                        })}`
-                      }
-                    />
-                    <Tooltip
-                      formatter={(value) =>
-                        `$${Number(value).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                        })}`
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#2563eb"
-                      strokeWidth={3}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Next steps */}
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-default">
-              Next steps
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid sm:grid-cols-2 gap-3">
-            <Link to="/member/contribute">
-              <Button
-                variant="outline"
-                className="w-full h-20 flex flex-col items-center justify-center gap-2"
-              >
-                <DollarSign className="w-5 h-5" />
-                <span className="text-sm font-medium">
-                  Make a contribution
-                </span>
-              </Button>
-            </Link>
-            <Link to="/member/statements">
-              <Button
-                variant="outline"
-                className="w-full h-20 flex flex-col items-center justify-center gap-2"
-              >
-                <ArrowRight className="w-5 h-5" />
-                <span className="text-sm font-medium">View statements</span>
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Welcome back, {latest.member_name}
+        </h1>
+        <p className="text-xs text-gray-500">
+          This is your personal FFA dashboard, built from the same meeting
+          reports as the club dashboard.
+        </p>
       </div>
-    </Page>
-  );
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <div className="text-[11px] font-medium text-gray-500">
+            Your Portfolio Value
+          </div>
+          <div className="mt-1 text-xl font-bold">
+            ${Number(totalValue).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <div className="text-[11px] font-medium text-gray-500">
+            Units Owned
+          </div>
+          <div className="mt-1 text-xl font-bold">
+            {Number(totalUnits).toLocaleString(undefined, {
+              maximumFractionDigits: 4,
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <div className="text-[11px] font-medium text-gray-500">
+            Total Contributed
+          </div>
+          <div className="mt-1 text-xl font-bold">
+            ${Number(totalContribution).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+          <div className="text-[11px] font-medium text-gray-500">
+            Latest Change
+          </div>
+          <div className="mt-1 text-xl font-bold">
+            {growthAmount >= 0 ? '+' : '-'}$
+            {Math.abs(growthAmount).toLocaleString(undefined, {
+              maximumFractionDigits: 2,
+            })}
+          </div>
+          <div
+            className={
+              'mt-1 text-[11px] ' +
+              (growthPct >= 0 ? 'text-emerald-600' : 'text-red-600')
+            }
+          >
+            {growthPct >= 0 ? '▲' : '▼'}{' '}
+            {(growthPct * 100).toFixed(2)}% vs last meeting
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-white p-4 shadow-sm">
+        <div className="mb-3 text-sm font-semibold">
+          Your Portfolio Over Time
+        </div>
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={history}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="report_month"
+                tickFormatter={(value) =>
+                  new Date(value).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: '2-digit',
+                  })
+                }
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis
+                tickFormatter={(value) =>
+                  `$${(value / 1000).toFixed(0)}k`
+                }
+                tick={{ fontSize: 10 }}
+              />
+              <Tooltip
+                formatter={(value, name) => {
+                  if (name === 'portfolio_value') {
+                    return [
+                      `$${Number(value).toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}`,
+                      'Portfolio',
+                    ]
+                  }
+                  return [value, name]
+                }}
+                labelFormatter={(label) =>
+                  new Date(label).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                }
+              />
+              <Line
+                type="monotone"
+                dataKey="portfolio_value"
+                stroke="#16a34a"
+                strokeWidth={2}
+                dot={false}
+                name="Portfolio"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </div>
+  )
 }
+
+export default MemberDashboard

@@ -7,6 +7,7 @@ import { useAuth } from "./contexts/AuthContext";
 
 const adminNav = [
   { title: "Dashboard", url: createPageUrl("AdminDashboard"), icon: "fas fa-table" },
+  { title: "Partner Dashboard", url: "/admin/dashboard", icon: "fas fa-chart-line" },
   { title: "Members", url: "/admin/members", icon: "fas fa-users" },
   { title: "User Management", url: "/admin/user-management", icon: "fas fa-user-shield" },
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },

@@ -11,6 +11,7 @@ import AuthTest from './components/AuthTest.jsx'
 import AuthCallback from './components/AuthCallback.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import AdminDashboard from './components/AdminDashboard.jsx'
+import AdminDashboard_Hero from './Pages/AdminDashboard_Hero.jsx'
 import AdminDashboard_Debug from './Pages/AdminDashboard_Debug.jsx'
 import DebugDataProbe from './DebugDataProbe.jsx'
 import AdminUsers from './components/AdminUsersNew.jsx'
@@ -85,7 +86,7 @@ function App() {
           <Route path="/admin/dashboard" element={
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminDashboard">
-                <AdminDashboard />
+                <AdminDashboard_Hero />
               </Layout>
             </ProtectedRoute>
           } />
