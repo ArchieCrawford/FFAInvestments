@@ -22,10 +22,10 @@ export function useCurrentMember() {
       
       try {
         // Step 1: Get the current authentication session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
         // Step 2: If no session exists, user is not logged in
-        if (sessionError || !sessionData?.session) {
+        if (sessionError || !session) {
           if (mounted) {
             setMember(null)
             setError(null)
@@ -34,7 +34,7 @@ export function useCurrentMember() {
           return
         }
 
-        const userId = sessionData.session.user.id
+        const userId = session.user.id
 
         // Step 3: Query the "members" table using auth_user_id
         const { data: memberData, error: memberError } = await supabase
@@ -49,14 +49,24 @@ export function useCurrentMember() {
           throw memberError
         }
 
-        // Step 5: Return the member data (or null if not found)
+        // Step 5: If no member found, return null
+        if (!memberData) {
+          if (mounted) {
+            setMember(null)
+            setError(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        // Step 6: Return the member data
         if (mounted) {
-          setMember(memberData || null)
+          setMember(memberData)
           setError(null)
           setLoading(false)
         }
       } catch (err) {
-        // Step 6: Basic error handling
+        // Step 7: Basic error handling
         console.error('[useCurrentMember] Unexpected error:', err)
         if (mounted) {
           setError(err)

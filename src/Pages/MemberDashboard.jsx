@@ -30,32 +30,64 @@ export default function MemberDashboard() {
   const navigate = useNavigate();
   const { member, loading: memberLoading } = useCurrentMember();
   const [selectedPositionsDate, setSelectedPositionsDate] = useState("latest");
+  const [session, setSession] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
+  // Check session to prevent redirect loop
   useEffect(() => {
-    if (!memberLoading && !member) {
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      setSessionLoading(false);
+    }
+    checkSession();
+  }, []);
+
+  // Only redirect if both member AND session are null (truly not authenticated)
+  // Do NOT redirect if member exists but timeline is empty
+  useEffect(() => {
+    if (!memberLoading && !sessionLoading && !member && !session) {
       navigate("/login", { replace: true });
     }
-  }, [memberLoading, member, navigate]);
+  }, [memberLoading, sessionLoading, member, session, navigate]);
 
   const {
     data: timeline = [],
     isLoading: timelineLoading,
     error: timelineError,
   } = useQuery({
-    queryKey: ["member-timeline", member?.member_id, member?.id],
+    queryKey: ["member-timeline", member?.member_id, member?.email, member?.member_name],
     enabled: !!member,
     queryFn: async () => {
-      const idsToTry = [member.member_id, member.id].filter(Boolean);
-      for (const id of idsToTry) {
-        const { data, error } = await supabase
-          .from("member_monthly_balances")
-          .select("*")
-          .eq("member_id", id)
-          .order("report_date", { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) return data;
+      // Determine filter column and value based on available data
+      // Prefer member_id, fallback to email, then member_name
+      let filterColumn, filterValue;
+      if (member.member_id) {
+        filterColumn = "member_id";
+        filterValue = member.member_id;
+      } else if (member.email) {
+        filterColumn = "email";
+        filterValue = member.email;
+      } else {
+        filterColumn = "member_name";
+        filterValue = member.member_name;
       }
-      return [];
+
+      console.log('[MemberDashboard] Timeline query filter:', { filterColumn, filterValue });
+
+      const { data, error } = await supabase
+        .from("member_monthly_balances")
+        .select("*")
+        .eq(filterColumn, filterValue)
+        .order("report_date", { ascending: true });
+      
+      if (error) {
+        console.error('[MemberDashboard] Timeline query error:', error);
+        throw error;
+      }
+
+      console.log('[MemberDashboard] Timeline rows found:', data?.length || 0);
+      return data || [];
     },
   });
 
