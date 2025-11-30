@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import schwabApi, { SchwabAPIError } from '../services/schwabApi'
 import { format } from 'date-fns'
-import { useCurrentMember } from '@/lib/authHooks'
 import { Page } from '../components/Page'
 
 const SchwabRawData = () => {
-  const { member, loading: memberLoading } = useCurrentMember();
   const [isLoading, setIsLoading] = useState(false)
   const [selectedEndpoint, setSelectedEndpoint] = useState('')
   const [customEndpoint, setCustomEndpoint] = useState('')
@@ -55,13 +53,6 @@ const SchwabRawData = () => {
       description: 'Get 1-month daily price history for Microsoft'
     }
   ]
-
-  // Protected route - redirect to login if not authenticated
-  useEffect(() => {
-    if (!memberLoading && !member) {
-      navigate('/login', { replace: true });
-    }
-  }, [memberLoading, member, navigate]);
 
   useEffect(() => {
     // Load history from localStorage
@@ -254,15 +245,6 @@ const SchwabRawData = () => {
     
     // Auto-run the API call
     setTimeout(() => handleApiCall(), 100)
-  }
-
-  // Protected route checks
-  if (memberLoading) {
-    return <Page title="Schwab Raw API Data"><div className="card"><div className="card-content">Loading...</div></div></Page>;
-  }
-
-  if (!member) {
-    return null;
   }
 
   return (

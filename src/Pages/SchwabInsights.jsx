@@ -4,10 +4,8 @@ import schwabApi, { SchwabAPIError } from '../services/schwabApi';
 import { supabase } from '../lib/supabase';
 import { captureSchwabSnapshot, getLatestSnapshots } from '../services/schwabSnapshots';
 import { syncSchwabPositionsForToday, getPositionsForAccountDate } from '../services/schwabPositions';
-import { useCurrentMember } from '@/lib/authHooks';
 
 const SchwabInsights = () => {
-  const { member, loading: memberLoading } = useCurrentMember();
   const [historicalSnapshots, setHistoricalSnapshots] = useState([]);
   const [latest, setLatest] = useState(null);
   const [positions, setPositions] = useState([]);
@@ -214,13 +212,6 @@ const SchwabInsights = () => {
     };
   }, []);
 
-  // Protected route - redirect to login if not authenticated
-  useEffect(() => {
-    if (!memberLoading && !member) {
-      navigate('/login', { replace: true });
-    }
-  }, [memberLoading, member, navigate]);
-
   useEffect(() => {
     if (!isAuthenticated || !selectedAccountNumber) return;
 
@@ -313,15 +304,6 @@ const SchwabInsights = () => {
       console.error('RPC call failed:', err);
       setError('RPC call failed: ' + (err.message || 'unknown error'));
     }
-  }
-
-  // Protected route checks
-  if (memberLoading) {
-    return <div className="card">Loading...</div>;
-  }
-
-  if (!member) {
-    return null;
   }
 
   return (
