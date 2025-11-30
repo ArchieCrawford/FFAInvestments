@@ -187,7 +187,8 @@ export default function MemberDashboard() {
     };
   });
 
-  if (memberLoading) {
+  // Show loading state while checking authentication or member data
+  if (memberLoading || sessionLoading) {
     return (
       <Page title="Member Dashboard">
         <div className="flex items-center justify-center p-12">
@@ -200,6 +201,7 @@ export default function MemberDashboard() {
     );
   }
 
+  // If not loading but no member, component will redirect (handled by useEffect above)
   if (!member) {
     return null;
   }
