@@ -104,10 +104,7 @@ export async function captureSchwabSnapshot() {
       
       // Extract balance fields from Schwab API response
       const currentBalances = accountDetails.securitiesAccount?.currentBalances ?? {}
-      const aggregatedBalance = accountDetails.aggregatedBalance ?? null
-      
-      // 2c. Insert snapshot into schwab_account_snapshots
-      const { data: snapshotRecord, error: snapshotError } = await supabase
+            const { data: snapshotRecord, error: snapshotError } = await supabase
         .from('schwab_account_snapshots')
         .insert({
           account_id: accountRecord.id,
@@ -121,8 +118,7 @@ export async function captureSchwabSnapshot() {
           equity: currentBalances.equity ?? null,
           margin_balance: currentBalances.marginBalance ?? null,
           buying_power: currentBalances.buyingPower ?? null,
-          aggregated_balance: aggregatedBalance,
-          raw_snapshot_data: accountDetails
+          raw_json: accountDetails
         })
         .select()
         .single()
