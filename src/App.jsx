@@ -27,6 +27,7 @@ import MemberDashboard_Debug from './Pages/MemberDashboard_Debug.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
 import MemberDirectory from './Pages/MemberDirectory.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
+import MemberAccounts from './Pages/MemberAccounts.jsx'
 import MemberAccountDashboard from './components/MemberAccountDashboard.jsx'
 import EducationCatalog from './Pages/EducationCatalog.jsx'
 import UnitValueSystemEducation from './Pages/UnitValueSystemEducation.jsx'
@@ -232,6 +233,13 @@ function App() {
             <ProtectedRoute>
               <Layout currentPageName="MemberContribute">
                 <MemberContribute />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/member/accounts" element={
+            <ProtectedRoute>
+              <Layout currentPageName="MemberAccounts">
+                <MemberAccounts />
               </Layout>
             </ProtectedRoute>
           } />

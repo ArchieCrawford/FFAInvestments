@@ -74,6 +74,7 @@ export default function MemberDashboard() {
       }
 
       console.log('[MemberDashboard] Timeline query filter:', { filterColumn, filterValue });
+      console.log('[MemberDashboard] Full member object:', member);
 
       const { data, error } = await supabase
         .from("member_monthly_balances")
@@ -87,6 +88,7 @@ export default function MemberDashboard() {
       }
 
       console.log('[MemberDashboard] Timeline rows found:', data?.length || 0);
+      console.log('[MemberDashboard] Timeline data sample:', data?.[0]);
       return data || [];
     },
   });

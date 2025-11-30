@@ -443,11 +443,11 @@ const SchwabInsights = () => {
                   <tbody>
                     {positions.map((pos, idx) => {
                       // Handle both API format (nested) and DB format (flattened)
-                      const symbol = pos.symbol || pos.instrument?.symbol || '—';
-                      const description = pos.description || pos.instrument?.description || '—';
-                      const quantity = pos.quantity ?? pos.longQuantity ?? pos.shortQuantity ?? 0;
-                      const marketValue = pos.market_value ?? pos.marketValue ?? 0;
-                      const dayPL = pos.current_day_pl ?? pos.currentDayProfitLoss ?? 0;
+                      const symbol = pos.instrument?.symbol || pos.symbol || '—';
+                      const description = pos.instrument?.description || pos.security_name || pos.description || '—';
+                      const quantity = pos.longQuantity ?? pos.quantity ?? pos.shortQuantity ?? 0;
+                      const marketValue = pos.marketValue ?? pos.market_value ?? 0;
+                      const dayPL = pos.currentDayProfitLoss ?? pos.current_day_pl ?? 0;
                       
                       return (
                         <tr key={idx}>
