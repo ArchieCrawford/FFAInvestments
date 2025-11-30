@@ -205,8 +205,28 @@ export default function MemberDashboard() {
 
   // If not loading but no member, component will redirect (handled by useEffect above)
   if (!member) {
-    return null;
-  }
+  return (
+    <Page title="Member Dashboard" subtitle="We couldn't find your member profile">
+      <div className="max-w-xl mx-auto mt-8 space-y-4">
+        <h1 className="text-2xl font-bold text-default">
+          We couldn&apos;t find your member record
+        </h1>
+        <p className="text-muted text-sm">
+          You are logged in, but there is no matching row in the <code>members</code> table yet.
+        </p>
+        <p className="text-xs text-muted">
+          The app tries to match by <code>auth_user_id</code> first, and then by your email
+          (<code>supabase.auth</code> user email). Make sure your imported member row has the
+          same email, or set <code>auth_user_id</code> on that member.
+        </p>
+        <p className="text-xs text-muted">
+          If you just updated the database, try refreshing the page.
+        </p>
+      </div>
+    </Page>
+  );
+}
+
 
   return (
     <Page
