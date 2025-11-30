@@ -49,6 +49,7 @@ import BeardstownLadies from './Pages/BeardstownLadies/index.jsx'
 import MemberFeed from './Pages/MemberFeed/MemberFeed.jsx'
 import SettingsPage from './Pages/Settings/SettingsPage.jsx'
 import ResetPassword from './Pages/ResetPassword.jsx'
+import ClaimAccount from './Pages/ClaimAccount.jsx'
 
 // Admin Components  
 import AdminDues from './Pages/AdminDues/index.jsx'
@@ -316,6 +317,8 @@ function App() {
           } />
           
           <Route path="/reset-password" element={<ResetPassword />} />
+          
+          <Route path="/claim-account" element={<ClaimAccount />} />
 
           {/* Redirect any unknown routes to login instead of protected root */}
           <Route path="*" element={<Navigate to="/login" replace />} />

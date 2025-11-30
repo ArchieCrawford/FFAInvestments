@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
-import { getCurrentMemberAccount } from './ffaApi'
 import { supabase } from './supabase'
 
-// Lightweight hook to load the current member row from the members table
+/**
+ * useCurrentMember Hook
+ * 
+ * Returns the current authenticated member from the "members" table
+ * by matching the auth user's ID to the auth_user_id column.
+ * 
+ * @returns {Object} { member, loading, error }
+ */
 export function useCurrentMember() {
   const [member, setMember] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -13,11 +19,13 @@ export function useCurrentMember() {
 
     async function load() {
       setLoading(true)
+      
       try {
-        const { data: userData, error: userErr } = await supabase.auth.getUser()
+        // Step 1: Get the current authentication session
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
-        // Treat the missing-session message as a non-error (logged out)
-        if (userErr && userErr.message === 'Auth session missing!') {
+        // Step 2: If no session exists, user is not logged in
+        if (sessionError || !sessionData?.session) {
           if (mounted) {
             setMember(null)
             setError(null)
@@ -26,24 +34,30 @@ export function useCurrentMember() {
           return
         }
 
-        if (userErr) throw userErr
+        const userId = sessionData.session.user.id
 
-        const user = userData?.user
-        if (!user) {
-          if (mounted) {
-            setMember(null)
-            setError(null)
-            setLoading(false)
-          }
-          return
+        // Step 3: Query the "members" table using auth_user_id
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .select('*')
+          .eq('auth_user_id', userId)
+          .maybeSingle()
+
+        // Step 4: Handle query errors
+        if (memberError && memberError.code !== 'PGRST116') {
+          console.warn('[useCurrentMember] Error fetching member:', memberError)
+          throw memberError
         }
 
-        const profile = await getCurrentMemberAccount()
+        // Step 5: Return the member data (or null if not found)
         if (mounted) {
-          setMember(profile)
+          setMember(memberData || null)
+          setError(null)
           setLoading(false)
         }
       } catch (err) {
+        // Step 6: Basic error handling
+        console.error('[useCurrentMember] Unexpected error:', err)
         if (mounted) {
           setError(err)
           setMember(null)
