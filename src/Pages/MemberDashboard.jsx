@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -18,179 +18,68 @@ import {
   CartesianGrid,
 } from "recharts";
 import { format } from "date-fns";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export default function MemberDashboard() {
   const navigate = useNavigate();
   const { member, loading: memberLoading } = useCurrentMember();
-  const [selectedPositionsDate, setSelectedPositionsDate] = useState("latest");
-  const [session, setSession] = useState(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
 
-  // Check session to prevent redirect loop
+  // Redirect if not logged in
   useEffect(() => {
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setSessionLoading(false);
-    }
-    checkSession();
-  }, []);
-
-  // Only redirect if both member AND session are null (truly not authenticated)
-  // Do NOT redirect if member exists but timeline is empty
-  useEffect(() => {
-    if (!memberLoading && !sessionLoading && !member && !session) {
+    if (!memberLoading && !member) {
       navigate("/login", { replace: true });
     }
-  }, [memberLoading, sessionLoading, member, session, navigate]);
+  }, [memberLoading, member, navigate]);
+
+  const memberEmail = member?.email || member?.member_email;
 
   const {
     data: timeline = [],
     isLoading: timelineLoading,
     error: timelineError,
   } = useQuery({
-    queryKey: ["member-timeline", member?.member_id, member?.email, member?.member_name],
-    enabled: !!member,
+    queryKey: ["member-timeline", memberEmail],
+    enabled: !!memberEmail,
     queryFn: async () => {
-      // Determine filter column and value based on available data
-      // Prefer member_id, fallback to email, then member_name
-      let filterColumn, filterValue;
-      if (member.member_id) {
-        filterColumn = "member_id";
-        filterValue = member.member_id;
-      } else if (member.email) {
-        filterColumn = "email";
-        filterValue = member.email;
-      } else {
-        filterColumn = "member_name";
-        filterValue = member.member_name;
-      }
-
-      console.log('[MemberDashboard] Timeline query filter:', { filterColumn, filterValue });
-      console.log('[MemberDashboard] Full member object:', member);
-
       const { data, error } = await supabase
-        .from("member_monthly_balances")
+        .from("v_member_positions_as_of")
         .select("*")
-        .eq(filterColumn, filterValue)
-        .order("report_date", { ascending: true });
-      
+        .eq("member_email", memberEmail)
+        .order("as_of_date", { ascending: true });
+
       if (error) {
-        console.error('[MemberDashboard] Timeline query error:', error);
+        console.error("[MemberDashboard] Timeline query error:", error);
         throw error;
       }
-
-      console.log('[MemberDashboard] Timeline rows found:', data?.length || 0);
-      console.log('[MemberDashboard] Timeline data sample:', data?.[0]);
       return data || [];
     },
   });
 
-  const {
-    data: positions = [],
-    isLoading: positionsLoading,
-    error: positionsError,
-  } = useQuery({
-    queryKey: ["member-positions", member?.member_id, member?.id],
-    enabled: !!member,
-    queryFn: async () => {
-      const idsToTry = [member.member_id, member.id].filter(Boolean);
-      for (const id of idsToTry) {
-        const { data, error } = await supabase
-          .from("v_member_positions_as_of")
-          .select("*")
-          .eq("member_id", id)
-          .order("as_of_date", { ascending: true });
-        if (error) throw error;
-        if (data && data.length > 0) return data;
-      }
-      return [];
-    },
-  });
+  const latest = useMemo(
+    () => (timeline.length > 0 ? timeline[timeline.length - 1] : null),
+    [timeline]
+  );
 
-  const latest = timeline.length > 0 ? timeline[timeline.length - 1] : null;
-
-  const portfolioValue = latest ? Number(latest.portfolio_value || latest.value || 0) : 0;
-  const totalUnits = latest ? Number(latest.total_units || latest.units || 0) : 0;
-  const totalContribution = latest
-    ? Number(latest.total_contribution || latest.contributions || 0)
-    : 0;
+  const portfolioValue = latest ? Number(latest.current_value || 0) : 0;
+  const totalUnits = latest ? Number(latest.current_units || 0) : 0;
+  const totalContribution = latest ? Number(latest.total_contribution || 0) : 0;
   const unitValue = totalUnits > 0 ? portfolioValue / totalUnits : 0;
   const lastGrowthAmount = latest ? Number(latest.growth_amount || 0) : 0;
   const lastGrowthPct = latest ? Number(latest.growth_pct || 0) : 0;
-  const ownershipPct =
-    latest && latest.ownership_pct != null ? Number(latest.ownership_pct) : null;
+  const ownershipPct = latest ? Number(latest.ownership_percentage || 0) : 0;
 
-  const chartData = timeline.map((entry) => ({
-    date: entry.report_date
-      ? format(new Date(entry.report_date), "MMM yy")
-      : entry.for_month
-      ? format(new Date(entry.for_month), "MMM yy")
-      : "",
-    value: Number(entry.portfolio_value || entry.value || 0),
-  }));
+  const chartData = useMemo(
+    () =>
+      timeline.map((entry) => ({
+        date: entry.as_of_date
+          ? format(new Date(entry.as_of_date), "MMM yy")
+          : "",
+        value: Number(entry.current_value || 0),
+      })),
+    [timeline]
+  );
 
-  const positionDates = useMemo(() => {
-    const dates = Array.from(
-      new Set(
-        positions
-          .map((p) => p.as_of_date)
-          .filter(Boolean)
-      )
-    );
-    return dates.sort((a, b) => new Date(a) - new Date(b));
-  }, [positions]);
-
-  const latestPositionsDate =
-    positionDates.length > 0 ? positionDates[positionDates.length - 1] : null;
-
-  const effectivePositionsDate =
-    selectedPositionsDate === "latest" ? latestPositionsDate : selectedPositionsDate;
-
-  const positionsForSelectedDate = useMemo(() => {
-    if (!effectivePositionsDate) return [];
-    return positions.filter((p) => p.as_of_date === effectivePositionsDate);
-  }, [positions, effectivePositionsDate]);
-
-  const totalValueForSelectedDate = positionsForSelectedDate.reduce((sum, p) => {
-    const v =
-      p.position_value ??
-      p.market_value ??
-      p.position_market_value ??
-      p.value ??
-      0;
-    return sum + Number(v || 0);
-  }, 0);
-
-  const positionsTableRows = positionsForSelectedDate.map((p) => {
-    const rawValue =
-      p.position_value ??
-      p.market_value ??
-      p.position_market_value ??
-      p.value ??
-      0;
-    const value = Number(rawValue || 0);
-    const pctOfMember =
-      totalValueForSelectedDate > 0 ? (value / totalValueForSelectedDate) * 100 : 0;
-
-    return {
-      symbol: p.symbol,
-      description: p.description || p.security_name || "",
-      units: Number(p.units || p.quantity || p.long_quantity || 0),
-      value,
-      pctOfMember,
-    };
-  });
-
-  // Show loading state while checking authentication or member data
-  if (memberLoading || sessionLoading) {
+  // Loading auth
+  if (memberLoading) {
     return (
       <Page title="Member Dashboard">
         <div className="flex items-center justify-center p-12">
@@ -203,30 +92,9 @@ export default function MemberDashboard() {
     );
   }
 
-  // If not loading but no member, component will redirect (handled by useEffect above)
   if (!member) {
-  return (
-    <Page title="Member Dashboard" subtitle="We couldn't find your member profile">
-      <div className="max-w-xl mx-auto mt-8 space-y-4">
-        <h1 className="text-2xl font-bold text-default">
-          We couldn&apos;t find your member record
-        </h1>
-        <p className="text-muted text-sm">
-          You are logged in, but there is no matching row in the <code>members</code> table yet.
-        </p>
-        <p className="text-xs text-muted">
-          The app tries to match by <code>auth_user_id</code> first, and then by your email
-          (<code>supabase.auth</code> user email). Make sure your imported member row has the
-          same email, or set <code>auth_user_id</code> on that member.
-        </p>
-        <p className="text-xs text-muted">
-          If you just updated the database, try refreshing the page.
-        </p>
-      </div>
-    </Page>
-  );
-}
-
+    return null;
+  }
 
   return (
     <Page
@@ -234,17 +102,11 @@ export default function MemberDashboard() {
       subtitle="View your investment performance"
     >
       <div className="max-w-6xl mx-auto space-y-6">
-        {(timelineError || positionsError) && (
-          <div className="card p-4 border-l-4 border-red-500 text-sm text-red-500">
-            {timelineError && <div>Timeline error: {timelineError.message}</div>}
-            {positionsError && <div>Positions error: {positionsError.message}</div>}
-          </div>
-        )}
-
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-default">
-              Welcome, {member.full_name || member.member_name}
+              Welcome, {member.full_name || member.member_name || "Member"}
             </h1>
             <p className="text-muted">
               Member since{" "}
@@ -261,7 +123,20 @@ export default function MemberDashboard() {
           </Link>
         </div>
 
+        {/* Timeline error (view / RLS / data issues) */}
+        {timelineError && (
+          <div className="card p-4 border-l-4 border-red-500 flex items-start gap-3">
+            <ArrowRight className="h-4 w-4 text-red-500 mt-0.5" />
+            <p className="text-red-400">
+              We couldn&apos;t load your history. Admin may need to backfill
+              member_monthly_balances or v_member_positions_as_of.
+            </p>
+          </div>
+        )}
+
+        {/* Stats cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Portfolio Value */}
           <Card className="border-none shadow-lg bg-primary text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium opacity-90">
@@ -275,14 +150,10 @@ export default function MemberDashboard() {
                   maximumFractionDigits: 0,
                 })}
               </div>
-              {ownershipPct != null && (
-                <p className="text-xs mt-2 opacity-90">
-                  Ownership of club: {(ownershipPct * 100).toFixed(2)}%
-                </p>
-              )}
             </CardContent>
           </Card>
 
+          {/* Total Contributions */}
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted">
@@ -299,6 +170,7 @@ export default function MemberDashboard() {
             </CardContent>
           </Card>
 
+          {/* Units + Unit Value */}
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted">
@@ -315,6 +187,7 @@ export default function MemberDashboard() {
             </CardContent>
           </Card>
 
+          {/* Last Period Change + Ownership */}
           <Card className="border-none shadow-lg">
             <CardHeader className="pb-2 flex justify-between items-center">
               <CardTitle className="text-sm font-medium text-muted">
@@ -329,23 +202,29 @@ export default function MemberDashboard() {
                   minimumFractionDigits: 2,
                 })}
               </div>
-              <Badge
-                variant="outline"
-                className={
-                  lastGrowthPct > 0
-                    ? "border-emerald-500 text-emerald-600"
-                    : lastGrowthPct < 0
-                    ? "border-red-500 text-red-600"
-                    : ""
-                }
-              >
-                {lastGrowthPct >= 0 ? "+" : ""}
-                {(lastGrowthPct * 100).toFixed(2)}%
-              </Badge>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge
+                  variant="outline"
+                  className={
+                    lastGrowthPct > 0
+                      ? "border-emerald-500 text-emerald-600"
+                      : lastGrowthPct < 0
+                      ? "border-red-500 text-red-600"
+                      : ""
+                  }
+                >
+                  {lastGrowthPct >= 0 ? "+" : ""}
+                  {(lastGrowthPct * 100).toFixed(2)}%
+                </Badge>
+                <Badge variant="outline">
+                  Ownership: {(ownershipPct * 100).toFixed(2)}%
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Chart */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-default flex items-center gap-2">
@@ -357,14 +236,18 @@ export default function MemberDashboard() {
             {timelineLoading ? (
               <p className="text-muted">Loading performance data…</p>
             ) : chartData.length === 0 ? (
-              <p className="text-muted">No history available yet.</p>
+              <p className="text-muted">
+                No history available yet. Admin may need to import your legacy
+                balances or allocate units.
+              </p>
             ) : (
               <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
-                    <CartesianGrid />
-                    <XAxis dataKey="date" />
+                    <CartesianGrid stroke="#e2e8f0" />
+                    <XAxis dataKey="date" stroke="#64748b" />
                     <YAxis
+                      stroke="#64748b"
                       tickFormatter={(v) =>
                         `$${Number(v).toLocaleString("en-US", {
                           maximumFractionDigits: 0,
@@ -381,6 +264,7 @@ export default function MemberDashboard() {
                     <Line
                       type="monotone"
                       dataKey="value"
+                      stroke="#2563eb"
                       strokeWidth={3}
                       dot={false}
                     />
@@ -391,89 +275,7 @@ export default function MemberDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-lg font-bold text-default">
-              Your positions
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted">As of</span>
-              <Select
-                value={selectedPositionsDate}
-                onValueChange={setSelectedPositionsDate}
-                disabled={positionDates.length === 0}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Select date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="latest">Latest</SelectItem>
-                  {positionDates.map((d) => (
-                    <SelectItem key={d} value={d}>
-                      {format(new Date(d), "MMM dd, yyyy")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {positionsLoading ? (
-              <p className="text-muted">Loading positions…</p>
-            ) : positionsTableRows.length === 0 ? (
-              <p className="text-muted">
-                No positions found for the selected date.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left">
-                      <th className="py-2 pr-4">Symbol</th>
-                      <th className="py-2 pr-4">Description</th>
-                      <th className="py-2 pr-4 text-right">Units</th>
-                      <th className="py-2 pr-4 text-right">Value</th>
-                      <th className="py-2 pr-0 text-right">% of portfolio</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {positionsTableRows.map((row) => (
-                      <tr key={row.symbol} className="border-b border-border/60">
-                        <td className="py-2 pr-4 font-semibold">
-                          {row.symbol}
-                        </td>
-                        <td className="py-2 pr-4 text-muted">
-                          {row.description || "—"}
-                        </td>
-                        <td className="py-2 pr-4 text-right font-mono">
-                          {row.units.toFixed(4)}
-                        </td>
-                        <td className="py-2 pr-4 text-right font-mono">
-                          $
-                          {row.value.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </td>
-                        <td className="py-2 pr-0 text-right">
-                          {row.pctOfMember.toFixed(2)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <p className="text-xs text-muted mt-2 text-right">
-                  Total: $
-                  {totalValueForSelectedDate.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
+        {/* Next steps */}
         <Card className="border-none shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-default">
@@ -487,7 +289,9 @@ export default function MemberDashboard() {
                 className="w-full h-20 flex flex-col items-center justify-center gap-2"
               >
                 <DollarSign className="w-5 h-5" />
-                <span className="text-sm font-medium">Make a contribution</span>
+                <span className="text-sm font-medium">
+                  Make a contribution
+                </span>
               </Button>
             </Link>
             <Link to="/member/statements">
