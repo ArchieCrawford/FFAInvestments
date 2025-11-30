@@ -13,7 +13,7 @@ export default function EnrichSymbolsButton() {
 
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://<YOUR_PROJECT_REF>.functions.supabase.co'}/enrich-symbols`,
+        `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'https://wynbgrgmrygkodcdumii.functions.supabase.co'}/enrich-symbols`,
         {
           method: 'POST',
           headers: {

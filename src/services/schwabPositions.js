@@ -45,22 +45,26 @@ export async function syncSchwabPositionsForToday() {
   // 3) Map Schwab positions → rows for schwab_positions
   const rows = positions.map(pos => {
     const instrument = pos.instrument || {}
-    const qty = pos.longQuantity ?? pos.shortQuantity ?? pos.quantity ?? null
+    const longQty = pos.longQuantity ?? null
+    const shortQty = pos.shortQuantity ?? null
     const mv = pos.marketValue ?? null
-    const price = pos.averagePrice ?? (mv && qty ? mv / qty : null)
+    const avgPrice = pos.averagePrice ?? null
+    const dayPL = pos.currentDayProfitLoss ?? null
+    const dayPLPct = pos.currentDayProfitLossPercentage ?? null
+    const costBasis = pos.averagePrice ?? null
 
     return {
+      snapshot_date: today,
       account_number: accountNumber,
-      as_of_date: today,
       symbol: instrument.symbol || null,
       description: instrument.description || null,
-      asset_type: instrument.assetType || null,
-      quantity: qty,
-      price,
+      long_quantity: longQty,
+      short_quantity: shortQty,
+      average_price: avgPrice,
       market_value: mv,
-      cost_basis: pos.averagePrice ?? null,
-      side: pos.longQuantity ? 'LONG' : pos.shortQuantity ? 'SHORT' : null,
-      raw_json: pos
+      current_day_pl: dayPL,
+      current_day_pl_pct: dayPLPct,
+      cost_basis: costBasis
     }
   })
 
@@ -70,7 +74,7 @@ export async function syncSchwabPositionsForToday() {
     .from('schwab_positions')
     .delete()
     .eq('account_number', accountNumber)
-    .eq('as_of_date', today)
+    .eq('snapshot_date', today)
   
   console.log('🔁 [syncSchwabPositionsForToday] Delete result:', { deleteError })
 
@@ -99,7 +103,7 @@ export async function getPositionsForAccountDate(accountNumber, dateISO) {
     .from('schwab_positions')
     .select('*')
     .eq('account_number', accountNumber)
-    .eq('as_of_date', dateISO)
+    .eq('snapshot_date', dateISO)
     .order('market_value', { ascending: false })
 
   if (error) throw new Error(`Failed to fetch Schwab positions: ${error.message}`)
