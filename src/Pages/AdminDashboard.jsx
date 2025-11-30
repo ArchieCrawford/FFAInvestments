@@ -86,6 +86,40 @@ export default function AdminDashboard() {
     },
   });
 
+  // Fallback AUM from v_member_positions_as_of (if unit_prices.total_aum is unavailable)
+  const {
+    data: latestPositions = [],
+    isLoading: positionsLoading,
+    error: positionsError,
+  } = useQuery({
+    queryKey: ["latest-member-positions"],
+    queryFn: async () => {
+      // Get latest snapshot rows from v_member_positions_as_of
+      const { data, error } = await supabase
+        .from("v_member_positions_as_of")
+        .select("as_of_date,current_value")
+        .order("as_of_date", { ascending: false })
+        .limit(500); // keep it reasonable
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // derive AUM from view if needed
+  const viewAumFallback = useMemo(() => {
+    if (!latestPositions || latestPositions.length === 0) return null;
+    const latestDate = latestPositions[0].as_of_date;
+    if (!latestDate) return null;
+
+    return latestPositions
+      .filter((row) => row.as_of_date === latestDate)
+      .reduce(
+        (sum, row) => sum + Number(row.current_value || 0),
+        0
+      );
+  }, [latestPositions]);
+
   // Org-level historical AUM curve from org_balance_history
   useEffect(() => {
     let active = true;
@@ -134,7 +168,10 @@ export default function AdminDashboard() {
     return { totalValue, dateLabel };
   }, [orgHistory]);
 
-  const totalAUM = latestUnitPrice?.total_aum || 0;
+  const totalAUM =
+    (latestUnitPrice && latestUnitPrice.total_aum) ??
+    viewAumFallback ??
+    0;
   const totalMembers = members.length;
   const activeAccounts = accounts.filter((a) => a.status === "active").length;
   const pendingKYC = members.filter((m) => m.kyc_status === "pending").length;
