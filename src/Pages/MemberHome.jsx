@@ -208,10 +208,10 @@ const MemberHome = () => {
                   description: 'Record contributions and withdrawals'
                 },
                 {
-                  label: 'Profile Directory',
+                  label: 'Member Feed',
                   icon: <User size={18} />,
-                  path: '/member/directory',
-                  description: 'Connect with other members'
+                  path: '/member/feed',
+                  description: 'Catch up on club updates and discussions'
                 }
               ].map((action) => (
                 <button

@@ -62,8 +62,8 @@ const SettingsPage = () => {
 
               <label className="form-label">Default landing page</label>
               <select className="input" value={form.default_landing_page} onChange={e => setForm({ ...form, default_landing_page: e.target.value })}>
-                <option value="/member/home">Member Dashboard</option>
-                <option value="/unit-price">Unit Price History</option>
+                <option value="/member/accounts">Member Dashboard</option>
+                <option value="/admin/unit-price">Unit Price History</option>
                 <option value="/education/catalog">Education Catalog</option>
               </select>
 

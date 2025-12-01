@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 import { Page } from '../components/Page'
 import { 
-  LayoutDashboard, Users, UserCheck, Upload, Settings, 
+  LayoutDashboard, Users, UserCheck, Settings, 
   BookOpen, DollarSign, Building2 
 } from 'lucide-react'
 
@@ -34,7 +34,6 @@ const AdminPanel = () => {
     { to: "/admin/dashboard", label: "Admin Dashboard", icon: <LayoutDashboard size={20} /> },
     { to: "/admin/users", label: "Manage Users", icon: <Users size={20} /> },
     { to: "/admin/members", label: "Members", icon: <UserCheck size={20} /> },
-    { to: "/admin/import", label: "Import Data", icon: <Upload size={20} /> },
     { to: "/admin/settings", label: "Settings", icon: <Settings size={20} /> },
     { to: "/admin/ledger", label: "Ledger", icon: <BookOpen size={20} /> },
     { to: "/admin/unit-price", label: "Unit Price", icon: <DollarSign size={20} /> },

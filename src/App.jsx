@@ -15,16 +15,13 @@ import AdminPositions from './Pages/AdminPositions.jsx'
 import AdminLedger from './Pages/AdminLedger.jsx'
 import AdminUnitPrice from './Pages/AdminUnitPrice.jsx'
 import AdminEducation from './Pages/AdminEducation.jsx'
-import AdminImport from './components/AdminImport.jsx'
 import AdminSettings from './Pages/AdminSettings.jsx'
 import AdminMembers from './Pages/AdminMembers.jsx'
 import AdminUserManagement from './Pages/AdminUserManagement.jsx'
 import MemberDashboard from './Pages/MemberDashboard.jsx'
 import MemberDashboard_Debug from './Pages/MemberDashboard_Debug.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
-import MemberDirectory from './Pages/MemberDirectory.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
-import MemberAccounts from './Pages/MemberAccounts.jsx'
 import MemberAccountDashboard from './components/MemberAccountDashboard.jsx'
 import EducationCatalog from './Pages/EducationCatalog.jsx'
 import UnitValueSystemEducation from './Pages/UnitValueSystemEducation.jsx'
@@ -38,7 +35,6 @@ import AdminPanel from './Pages/AdminPanel.jsx'
 import SchwabInsightsPage from './Pages/SchwabInsightsPage.jsx'
 import SchwabRawData from './Pages/SchwabRawData.jsx'
 import SchwabCallback from './Pages/SchwabCallback.jsx'
-import AdminOrgBalance from './Pages/AdminOrgBalance.jsx'
 
 // Education Components
 import BeardstownLadies from './Pages/BeardstownLadies/index.jsx'
@@ -148,13 +144,6 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/admin/import" element={
-            <ProtectedRoute requireAdmin={true}>
-              <Layout currentPageName="AdminImport">
-                <AdminImport />
-              </Layout>
-            </ProtectedRoute>
-          } />
           <Route path="/admin/user-management" element={
             <ProtectedRoute>
               <Layout currentPageName="AdminUserManagement">
@@ -183,13 +172,6 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/admin/org-balance" element={
-            <ProtectedRoute>
-              <Layout currentPageName="AdminOrgBalance">
-                <AdminOrgBalance />
-              </Layout>
-            </ProtectedRoute>
-          } />
           <Route path="/admin/schwab/insights" element={
             <ProtectedRoute>
               <Layout currentPageName="SchwabInsights">
@@ -213,9 +195,14 @@ function App() {
           } />
           <Route path="/admin/schwab/callback" element={<SchwabCallback />} />
           <Route path="/callback" element={<SchwabCallback />} />
+          <Route path="/member" element={
+            <ProtectedRoute>
+              <Navigate to="/member/accounts" replace />
+            </ProtectedRoute>
+          } />
           <Route path="/member/home" element={
             <ProtectedRoute>
-              <Navigate to="/admin/dashboard" replace />
+              <Navigate to="/member/accounts" replace />
             </ProtectedRoute>
           } />
           <Route path="/member/dashboard" element={
@@ -241,15 +228,8 @@ function App() {
           } />
           <Route path="/member/accounts" element={
             <ProtectedRoute>
-              <Layout currentPageName="MemberAccounts">
-                <MemberAccounts />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/member/directory" element={
-            <ProtectedRoute>
-              <Layout currentPageName="MemberDirectory">
-                <MemberDirectory />
+              <Layout currentPageName="MemberHome">
+                <MemberHome />
               </Layout>
             </ProtectedRoute>
           } />
@@ -263,13 +243,6 @@ function App() {
           <Route path="/education/catalog" element={
             <ProtectedRoute>
               <EducationCatalog />
-            </ProtectedRoute>
-          } />
-          <Route path="/unit-price" element={
-            <ProtectedRoute>
-              <Layout currentPageName="UnitPrice">
-                <AdminUnitPrice />
-              </Layout>
             </ProtectedRoute>
           } />
           <Route path="/education/unit-value-system" element={

@@ -7,11 +7,8 @@ export const createPageUrl = (pageName) => {
     'AdminLedger': '/admin/ledger',
     'AdminUnitPrice': '/admin/unit-price',
     'AdminEducation': '/admin/education',
-    'AdminImport': '/admin/import',
-    'AdminFFAImport': '/admin/ffa-import',
     'AdminSchwab': '/admin/schwab',
     'MemberDashboard': '/member/dashboard',
-    'MemberAccounts': '/member/accounts',
     'MemberContribute': '/member/contribute',
     'EducationCatalog': '/education/catalog'
   };

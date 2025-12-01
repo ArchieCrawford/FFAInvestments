@@ -7,7 +7,7 @@ import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign, User } from 
 // Styles centralized in global index.css with semantic theme classes
 
 const ModernLogin = () => {
-  const { user, signIn, signUp, loading, error, clearError } = useAuth()
+  const { user, profile, signIn, signUp, loading, error, clearError } = useAuth()
   const [mode, setMode] = useState('signin')
   const [formData, setFormData] = useState({
     email: '',
@@ -57,8 +57,10 @@ const ModernLogin = () => {
 
   // Redirect if user is logged in
   if (user) {
-    const from = location.state?.from?.pathname || '/dashboard'
-    return <Navigate to={from} replace />
+    const from = location.state?.from?.pathname
+    const defaultDestination = profile?.role === 'member' ? '/member/accounts' : '/admin/dashboard'
+    const target = from && from !== '/login' ? from : defaultDestination
+    return <Navigate to={target} replace />
   }
 
   const handleSubmit = async (e) => {
