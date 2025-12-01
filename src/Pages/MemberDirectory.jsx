@@ -35,7 +35,7 @@ const fetchDirectoryData = async () => {
 
 const MemberDirectory = () => {
   const {
-    data: directory,
+    data: directory = [],
     isLoading,
     isError,
     error,
@@ -52,7 +52,7 @@ const MemberDirectory = () => {
         )}
 
         {isError && (
-          <div className="card p-4 text-sm text-red-500">
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
             Error loading directory: {error?.message || 'Unknown error'}
           </div>
         )}

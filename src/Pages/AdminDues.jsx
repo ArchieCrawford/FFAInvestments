@@ -1,7 +1,7 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import supabase from '../supabase'
-import Page from '../components/Page'
+import { supabase } from '@/lib/supabase'
+import { Page } from '@/components/Page'
 
 const fetchDuesData = async () => {
   const [{ data: members, error: membersError }, { data: dues, error: duesError }] =
@@ -35,7 +35,7 @@ const fetchDuesData = async () => {
 
 const AdminDues = () => {
   const {
-    data: rows,
+    data: rows = [],
     isLoading,
     isError,
     error,
@@ -54,7 +54,7 @@ const AdminDues = () => {
         )}
 
         {isError && (
-          <div className="card p-4 text-sm text-red-500">
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
             Error loading dues: {error?.message || 'Unknown error'}
           </div>
         )}

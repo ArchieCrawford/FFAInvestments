@@ -1,30 +1,24 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from './ThemeProvider.jsx'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import Layout from './Layout.jsx'
-import Login from './components/Login.jsx'
-
 import ModernLogin from './components/ModernLogin.jsx'
-import AuthTest from './components/AuthTest.jsx'
 import AuthCallback from './components/AuthCallback.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
-import AdminDashboard from './components/AdminDashboard.jsx'
 import AdminDashboard_Hero from './Pages/AdminDashboard_Hero.jsx'
 import AdminDashboard_Debug from './Pages/AdminDashboard_Debug.jsx'
 import DebugDataProbe from './DebugDataProbe.jsx'
 import AdminUsers from './components/AdminUsersNew.jsx'
-import AdminAccounts from './components/AdminAccounts.jsx'
 import AdminPositions from './Pages/AdminPositions.jsx'
 import AdminLedger from './Pages/AdminLedger.jsx'
-import AdminUnitPriceComponent from './components/AdminUnitPriceNew.jsx'
-import AdminUnitPricePage from './Pages/AdminUnitPrice.jsx'
+import AdminUnitPrice from './Pages/AdminUnitPrice.jsx'
 import AdminEducation from './Pages/AdminEducation.jsx'
 import AdminImport from './components/AdminImport.jsx'
 import AdminSettings from './Pages/AdminSettings.jsx'
-import AdminMembers from './Pages/AdminMembers_Clean.jsx'
-import UserManagement from './Pages/UserManagement.jsx'
+import AdminMembers from './Pages/AdminMembers.jsx'
+import AdminUserManagement from './Pages/AdminUserManagement.jsx'
 import MemberDashboard from './Pages/MemberDashboard.jsx'
 import MemberDashboard_Debug from './Pages/MemberDashboard_Debug.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
@@ -56,7 +50,7 @@ import ResetPassword from './Pages/ResetPassword.jsx'
 import ClaimAccount from './Pages/ClaimAccount.jsx'
 
 // Admin Components  
-import AdminDues from './Pages/AdminDues/index.jsx'
+import AdminDues from './Pages/AdminDues.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
 import AdminSeedUnitValuation from './Pages/AdminSeedUnitValuation.jsx'
 
@@ -135,7 +129,7 @@ function App() {
           <Route path="/admin/unit-price" element={
             <ProtectedRoute>
               <Layout currentPageName="AdminUnitPrice">
-                <AdminUnitPricePage />
+                <AdminUnitPrice />
               </Layout>
             </ProtectedRoute>
           } />
@@ -162,8 +156,8 @@ function App() {
           } />
           <Route path="/admin/user-management" element={
             <ProtectedRoute>
-              <Layout currentPageName="UserManagement">
-                <UserManagement />
+              <Layout currentPageName="AdminUserManagement">
+                <AdminUserManagement />
               </Layout>
             </ProtectedRoute>
           } />
@@ -266,7 +260,7 @@ function App() {
           <Route path="/unit-price" element={
             <ProtectedRoute>
               <Layout currentPageName="UnitPrice">
-                <AdminUnitPricePage />
+                <AdminUnitPrice />
               </Layout>
             </ProtectedRoute>
           } />

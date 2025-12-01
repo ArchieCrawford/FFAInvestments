@@ -20,7 +20,7 @@ const AdminUserManagement = () => {
   const canEdit = profile?.role === 'admin'
 
   const {
-    data: users,
+    data: users = [],
     isLoading,
     isError,
     error,
@@ -42,6 +42,8 @@ const AdminUserManagement = () => {
   )
 
   const handleRoleChange = (user, newRole) => {
+    if (!canEdit) return
+
     updateUserMutation.mutate({
       id: user.id,
       role: newRole,
@@ -50,6 +52,8 @@ const AdminUserManagement = () => {
   }
 
   const handleActiveToggle = (user, isActive) => {
+    if (!canEdit) return
+
     updateUserMutation.mutate({
       id: user.id,
       role: user.role,
@@ -68,7 +72,7 @@ const AdminUserManagement = () => {
         )}
 
         {isError && (
-          <div className="card p-4 text-sm text-red-500">
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
             Error loading users: {error?.message || 'Unknown error'}
           </div>
         )}

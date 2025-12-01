@@ -15,7 +15,7 @@ const fetchLatestPositions = async () => {
 
 const AdminPositions = () => {
   const {
-    data: positions,
+    data: positions = [],
     isLoading,
     isError,
     error,

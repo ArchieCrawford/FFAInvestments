@@ -15,7 +15,7 @@ const fetchUnitPriceHistory = async () => {
 
 const AdminUnitPrice = () => {
   const {
-    data: history,
+    data: history = [],
     isLoading,
     isError,
     error,
@@ -36,7 +36,7 @@ const AdminUnitPrice = () => {
         )}
 
         {isError && (
-          <div className="card p-4 text-sm text-red-500">
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
             Error loading unit price: {error?.message || 'Unknown error'}
           </div>
         )}

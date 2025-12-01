@@ -22,7 +22,7 @@ const AdminMembers = () => {
   const [form, setForm] = useState({ member_name: '', email: '' })
 
   const {
-    data: members,
+    data: members = [],
     isLoading,
     isError,
     error,
@@ -63,6 +63,8 @@ const AdminMembers = () => {
   )
 
   const startEditing = (member) => {
+    if (!canEdit) return
+
     setEditingId(member.id)
     setForm({
       member_name: member.member_name || '',
@@ -80,6 +82,8 @@ const AdminMembers = () => {
   }
 
   const handleSave = (id) => {
+    if (!canEdit) return
+
     updateMemberMutation.mutate({
       id,
       member_name: form.member_name,
@@ -88,6 +92,8 @@ const AdminMembers = () => {
   }
 
   const handleSoftDelete = (member) => {
+    if (!canEdit) return
+
     if (
       window.confirm(
         `This will deactivate ${member.member_name} and hide them from member lists. Continue?`
@@ -110,7 +116,7 @@ const AdminMembers = () => {
         )}
 
         {isError && (
-          <div className="card p-4 text-sm text-red-500">
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
             Error loading members: {error?.message || 'Unknown error'}
           </div>
         )}

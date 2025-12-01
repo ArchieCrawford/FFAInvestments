@@ -13,12 +13,12 @@ const adminNav = [
   // === Members ===
   { title: "Members", url: "/admin/members", icon: "fas fa-users" },
   { title: "User Management", url: "/admin/user-management", icon: "fas fa-user-shield" },
-  { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
+  { title: "Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "Member Feed", url: "/member/feed", icon: "fas fa-comments" },
   
   // === Club Management ===
-  { title: "Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
-  { title: "Dues Tracker", url: "/admin/dues", icon: "fas fa-money-check-alt" },
+  { title: "Accounts / Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
+  { title: "Dues", url: "/admin/dues", icon: "fas fa-money-check-alt" },
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
   { title: "Unit Price", url: "/admin/unit-price", icon: "fas fa-chart-line" },
   { title: "Portfolio Builder", url: "/admin/portfolio-builder", icon: "fas fa-briefcase" },
@@ -43,7 +43,7 @@ const memberNav = [
   { title: "Partner Dashboard", url: "/admin/dashboard", icon: "fas fa-chart-line" },
   { title: "My Dashboard", url: "/member/dashboard", icon: "fas fa-table" },
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
-  { title: "Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
+  { title: "Accounts / Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
   { title: "My Accounts", url: createPageUrl("MemberAccounts"), icon: "fas fa-wallet" },
   { title: "Make Contribution", url: createPageUrl("MemberContribute"), icon: "fas fa-dollar-sign" },
   { title: "Unit Price", url: "/unit-price", icon: "fas fa-chart-line" },
