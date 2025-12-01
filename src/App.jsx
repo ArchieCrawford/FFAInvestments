@@ -120,7 +120,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/ledger" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminLedger">
                 <AdminLedger />
               </Layout>
@@ -134,14 +134,14 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/education" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminEducation">
                 <AdminEducation />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/admin/portfolio-builder" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="PortfolioBuilder">
                 <PortfolioBuilder />
               </Layout>
@@ -183,14 +183,14 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/org-balance" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminOrgBalance">
                 <AdminOrgBalance />
               </Layout>
             </ProtectedRoute>
           } />
           <Route path="/admin/schwab/insights" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="SchwabInsights">
                 <SchwabInsightsPage />
               </Layout>
