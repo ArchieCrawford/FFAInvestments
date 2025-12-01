@@ -9,12 +9,31 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
+
+      const wasSuccessful = !error;
+
+      // Log the login attempt (success or failure) – non-blocking
+      try {
+        await supabase.from('member_login_logs').insert({
+          email,
+          was_successful: wasSuccessful,
+          failure_reason: wasSuccessful ? null : error?.message ?? null,
+          ip_address: null,
+          city: null,
+          region: null,
+          country: null,
+          is_active_member: null,
+          member_account_id: null,
+        });
+      } catch (logError) {
+        console.warn('Failed to log login attempt', logError);
+      }
 
       if (error) {
         throw error;
@@ -51,10 +70,15 @@ export default function Login() {
             <h2 className="text-2xl font-bold text-default">FFA Investments</h2>
             <p className="text-muted mt-1">Investment Club Portal</p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-default mb-1">Email address</label>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-default mb-1"
+              >
+                Email address
+              </label>
               <input
                 type="email"
                 className="input w-full"
@@ -65,9 +89,14 @@ export default function Login() {
                 placeholder="Enter your email"
               />
             </div>
-            
+
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-default mb-1">Password</label>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-default mb-1"
+              >
+                Password
+              </label>
               <input
                 type="password"
                 className="input w-full"
@@ -78,9 +107,9 @@ export default function Login() {
                 placeholder="Enter your password"
               />
             </div>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn-primary w-full"
               disabled={loading}
             >
@@ -94,10 +123,11 @@ export default function Login() {
               )}
             </button>
           </form>
-          
+
           <div className="text-center mt-4">
             <small className="text-muted">
-              This app uses your Supabase login. Contact an admin if you don't have access yet.
+              This app uses your Supabase login. Contact an admin if you don't
+              have access yet.
             </small>
           </div>
         </div>
