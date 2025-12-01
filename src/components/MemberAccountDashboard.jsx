@@ -1,270 +1,440 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
-import { createClient } from '@supabase/supabase-js';
-import { getMemberTimeline } from '../lib/ffaApi';
-import { Page } from './Page';
-import { Wallet, TrendingUp, Users, Mail } from 'lucide-react';
+import React, { useMemo } from 'react'
+import { useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { getMemberTimeline } from '../lib/ffaApi'
+import { Page } from './Page'
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  ResponsiveContainer,
+} from 'recharts'
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+function numberOrNull(value) {
+  if (value === null || value === undefined) return null
+  const n = Number(value)
+  return Number.isNaN(n) ? null : n
+}
 
-export default function MemberAccountDashboard() {
-  const { memberId } = useParams();
-  const [member, setMember] = useState(null);
-  const [timeline, setTimeline] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState('all');
+function formatCurrencyShort(n) {
+  if (n === null || n === undefined) return '—'
+  const v = Number(n)
+  if (Number.isNaN(v)) return '—'
+  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
+  if (Math.abs(v) >= 1_000) return `$${(v / 1_000).toFixed(1)}k`
+  return `$${v.toFixed(2)}`
+}
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const memberIdNum = parseInt(memberId, 10);
-        const { data: memberRow, error: memberErr } = await supabase
-          .from('members')
-          .select('*')
-          .eq('id', memberIdNum)
-          .single();
+function formatPercent(n) {
+  if (n === null || n === undefined) return '—'
+  const v = Number(n)
+  if (Number.isNaN(v)) return '—'
+  return `${(v * 100).toFixed(1)}%`
+}
 
-        if (memberErr) throw memberErr;
-
-        setMember(memberRow);
-
-        try {
-          const timelineData = await getMemberTimeline(String(memberIdNum));
-          setTimeline(timelineData || []);
-        } catch (err) {
-          console.error('Error loading timeline:', err);
-          setTimeline([]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [memberId]);
-
-  const formatCurrency = (amount) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-
-  const getFilteredTimeline = () => {
-    if (selectedPeriod === 'all') return timeline;
-    const months = selectedPeriod === '12m' ? 12 : selectedPeriod === '6m' ? 6 : 3;
-    const cutoff = new Date();
-    cutoff.setMonth(cutoff.getMonth() - months);
-    return timeline.filter(t => new Date(t.report_date) >= cutoff);
-  };
-
-  const filteredTimeline = getFilteredTimeline();
-  const chartData = filteredTimeline.map(e => ({ date: formatDate(e.report_date), portfolio_value: e.portfolio_value }));
-  const latestEntry = timeline[timeline.length - 1];
-  const previousEntry = timeline[timeline.length - 2];
-
-  const totalGrowth = latestEntry && timeline[0] ? ((latestEntry.portfolio_value - timeline[0].portfolio_value) / timeline[0].portfolio_value) * 100 : 0;
-  const monthlyGrowth = latestEntry && previousEntry ? ((latestEntry.portfolio_value - previousEntry.portfolio_value) / previousEntry.portfolio_value) * 100 : 0;
-  const periodOptions = [
-    { value: '3m', label: '3M' },
-    { value: '6m', label: '6M' },
-    { value: '12m', label: '1Y' },
-    { value: 'all', label: 'All' }
-  ];
-
-  if (loading) {
-    return (
-      <Page title="Member Account">
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p className="text-muted mt-4">Loading member data...</p>
-          </div>
-        </div>
-      </Page>
-    );
+function formatDateLabel(d) {
+  try {
+    return new Date(d).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+  } catch {
+    return d
   }
+}
 
-  if (!member) {
-    return (
-      <Page title="Member Account">
-        <div className="card p-6 border-l-4 border-red-500">
-          <p className="text-red-400">Member not found</p>
-        </div>
-      </Page>
-    );
+async function fetchMemberAccountData(memberId) {
+  const { data: account, error: accountError } = await supabase
+    .from('member_accounts')
+    .select('*')
+    .eq('member_id', memberId)
+    .maybeSingle()
+  if (accountError) throw accountError
+  if (!account) throw new Error('Member account not found')
+
+  const timeline = await getMemberTimeline(memberId)
+
+  const { data: meetingRows, error: meetingError } = await supabase
+    .from('meeting_report_members')
+    .select('*, meeting_reports(report_month, unit_value)')
+    .eq('member_id', memberId)
+    .order('created_at', { ascending: true })
+  if (meetingError) throw meetingError
+
+  return {
+    account,
+    timeline: timeline || [],
+    meetingRows: meetingRows || [],
   }
+}
+
+const MemberAccountDashboard = () => {
+  const { memberId } = useParams()
+
+  const {
+    data,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['member_account_dashboard', memberId],
+    queryFn: () => fetchMemberAccountData(memberId),
+    enabled: !!memberId,
+  })
+
+  const account = data?.account || null
+  const timeline = data?.timeline || []
+  const meetingRows = data?.meetingRows || []
+
+  const latestTimeline = timeline.length > 0 ? timeline[timeline.length - 1] : null
+
+  const chartTimeline = useMemo(
+    () =>
+      (timeline || []).map(row => ({
+        report_date: row.report_date,
+        label: formatDateLabel(row.report_date),
+        portfolio_value: numberOrNull(row.portfolio_value),
+        total_units: numberOrNull(row.total_units),
+        total_contribution: numberOrNull(row.total_contribution),
+        growth_amount: numberOrNull(row.growth_amount),
+        growth_pct: numberOrNull(row.growth_pct),
+      })),
+    [timeline],
+  )
+
+  const meetingSeries = useMemo(
+    () =>
+      (meetingRows || []).map(row => ({
+        id: row.id,
+        label: row.meeting_reports?.report_month
+          ? formatDateLabel(row.meeting_reports.report_month)
+          : '',
+        report_month: row.meeting_reports?.report_month || null,
+        dues_paid_buyout: numberOrNull(row.dues_paid_buyout),
+        dues_owed: numberOrNull(row.dues_owed),
+        total_contribution: numberOrNull(row.total_contribution),
+        previous_units: numberOrNull(row.previous_units),
+        units_added: numberOrNull(row.units_added),
+        total_units: numberOrNull(row.total_units),
+        portfolio_value: numberOrNull(row.portfolio_value),
+        ownership_pct_of_club: numberOrNull(row.ownership_pct_of_club),
+      })),
+    [meetingRows],
+  )
+
+  const latestMeeting = meetingSeries.length > 0 ? meetingSeries[meetingSeries.length - 1] : null
+
+  const overviewCards = [
+    {
+      label: 'Current Portfolio Value',
+      value: latestTimeline
+        ? formatCurrencyShort(latestTimeline.portfolio_value)
+        : account
+        ? formatCurrencyShort(account.current_value)
+        : '—',
+      helper: latestTimeline ? formatDateLabel(latestTimeline.report_date) : '',
+    },
+    {
+      label: 'Units Owned',
+      value: latestTimeline
+        ? Number(latestTimeline.total_units || 0).toFixed(3)
+        : account
+        ? Number(account.current_units || 0).toFixed(3)
+        : '—',
+      helper: latestMeeting && latestMeeting.units_added
+        ? `+${Number(latestMeeting.units_added).toFixed(3)} last meeting`
+        : '',
+    },
+    {
+      label: 'Ownership in Club',
+      value: latestMeeting && latestMeeting.ownership_pct_of_club
+        ? formatPercent(latestMeeting.ownership_pct_of_club)
+        : account && account.ownership_percentage
+        ? formatPercent(account.ownership_percentage)
+        : '—',
+      helper: latestMeeting
+        ? `As of ${latestMeeting.label || 'latest meeting'}`
+        : '',
+    },
+    {
+      label: 'Total Contributed',
+      value: latestTimeline && latestTimeline.total_contribution
+        ? formatCurrencyShort(latestTimeline.total_contribution)
+        : account
+        ? formatCurrencyShort(account.total_contributions)
+        : '—',
+      helper: latestMeeting && latestMeeting.dues_owed
+        ? `${formatCurrencyShort(latestMeeting.dues_owed)} dues outstanding last meeting`
+        : '',
+    },
+  ]
 
   return (
-    <Page 
-      title={member.name}
-      subtitle={`Member since ${new Date(member.joinDate).toLocaleDateString()} • ${member.email || 'No email provided'}`}
-      actions={
-        <>
-          <button className="btn-primary-soft border border-border px-4 py-2 rounded-lg flex items-center gap-2">
-            <Mail size={16} />
-            Send Message
-          </button>
-          <button className="btn-primary px-4 py-2 rounded-lg flex items-center gap-2">
-            <Users size={16} />
-            Edit Profile
-          </button>
-        </>
-      }
+    <Page
+      title={account ? account.member_name || 'Member Account' : 'Member Account'}
+      subtitle="Drill into a partner’s long-term performance, contributions, and ownership."
     >
-      <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Current Portfolio Value</p>
-                <p className="text-3xl font-bold text-default">{formatCurrency(latestEntry?.portfolio_value || 0)}</p>
-              </div>
-              <Wallet className="w-8 h-8 text-primary" />
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Total Units</p>
-                <p className="text-3xl font-bold text-default">{latestEntry?.total_units?.toFixed(2) || '0.00'}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-primary" />
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Total Growth</p>
-                <p className={`text-3xl font-bold ${totalGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {totalGrowth >= 0 ? '+' : ''}{totalGrowth.toFixed(2)}%
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-primary" />
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Monthly Change</p>
-                <p className={`text-3xl font-bold ${monthlyGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {monthlyGrowth >= 0 ? '+' : ''}{monthlyGrowth.toFixed(2)}%
-                </p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-primary" />
-            </div>
-          </div>
+      {error && (
+        <div className="card mb-4 bg-primary-soft border border-border text-default p-3 rounded-xl">
+          {error.message || String(error)}
         </div>
+      )}
 
-        <div className="card">
-          <div className="p-6 border-b border-border">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-default">Portfolio Performance Over Time</h3>
-              <div className="flex flex-wrap gap-2">
-                {periodOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`px-3 py-1 rounded-lg text-sm ${selectedPeriod === option.value ? 'btn-primary' : 'btn-primary-soft border border-border'}`}
-                    onClick={() => setSelectedPeriod(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+      {isLoading ? (
+        <div className="py-16 text-center text-muted text-sm">Loading member account…</div>
+      ) : !account ? (
+        <div className="py-16 text-center text-muted text-sm">
+          Member account not found.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {overviewCards.map(card => (
+                <div
+                  key={card.label}
+                  className="card rounded-xl border border-border bg-surface p-4 flex flex-col gap-1"
+                >
+                  <div className="text-xs uppercase tracking-wide text-muted">
+                    {card.label}
+                  </div>
+                  <div className="text-2xl font-semibold text-default">
+                    {card.value}
+                  </div>
+                  {card.helper ? (
+                    <div className="text-xs text-muted mt-1">{card.helper}</div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">Portfolio Value Over Time</div>
+                  <div className="text-xs text-muted">
+                    Monthly snapshots of this partner&apos;s account
+                  </div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartTimeline}>
+                    <defs>
+                      <linearGradient id="memberPortfolioGradientAdmin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.7} />
+                        <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) =>
+                        name === 'portfolio_value'
+                          ? [formatCurrencyShort(value), 'Portfolio value']
+                          : [value, name]
+                      }
+                    />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="portfolio_value"
+                      stroke="rgb(59,130,246)"
+                      strokeWidth={2}
+                      fill="url(#memberPortfolioGradientAdmin)"
+                      name="Portfolio value"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
-          </div>
 
-          <div className="p-6">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="rgb(var(--color-primary))" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="rgb(var(--color-primary))" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-border))" />
-                  <XAxis dataKey="date" stroke="rgb(var(--color-text))" />
-                  <YAxis tickFormatter={(value) => formatCurrency(value)} stroke="rgb(var(--color-text))" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgb(var(--color-surface))', borderColor: 'rgb(var(--color-border))' }}
-                    formatter={(value, name) => [name === 'portfolio_value' ? formatCurrency(value) : value, name === 'portfolio_value' ? 'Portfolio Value' : 'Value']} 
-                  />
-                  <Area type="monotone" dataKey="portfolio_value" stroke="rgb(var(--color-primary))" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-muted py-12">No timeline data available for this member</div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="card">
-            <div className="p-6 border-b border-border">
-              <h3 className="text-xl font-semibold text-default">Recent Performance</h3>
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">Units & Growth</div>
+                  <div className="text-xs text-muted">
+                    Units, contributions, and growth over time
+                  </div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartTimeline}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'total_units') {
+                          return [Number(value).toFixed(3), 'Total units']
+                        }
+                        if (name === 'growth_amount') {
+                          return [formatCurrencyShort(value), 'Growth amount']
+                        }
+                        if (name === 'total_contribution') {
+                          return [formatCurrencyShort(value), 'Total contribution']
+                        }
+                        return [value, name]
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="total_units"
+                      stroke="rgb(16,185,129)"
+                      strokeWidth={2}
+                      dot={false}
+                      name="Total units"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="growth_amount"
+                      stroke="rgb(234,179,8)"
+                      strokeWidth={2}
+                      dot={false}
+                      name="Growth amount"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="total_contribution"
+                      stroke="rgb(99,102,241)"
+                      strokeWidth={2}
+                      dot={false}
+                      name="Total contribution"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="p-6">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 text-sm font-medium text-muted">Month</th>
-                      <th className="text-left py-3 text-sm font-medium text-muted">Value</th>
-                      <th className="text-left py-3 text-sm font-medium text-muted">Change</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTimeline.slice(-5).reverse().map((entry, index) => {
-                      const prevEntry = filteredTimeline[filteredTimeline.length - 2 - index];
-                      const change = prevEntry ? ((entry.portfolio_value - prevEntry.portfolio_value) / prevEntry.portfolio_value) * 100 : 0;
-                      return (
-                        <tr key={index} className="border-b border-border">
-                          <td className="py-3 text-default">{formatDate(entry.report_date)}</td>
-                          <td className="py-3 text-default">{formatCurrency(entry.portfolio_value)}</td>
-                          <td className="py-3">
-                            <span className={`badge ${change >= 0 ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
-                            </span>
+          </section>
+
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">
+                    Dues & Contributions By Meeting
+                  </div>
+                  <div className="text-xs text-muted">
+                    Meeting-level cash flows for this partner
+                  </div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={meetingSeries}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'total_contribution') {
+                          return [formatCurrencyShort(value), 'Total contribution']
+                        }
+                        if (name === 'dues_paid_buyout') {
+                          return [formatCurrencyShort(value), 'Dues paid']
+                        }
+                        if (name === 'dues_owed') {
+                          return [formatCurrencyShort(value), 'Dues owed']
+                        }
+                        return [value, name]
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="total_contribution"
+                      fill="rgb(59,130,246)"
+                      name="Contribution"
+                    />
+                    <Bar
+                      dataKey="dues_paid_buyout"
+                      fill="rgb(16,185,129)"
+                      name="Dues paid"
+                    />
+                    <Bar
+                      dataKey="dues_owed"
+                      fill="rgb(239,68,68)"
+                      name="Dues owed"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">
+                    Meeting Snapshot Details
+                  </div>
+                  <div className="text-xs text-muted">
+                    Units, value, and ownership per meeting
+                  </div>
+                </div>
+              </div>
+              {meetingSeries.length === 0 ? (
+                <div className="text-sm text-muted py-4">
+                  No meeting snapshots imported yet for this member.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-muted border-b border-border">
+                        <th className="text-left py-2 pr-2">Meeting</th>
+                        <th className="text-right py-2 px-2">Units</th>
+                        <th className="text-right py-2 px-2">Value</th>
+                        <th className="text-right py-2 px-2">Units Added</th>
+                        <th className="text-right py-2 pl-2">Ownership</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {meetingSeries.map(row => (
+                        <tr key={row.id} className="border-b border-border/40 last:border-b-0">
+                          <td className="py-2 pr-2 text-default">
+                            {row.label || '—'}
+                          </td>
+                          <td className="py-2 px-2 text-right text-default">
+                            {row.total_units !== null
+                              ? Number(row.total_units).toFixed(3)
+                              : '—'}
+                          </td>
+                          <td className="py-2 px-2 text-right text-default">
+                            {row.portfolio_value !== null
+                              ? formatCurrencyShort(row.portfolio_value)
+                              : '—'}
+                          </td>
+                          <td className="py-2 px-2 text-right text-default">
+                            {row.units_added !== null
+                              ? Number(row.units_added).toFixed(3)
+                              : '—'}
+                          </td>
+                          <td className="py-2 pl-2 text-right text-default">
+                            {row.ownership_pct_of_club !== null
+                              ? formatPercent(row.ownership_pct_of_club)
+                              : '—'}
                           </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="card">
-            <div className="p-6 border-b border-border">
-              <h3 className="text-xl font-semibold text-default">Account Summary</h3>
-            </div>
-            <div className="p-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-muted">Total Data Points</span>
-                <strong className="text-default">{timeline.length}</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">First Record</span>
-                <strong className="text-default">{timeline[0] ? formatDate(timeline[0].report_date) : 'N/A'}</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">Latest Record</span>
-                <strong className="text-default">{latestEntry ? formatDate(latestEntry.report_date) : 'N/A'}</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted">Account Status</span>
-                <span className="badge bg-green-500/20 text-green-500">Active</span>
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
-      </div>
+      )}
     </Page>
-  );
+  )
 }
+
+export default MemberAccountDashboard

@@ -1,215 +1,171 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Users, DollarSign, Target } from 'lucide-react'
-import { Page } from '../components/Page'
+import React, { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import supabase from '../supabase'
 
-const MEMBER_ACCOUNT_FIELDS = `
-  id,
-  member_name,
-  email,
-  current_units,
-  total_contributions,
-  current_value,
-  ownership_percentage,
-  is_active
-`
+const fetchMembers = async () => {
+  const { data, error } = await supabase
+    .from('admin_members_overview')
+    .select('*')
+    .order('full_name', { ascending: true })
+
+  if (error) throw error
+  return data
+}
 
 const AdminMembers = () => {
-  const [accounts, setAccounts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const queryClient = useQueryClient()
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState({ full_name: '', email: '' })
 
-  useEffect(() => {
-    let mounted = true
-    const load = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const { data, error } = await supabase
-          .from('member_accounts')
-          .select(MEMBER_ACCOUNT_FIELDS)
-          .order('member_name', { ascending: true })
-        if (error) throw error
-        if (mounted) setAccounts(data || [])
-      } catch (err) {
-        if (mounted) {
-          setAccounts([])
-          setError(err.message || 'Unable to load member accounts')
-        }
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-    load()
-    return () => {
-      mounted = false
-    }
-  }, [])
+  const { data: members, isLoading, isError } = useQuery(['admin_members'], fetchMembers)
 
-  const filteredAccounts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase()
-    return accounts.filter((account) => {
-      const matchesTerm =
-        !term ||
-        account.member_name.toLowerCase().includes(term) ||
-        (account.email || '').toLowerCase().includes(term)
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && account.is_active) ||
-        (statusFilter === 'inactive' && !account.is_active)
-      return matchesTerm && matchesStatus
-    })
-  }, [accounts, searchTerm, statusFilter])
-
-  const totals = useMemo(() => {
-    return filteredAccounts.reduce(
-      (acc, account) => {
-        return {
-          contributions: acc.contributions + Number(account.total_contributions || 0),
-          value: acc.value + Number(account.current_value || 0),
-          units: acc.units + Number(account.current_units || 0),
-        }
+  const updateMemberMutation = useMutation(
+    async ({ id, full_name, email }) => {
+      const { error } = await supabase
+        .from('members')
+        .update({ full_name, email })
+        .eq('id', id)
+      if (error) throw error
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['admin_members'])
+        setEditing(null)
       },
-      { contributions: 0, value: 0, units: 0 }
-    )
-  }, [filteredAccounts])
+    }
+  )
 
-  if (loading) {
-    return (
-      <Page title="Member Accounts">
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            <p className="text-muted mt-4">Loading member accounts...</p>
-          </div>
-        </div>
-      </Page>
-    )
-  }
+  const deleteMemberMutation = useMutation(
+    async (id) => {
+      const { error } = await supabase
+        .from('members')
+        .update({ is_active: false, deleted_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['admin_members'])
+      },
+    }
+  )
 
-  if (error) {
-    return (
-      <Page title="Member Accounts">
-        <div className="card p-6 border-l-4 border-red-500">
-          <p className="text-red-400">{error}</p>
-        </div>
-      </Page>
-    )
-  }
+  if (isLoading) return <div className="p-6">Loading members…</div>
+  if (isError) return <div className="p-6 text-red-600">Error loading members.</div>
 
   return (
-    <Page
-      title="Member Accounts"
-      subtitle="Overview of current balances and contributions"
-    >
-      <div className="space-y-6">
-        <div className="card p-6">
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1" style={{ minWidth: 220 }}>
-              <label className="block text-sm font-medium text-default mb-2">Search members</label>
-              <input
-                className="input w-full"
-                placeholder="Search by name or email"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-default mb-2">Status</label>
-              <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-        </div>
+    <div className="p-6 space-y-4">
+      <h1 className="text-2xl font-bold">Members</h1>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Total Members</p>
-                <p className="text-3xl font-bold text-default">{accounts.length}</p>
-              </div>
-              <Users size={32} className="text-primary" />
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Active Accounts</p>
-                <p className="text-3xl font-bold text-default">{accounts.filter((a) => a.is_active).length}</p>
-              </div>
-              <Target size={32} className="text-primary" />
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted mb-1">Total Contributions</p>
-                <p className="text-3xl font-bold text-default">${totals.contributions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-              </div>
-              <DollarSign size={32} className="text-primary" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card overflow-hidden">
-          <div className="p-6 border-b border-border">
-            <h3 className="text-xl font-semibold text-default">Member Detail</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border bg-surface">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Member</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Current Value</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Total Contributions</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Units</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">Ownership %</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredAccounts.map((account) => (
-                  <tr key={account.id} className="hover:bg-surface">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default">{account.member_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">{account.email || '—'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">
-                      ${Number(account.current_value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">
-                      ${Number(account.total_contributions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">{Number(account.current_units || 0).toFixed(4)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-default text-right">{Number(account.ownership_percentage || 0).toFixed(2)}%</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`badge ${account.is_active ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-muted'}`}>
-                        {account.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {account.email ? (
-                        <a className="text-primary hover:text-primary/80" href={`mailto:${account.email}`}>
-                          Email
-                        </a>
-                      ) : (
-                        <span className="text-muted">No email</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </Page>
+      <table className="min-w-full text-sm border rounded-xl overflow-hidden bg-white">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-3 py-2 text-left">Name</th>
+            <th className="px-3 py-2 text-left">Email</th>
+            <th className="px-3 py-2 text-right">Value</th>
+            <th className="px-3 py-2 text-right">Units</th>
+            <th className="px-3 py-2 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {members.map((m) => {
+            const isEditing = editing === m.id
+            return (
+              <tr key={m.id} className="border-t">
+                <td className="px-3 py-2">
+                  {isEditing ? (
+                    <input
+                      className="w-full border rounded px-2 py-1 text-xs"
+                      value={form.full_name}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, full_name: e.target.value }))
+                      }
+                    />
+                  ) : (
+                    m.full_name
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {isEditing ? (
+                    <input
+                      className="w-full border rounded px-2 py-1 text-xs"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                  ) : (
+                    m.email
+                  )}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {m.portfolio_value != null
+                    ? `$${Number(m.portfolio_value).toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}`
+                    : '—'}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {m.total_units != null
+                    ? Number(m.total_units).toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                      })
+                    : '—'}
+                </td>
+                <td className="px-3 py-2 text-right space-x-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        className="text-xs px-2 py-1 rounded bg-emerald-600 text-white"
+                        onClick={() =>
+                          updateMemberMutation.mutate({
+                            id: m.id,
+                            full_name: form.full_name,
+                            email: form.email,
+                          })
+                        }
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 rounded bg-gray-200"
+                        onClick={() => setEditing(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="text-xs px-2 py-1 rounded bg-blue-600 text-white"
+                        onClick={() => {
+                          setEditing(m.id)
+                          setForm({ full_name: m.full_name || '', email: m.email || '' })
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 rounded bg-red-600 text-white"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Delete member ${m.full_name}? This will deactivate them.`
+                            )
+                          ) {
+                            deleteMemberMutation.mutate(m.id)
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
