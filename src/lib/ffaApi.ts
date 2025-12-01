@@ -106,6 +106,82 @@ export async function getOrgBalanceHistory() {
   return data || []
 }
 
+export async function logMemberLogin({
+  userId,
+  email,
+  ip,
+  userAgent,
+  isActive,
+  memberAccountId,
+  city,
+  region,
+  country,
+}: {
+  userId: string
+  email: string
+  ip: string | null
+  userAgent: string | null
+  isActive: boolean
+  memberAccountId: string | null
+  city: string | null
+  region: string | null
+  country: string | null
+}) {
+  try {
+    const { error } = await supabase.from('member_login_logs').insert([{
+      user_id: userId,
+      email,
+      ip_address: ip,
+      user_agent: userAgent,
+      is_active_member: isActive,
+      member_account_id: memberAccountId,
+      was_successful: true,
+      failure_reason: null,
+      city,
+      region,
+      country,
+    }])
+    if (error) {
+      console.warn('Login logging failed', error)
+    }
+  } catch (err) {
+    console.warn('Login logging failed', err)
+  }
+}
+
+export async function logFailedMemberLogin({
+  email,
+  failureReason,
+  ip,
+  userAgent,
+}: {
+  email: string | null
+  failureReason: string
+  ip: string | null
+  userAgent: string | null
+}) {
+  try {
+    const { error } = await supabase.from('member_login_logs').insert([{
+      user_id: null,
+      email,
+      ip_address: ip,
+      user_agent: userAgent,
+      is_active_member: null,
+      member_account_id: null,
+      was_successful: false,
+      failure_reason: failureReason,
+      city: null,
+      region: null,
+      country: null,
+    }])
+    if (error) {
+      console.warn('Login logging failed', error)
+    }
+  } catch (err) {
+    console.warn('Login logging failed', err)
+  }
+}
+
 // Uses club_unit_valuations and normalizes to legacy unit_prices shape
 export async function getUnitPriceHistory() {
   const { data, error } = await supabase

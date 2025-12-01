@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { logMemberLogin, logFailedMemberLogin } from '@/lib/ffaApi'
 import { Eye, EyeOff, Mail, Lock, Sparkles, TrendingUp, DollarSign, User } from 'lucide-react'
 // Styles centralized in global index.css with semantic theme classes
 
@@ -131,10 +132,103 @@ const ModernLogin = () => {
           } else {
             setFormError(result.error.message || 'Sign in failed. Please try again.')
           }
+
+          // Log failed login (best effort)
+          try {
+            const userAgent = typeof window !== 'undefined' ? window?.navigator?.userAgent || null : null
+            const ip = await fetch('https://api.ipify.org?format=json')
+              .then(r => r.json())
+              .then(d => d.ip)
+              .catch(() => null)
+            await logFailedMemberLogin({
+              email: formData.email || null,
+              failureReason: result.error.message || 'Unknown error',
+              ip,
+              userAgent,
+            })
+          } catch (logErr) {
+            console.warn('Failed to log failed login', logErr)
+          }
         }
         else {
           // successful sign in - clear attempted submit flag
           setAttemptedSubmit(false)
+
+          try {
+            const { data: userData } = await supabase.auth.getUser()
+            const authedUser = userData?.user
+            const userId = authedUser?.id || null
+            const email = authedUser?.email || formData.email
+            const userAgent = typeof window !== 'undefined' ? window?.navigator?.userAgent || null : null
+
+            const ip = await fetch('https://api.ipify.org?format=json')
+              .then(r => r.json())
+              .then(d => d.ip)
+              .catch(() => null)
+
+            let city = null
+            let region = null
+            let country = null
+            if (ip) {
+              try {
+                const geo = await fetch(`https://ipapi.co/${ip}/json/`).then(r => r.json())
+                city = geo?.city || null
+                region = geo?.region || geo?.region_name || geo?.state || null
+                country = geo?.country_name || geo?.country || null
+              } catch (geoErr) {
+                console.warn('Geolocation lookup failed', geoErr)
+              }
+            }
+
+            let memberAccountId = null
+            let isActive = false
+            if (email) {
+              try {
+                const { data: acct, error: acctErr } = await supabase
+                  .from('member_accounts')
+                  .select('id, is_active')
+                  .eq('email', email)
+                  .eq('is_active', true)
+                  .maybeSingle()
+                if (acctErr) throw acctErr
+                if (acct) {
+                  memberAccountId = acct.id
+                  isActive = acct.is_active === true
+                }
+              } catch (acctLookupErr) {
+                console.warn('Member account lookup failed', acctLookupErr)
+              }
+            }
+
+            try {
+              await logMemberLogin({
+                userId,
+                email,
+                ip,
+                userAgent,
+                isActive,
+                memberAccountId,
+                city,
+                region,
+                country,
+              })
+            } catch (logErr) {
+              console.warn('Failed to log member login', logErr)
+            }
+
+            if (memberAccountId) {
+              try {
+                await supabase
+                  .from('member_accounts')
+                  .update({ last_login_at: new Date().toISOString() })
+                  .eq('id', memberAccountId)
+              } catch (updateErr) {
+                console.warn('Failed to update last_login_at', updateErr)
+              }
+            }
+          } catch (logWrapperErr) {
+            console.warn('Login logging skipped due to error', logWrapperErr)
+          }
         }
       }
     } catch (err) {

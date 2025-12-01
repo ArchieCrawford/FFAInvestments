@@ -37,6 +37,7 @@ const adminNav = [
   { title: "Schwab Integration", url: "/admin/schwab", icon: "fas fa-university" },
   { title: "Schwab Insights", url: "/admin/schwab/insights", icon: "fas fa-chart-pie" },
   { title: "Schwab Raw Data", url: "/admin/schwab/raw-data", icon: "fas fa-code" },
+  { title: "Login Activity", url: "/admin/login-activity", icon: "fas fa-user-clock" },
 ];
 
 const memberNav = [

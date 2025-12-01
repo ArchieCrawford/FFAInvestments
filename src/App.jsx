@@ -48,6 +48,7 @@ import MemberFeed from './Pages/MemberFeed/MemberFeed.jsx'
 import SettingsPage from './Pages/Settings/SettingsPage.jsx'
 import ResetPassword from './Pages/ResetPassword.jsx'
 import ClaimAccount from './Pages/ClaimAccount.jsx'
+import AdminLoginActivity from './Pages/AdminLoginActivity.jsx'
 
 // Admin Components  
 import AdminDues from './Pages/AdminDues.jsx'
@@ -200,6 +201,13 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="SchwabRawData">
                 <SchwabRawData />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/login-activity" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminLoginActivity">
+                <AdminLoginActivity />
               </Layout>
             </ProtectedRoute>
           } />
