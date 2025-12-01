@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
@@ -27,6 +27,13 @@ const AdminMembers = () => {
     isError,
     error,
   } = useQuery(['admin_members'], fetchAdminMembers)
+
+  const maxOwnership = useMemo(() => {
+    return members.reduce((max, m) => {
+      const v = m.ownership_pct_of_club ?? 0
+      return v > max ? v : max
+    }, 0)
+  }, [members])
 
   const updateMemberMutation = useMutation(
     async ({ id, member_name, email }) => {
@@ -106,7 +113,7 @@ const AdminMembers = () => {
   return (
     <Page
       title="Members"
-      subtitle="Manage member profiles and see their latest units and value."
+      subtitle="Manage member profiles and see their latest units, value, and ownership."
     >
       <div className="space-y-4">
         {isLoading && (
@@ -132,6 +139,9 @@ const AdminMembers = () => {
                   {members.length} member{members.length === 1 ? '' : 's'} in the system.
                 </div>
               </div>
+              <div className="hidden sm:block text-xs text-muted">
+                Ownership bars are scaled to the largest holder.
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -151,6 +161,9 @@ const AdminMembers = () => {
                       Units
                     </th>
                     <th className="px-4 py-2 text-right text-xs font-semibold text-muted">
+                      Ownership
+                    </th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-muted">
                       Actions
                     </th>
                   </tr>
@@ -158,6 +171,12 @@ const AdminMembers = () => {
                 <tbody>
                   {members.map((m) => {
                     const isEditing = editingId === m.id
+                    const ownershipPct = m.ownership_pct_of_club
+                    const ownershipRatio =
+                      maxOwnership > 0 && ownershipPct != null
+                        ? ownershipPct / maxOwnership
+                        : 0
+
                     return (
                       <tr key={m.id} className="border-b border-border/60">
                         <td className="px-4 py-2">
@@ -211,7 +230,29 @@ const AdminMembers = () => {
                             <span className="text-muted text-xs">No data</span>
                           )}
                         </td>
-                        <td className="px-4 py-2 text-right space-x-2">
+                        <td className="px-4 py-2 text-right">
+                          {ownershipPct != null ? (
+                            <div className="inline-flex flex-col items-end gap-1">
+                              <span className="text-xs text-default">
+                                {(ownershipPct * 100).toFixed(2)}%
+                              </span>
+                              <div className="h-1.5 w-24 bg-border/50 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-primary rounded-full transition-all"
+                                  style={{
+                                    width: `${Math.max(
+                                      4,
+                                      Math.min(100, ownershipRatio * 100)
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right space-x-2 whitespace-nowrap">
                           {canEdit ? (
                             isEditing ? (
                               <>
