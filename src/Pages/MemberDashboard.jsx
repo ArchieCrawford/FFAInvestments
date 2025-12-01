@@ -4,13 +4,17 @@ import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 import { useAuth } from '@/contexts/AuthContext'
 
-const fetchMemberRecord = async (authUserId) => {
-  if (!authUserId) return null
+const fetchMemberRecord = async (authUserId, email) => {
+  if (!authUserId && !email) return null
 
+  // Prefer auth_user_id; fall back to email to avoid orphaned accounts causing loading loops
   const { data, error } = await supabase
     .from('members')
     .select('id, member_name, email')
-    .eq('auth_user_id', authUserId)
+    .eq('is_active', true)
+    .or(`auth_user_id.eq.${authUserId || ''},email.eq.${email || ''}`)
+    .order('auth_user_id', { ascending: false }) // prefer claimed record
+    .limit(1)
     .maybeSingle()
 
   if (error) throw error
@@ -52,9 +56,13 @@ const MemberDashboard = () => {
     isLoading: memberLoading,
     isError: memberError,
     error: memberErrorObj,
-  } = useQuery(['member_record', authUserId], () => fetchMemberRecord(authUserId), {
-    enabled: !!authUserId,
-  })
+  } = useQuery(
+    ['member_record', authUserId, authUserId ? undefined : user?.email],
+    () => fetchMemberRecord(authUserId, user?.email || null),
+    {
+      enabled: !!authUserId || !!user?.email,
+    }
+  )
 
   const memberId = member?.id || null
 
