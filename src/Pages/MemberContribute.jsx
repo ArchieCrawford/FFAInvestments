@@ -36,9 +36,10 @@ export default function MemberContribute() {
       const { data, error } = await supabase
         .from("member_accounts")
         .select("*")
-  .eq("member_id", member ? member.member_id : null);
+        .eq("member_id", member ? member.member_id : null)
+        .eq("is_active", true);
       if (error) throw error;
-      return data || [];
+      return (data || []).filter((row) => row.is_active);
     },
   });
 

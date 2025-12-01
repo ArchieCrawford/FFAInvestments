@@ -154,7 +154,8 @@ export default function AdminImport() {
       } else if (importType === "ledger") {
         const { data: allAccounts, error: accountsError } = await supabase
           .from("member_accounts")
-          .select("id, member_id, member_name");
+          .select("id, member_id, member_name")
+          .eq("is_active", true);
         if (accountsError) throw accountsError;
 
         const accountByName = new Map(

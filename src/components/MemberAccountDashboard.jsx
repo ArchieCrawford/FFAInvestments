@@ -54,6 +54,7 @@ async function fetchMemberAccountData(memberId) {
     .from('member_accounts')
     .select('*')
     .eq('member_id', memberId)
+    .eq('is_active', true)
     .maybeSingle()
   if (accountError) throw accountError
   if (!account) throw new Error('Member account not found')

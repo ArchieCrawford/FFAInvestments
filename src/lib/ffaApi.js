@@ -67,6 +67,7 @@ export async function getMemberAccounts() {
   const { data, error } = await supabase
     .from('member_accounts')
     .select(MEMBER_ACCOUNT_FIELDS)
+    .eq('is_active', true)
     .order('member_name', { ascending: true })
   if (error) throw error
   return data || []
@@ -82,6 +83,7 @@ export async function getCurrentMemberAccount() {
     .from('member_accounts')
     .select(MEMBER_ACCOUNT_FIELDS)
     .eq('email', user.email)
+    .eq('is_active', true)
     .limit(1)
     .maybeSingle()
 
@@ -106,6 +108,7 @@ export async function getMemberAccountByEmail(email) {
     .from('member_accounts')
     .select(MEMBER_ACCOUNT_FIELDS)
     .eq('email', email)
+    .eq('is_active', true)
     .maybeSingle()
   if (error && error.code !== 'PGRST116') throw error
   return data || null

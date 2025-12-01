@@ -42,6 +42,7 @@ export default function AdminAccounts() {
       const { data, error } = await supabase
         .from("member_accounts")
         .select("*")
+        .eq("is_active", true)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

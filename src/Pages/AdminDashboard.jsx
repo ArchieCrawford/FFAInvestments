@@ -46,7 +46,10 @@ export default function AdminDashboard() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("member_accounts").select("*");
+      const { data, error } = await supabase
+        .from("member_accounts")
+        .select("*")
+        .eq("is_active", true);
       if (error) throw error;
       return data || [];
     },

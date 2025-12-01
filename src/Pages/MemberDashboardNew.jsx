@@ -59,6 +59,7 @@ async function fetchSelfMemberData() {
     .from('member_accounts')
     .select('*')
     .eq('email', user.email)
+    .eq('is_active', true)
     .maybeSingle()
   if (accountError) throw accountError
   if (!account) throw new Error('No member account found for this login')
