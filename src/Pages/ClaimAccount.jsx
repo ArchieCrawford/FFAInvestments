@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -9,111 +11,76 @@ import { AlertCircle, CheckCircle, User, Link as LinkIcon } from 'lucide-react'
 
 /**
  * ClaimAccount Component
- * 
+ *
  * Allows authenticated users to claim their member account by linking
  * their auth user ID to a specific member record in the members table.
- * 
+ *
  * Flow:
- * 1. Reads member_id from query string (?member_id=123)
- * 2. Checks if user is authenticated
- * 3. If not authenticated: shows login prompt with redirect
- * 4. If authenticated: shows claim button
- * 5. On claim: calls RPC function claim_member_account
- * 6. On success: redirects to member dashboard
+ * 1. Reads memberId from query string (?memberId=...)
+ * 2. Requires login (Prompts to log in if not authenticated)
+ * 3. If member is unclaimed, lets the user claim it
+ * 4. On success, redirects to member dashboard
  */
 export default function ClaimAccount() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  
-  // Get member_id from query string
-  const memberId = searchParams.get('member_id')
-  
-  // State management
-  const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState('idle') // idle | claiming | success | error
-  const [errorMessage, setErrorMessage] = useState('')
+  const queryClient = useQueryClient()
+  const { user } = useAuth()
 
-  // Check authentication status on mount
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession()
-        setSession(sessionData?.session || null)
-      } catch (err) {
-        console.error('[ClaimAccount] Error checking session:', err)
-        setSession(null)
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Support both memberId and legacy member_id params
+  const memberId = searchParams.get('memberId') || searchParams.get('member_id') || null
 
-    checkAuth()
-  }, [])
+  const {
+    data: member,
+    isLoading,
+    isError,
+    error,
+  } = useQuery(
+    ['claim_member', memberId],
+    async () => {
+      const { data, error: fetchError } = await supabase
+        .from('members')
+        .select('*')
+        .eq('id', memberId)
+        .maybeSingle()
+      if (fetchError) throw fetchError
+      return data
+    },
+    { enabled: !!memberId }
+  )
 
-  /**
-   * Handle the account claim action
-   * Calls the Supabase RPC function to link the auth user to the member
-   */
-  const handleClaim = async () => {
-    if (!memberId) {
-      setStatus('error')
-      setErrorMessage('No member ID provided')
-      return
-    }
-
-    setStatus('claiming')
-    setErrorMessage('')
-
-    try {
-      // Call the RPC function to claim the account
-      const { data, error } = await supabase.rpc('claim_member_account', {
-        _member_id: parseInt(memberId, 10)
-      })
-
-      if (error) throw error
-
-      // Success - redirect to dashboard after brief delay
-      setStatus('success')
-      setTimeout(() => {
+  const claimMutation = useMutation(
+    async () => {
+      const { error: updateError } = await supabase
+        .from('members')
+        .update({
+          auth_user_id: user.id,
+          claimed_at: new Date().toISOString(),
+        })
+        .eq('id', memberId)
+        .is('auth_user_id', null)
+      if (updateError) throw updateError
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['claim_member', memberId])
+        queryClient.invalidateQueries(['member_record'])
         navigate('/member/dashboard')
-      }, 1500)
-    } catch (err) {
-      console.error('[ClaimAccount] Claim failed:', err)
-      setStatus('error')
-      setErrorMessage(err.message || 'Failed to claim account. Please try again.')
+      },
     }
-  }
+  )
 
-  // Loading state
-  if (loading) {
-    return (
-      <Page title="Claim Account" subtitle="Loading...">
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-muted">Checking authentication...</p>
-          </CardContent>
-        </Card>
-      </Page>
-    )
-  }
-
-  // Missing member_id in query string
   if (!memberId) {
     return (
       <Page title="Claim Account" subtitle="Invalid Request">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No member ID provided. Please use a valid claim link.
-          </AlertDescription>
-        </Alert>
+        <div className="card p-4 text-sm text-muted">
+          No member ID provided. Please use a valid claim link.
+        </div>
       </Page>
     )
   }
 
-  // User is NOT logged in - show login prompt
-  if (!session) {
+  if (!user) {
     return (
       <Page title="Claim Your Account" subtitle="Authentication Required">
         <Card>
@@ -126,10 +93,10 @@ export default function ClaimAccount() {
           <CardContent className="space-y-4">
             <p className="text-muted">
               You need to log in to claim your member account. After logging in,
-              you'll be able to link your account and access your dashboard.
+              return to this link to finish claiming.
             </p>
-            <Button 
-              onClick={() => navigate(`/login?member_id=${memberId}`)}
+            <Button
+              onClick={() => navigate(`/login?memberId=${memberId}`)}
               className="w-full"
             >
               <LinkIcon className="w-4 h-4 mr-2" />
@@ -141,65 +108,74 @@ export default function ClaimAccount() {
     )
   }
 
-  // User IS logged in - show claim interface
   return (
     <Page title="Claim Your Account" subtitle="Link your member profile">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Claim Member Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Error state */}
-          {status === 'error' && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
-          )}
+      <div className="space-y-4">
+        {isLoading && (
+          <div className="card p-4 text-sm text-muted">
+            Loading your member record…
+          </div>
+        )}
 
-          {/* Success state */}
-          {status === 'success' && (
-            <Alert className="border-emerald-500 bg-emerald-50">
-              <CheckCircle className="h-4 w-4 text-emerald-600" />
-              <AlertDescription className="text-emerald-900">
-                Account claimed successfully! Redirecting to your dashboard...
-              </AlertDescription>
-            </Alert>
-          )}
+        {isError && (
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
+            Error: {error?.message || 'Unable to load member record.'}
+          </div>
+        )}
 
-          {/* Idle state - show claim button */}
-          {status === 'idle' && (
-            <>
-              <p className="text-muted">
-                Click below to claim your member account (ID: {memberId}) and link it
-                to your login. This will grant you access to your portfolio dashboard.
-              </p>
-              <Button 
-                onClick={handleClaim}
-                className="w-full"
-                size="lg"
-              >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Claim My Account
-              </Button>
-            </>
-          )}
+        {!isLoading && !isError && member && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                {member.member_name || 'Member'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-xs text-muted">
+                Logged in as: {user.email}
+              </div>
 
-          {/* Claiming state - show loading button */}
-          {status === 'claiming' && (
-            <Button 
-              disabled
-              className="w-full"
-              size="lg"
-            >
-              Claiming Account...
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+              {member.auth_user_id ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This member record is already claimed.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Button
+                  type="button"
+                  className="w-full"
+                  size="lg"
+                  onClick={() => claimMutation.mutate()}
+                  disabled={claimMutation.isLoading}
+                >
+                  {claimMutation.isLoading ? 'Claiming…' : 'Claim this account'}
+                </Button>
+              )}
+
+              {claimMutation.isError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {claimMutation.error?.message || 'Failed to claim account.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {claimMutation.isSuccess && !member.auth_user_id && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Account claimed successfully! Redirecting…
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </Page>
   )
 }
