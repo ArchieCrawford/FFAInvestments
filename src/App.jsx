@@ -75,16 +75,16 @@ function App() {
           <Route path="/invite/:token" element={<InviteAccept />} />
           <Route path="/" element={
             <ProtectedRoute>
-              <Navigate to="/member/home" replace />
+              <Navigate to="/admin/dashboard" replace />
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <Navigate to="/member/home" replace />
+              <Navigate to="/admin/dashboard" replace />
             </ProtectedRoute>
           } />
           <Route path="/admin/dashboard" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminDashboard">
                 <AdminDashboard_Hero />
               </Layout>
@@ -211,9 +211,7 @@ function App() {
           <Route path="/callback" element={<SchwabCallback />} />
           <Route path="/member/home" element={
             <ProtectedRoute>
-              <Layout currentPageName="MemberHome">
-                <MemberHome />
-              </Layout>
+              <Navigate to="/admin/dashboard" replace />
             </ProtectedRoute>
           } />
           <Route path="/member/dashboard" element={

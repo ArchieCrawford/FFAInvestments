@@ -35,7 +35,8 @@ const adminNav = [
 ];
 
 const memberNav = [
-  { title: "Dashboard", url: "/member/dashboard", icon: "fas fa-table" },
+  { title: "Partner Dashboard", url: "/admin/dashboard", icon: "fas fa-chart-line" },
+  { title: "My Dashboard", url: "/member/dashboard", icon: "fas fa-table" },
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "My Accounts", url: createPageUrl("MemberAccounts"), icon: "fas fa-wallet" },
   { title: "Make Contribution", url: createPageUrl("MemberContribute"), icon: "fas fa-dollar-sign" },

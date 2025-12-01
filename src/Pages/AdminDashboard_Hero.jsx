@@ -1,269 +1,428 @@
-// src/Pages/AdminDashboard_Hero.jsx
-
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../lib/supabase'
+import { Page } from '../components/Page'
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
+  Legend,
+  CartesianGrid,
   ResponsiveContainer,
 } from 'recharts'
 
-const fetchClubGrowth = async () => {
-  const { data, error } = await supabase
-    .from('club_growth_over_time')
-    .select('*')
-    .order('report_month', { ascending: true })
-
-  if (error) throw error
-
-  return data.map(row => ({
-    ...row,
-    report_month: row.report_month,
-  }))
+function numberOrNull(value) {
+  if (value === null || value === undefined) return null
+  const n = Number(value)
+  return Number.isNaN(n) ? null : n
 }
 
-const fetchMemberSnapshots = async () => {
-  const { data, error } = await supabase
-    .from('member_growth_over_time')
-    .select('*')
+function formatCurrencyShort(n) {
+  if (n === null || n === undefined) return '—'
+  const v = Number(n)
+  if (Number.isNaN(v)) return '—'
+  if (Math.abs(v) >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
+  if (Math.abs(v) >= 1_000) return `$${(v / 1_000).toFixed(1)}k`
+  return `$${v.toFixed(2)}`
+}
 
-  if (error) throw error
+function formatPercent(n) {
+  if (n === null || n === undefined) return '—'
+  const v = Number(n)
+  if (Number.isNaN(v)) return '—'
+  return `${(v * 100).toFixed(1)}%`
+}
 
-  const latestByMember = new Map()
-
-  for (const row of data) {
-    const key = row.member_id || row.member_name
-    const existing = latestByMember.get(key)
-    if (!existing || row.report_month > existing.report_month) {
-      latestByMember.set(key, row)
-    }
+function formatMonthLabel(d) {
+  try {
+    return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })
+  } catch {
+    return d
   }
+}
 
-  return Array.from(latestByMember.values())
+async function fetchMeetingReports() {
+  const { data, error } = await supabase
+    .from('meeting_reports')
+    .select('*')
+    .order('report_month', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+async function fetchLatestMeetingMembers() {
+  const { data: latest, error: latestError } = await supabase
+    .from('meeting_reports')
+    .select('id, report_month, portfolio_total_value, unit_value')
+    .order('report_month', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestError) throw latestError
+  if (!latest) return { latestMeeting: null, members: [] }
+
+  const { data: members, error: membersError } = await supabase
+    .from('meeting_report_members')
+    .select('*')
+    .eq('meeting_report_id', latest.id)
+    .order('ownership_pct_of_club', { ascending: false })
+
+  if (membersError) throw membersError
+
+  return {
+    latestMeeting: latest,
+    members: members || [],
+  }
 }
 
 const AdminDashboard_Hero = () => {
   const {
-    data: clubData,
-    isLoading: clubLoading,
-    isError: clubError,
-  } = useQuery(['club_growth'], fetchClubGrowth)
+    data: reports,
+    isLoading: reportsLoading,
+    error: reportsError,
+  } = useQuery({
+    queryKey: ['meeting_reports'],
+    queryFn: fetchMeetingReports,
+  })
 
   const {
-    data: memberSnapshots,
+    data: memberData,
     isLoading: membersLoading,
-    isError: membersError,
-  } = useQuery(['member_latest_snapshots'], fetchMemberSnapshots)
+    error: membersError,
+  } = useQuery({
+    queryKey: ['meeting_report_members_latest'],
+    queryFn: fetchLatestMeetingMembers,
+  })
 
-  if (clubLoading || membersLoading) {
-    return (
-      <div className="p-8">
-        <div className="text-lg font-semibold">Loading dashboard…</div>
-      </div>
-    )
-  }
+  const latestMeeting = memberData?.latestMeeting || null
+  const latestMembers = memberData?.members || []
 
-  if (clubError || membersError) {
-    return (
-      <div className="p-8">
-        <div className="text-lg font-semibold text-red-600">
-          Error loading dashboard.
-        </div>
-      </div>
-    )
-  }
+  const series = useMemo(() => {
+    const rows = reports || []
+    return rows.map(r => {
+      const monthLabel = formatMonthLabel(r.report_month)
+      return {
+        month: monthLabel,
+        report_month: r.report_month,
+        portfolio_total_value: numberOrNull(r.portfolio_total_value),
+        stock_value: numberOrNull(r.stock_value),
+        cash_credit_union: numberOrNull(r.cash_credit_union),
+        cash_schwab: numberOrNull(r.cash_schwab),
+        cash_schwab_mm: numberOrNull(r.cash_schwab_mm),
+        unit_value: numberOrNull(r.unit_value),
+        total_units_outstanding: numberOrNull(r.total_units_outstanding),
+        total_dues_paid: numberOrNull(r.total_dues_paid),
+        total_dues_owed: numberOrNull(r.total_dues_owed),
+        total_member_contribution: numberOrNull(r.total_member_contribution),
+        total_member_units_added: numberOrNull(r.total_member_units_added),
+      }
+    })
+  }, [reports])
 
-  const latest = clubData[clubData.length - 1]
+  const latestReport = useMemo(() => {
+    if (!reports || reports.length === 0) return null
+    return reports[reports.length - 1]
+  }, [reports])
 
-  const totalMembers = memberSnapshots.length
-  const totalAUM = latest?.portfolio_total_value || 0
-  const latestGrowthAmount = latest?.growth_amount || 0
-  const latestGrowthPct = latest?.growth_pct || 0
-  const unitPrice = latest?.unit_value || 0
+  const overviewCards = [
+    {
+      label: 'Latest Portfolio Value',
+      value: latestReport ? formatCurrencyShort(latestReport.portfolio_total_value) : '—',
+      helper: latestReport ? formatMonthLabel(latestReport.report_month) : '',
+    },
+    {
+      label: 'Current Unit Value',
+      value: latestReport ? `$${Number(latestReport.unit_value || 0).toFixed(4)}` : '—',
+      helper: latestReport ? `${Number(latestReport.total_units_outstanding || 0).toFixed(2)} units` : '',
+    },
+    {
+      label: 'Latest Stock vs Cash',
+      value: latestReport
+        ? `${formatCurrencyShort(latestReport.stock_value)} stock`
+        : '—',
+      helper: latestReport
+        ? `${formatCurrencyShort(
+            (latestReport.cash_credit_union || 0) +
+              (latestReport.cash_schwab || 0) +
+              (latestReport.cash_schwab_mm || 0),
+          )} cash`
+        : '',
+    },
+    {
+      label: 'Last Meeting Contributions',
+      value: latestReport && latestReport.total_member_contribution
+        ? formatCurrencyShort(latestReport.total_member_contribution)
+        : '—',
+      helper:
+        latestReport && latestReport.total_dues_paid
+          ? `${formatCurrencyShort(latestReport.total_dues_paid)} dues collected`
+          : '',
+    },
+  ]
 
-  const topMembers = [...memberSnapshots]
-    .sort((a, b) => (b.portfolio_value || 0) - (a.portfolio_value || 0))
-    .slice(0, 5)
+  const loading = reportsLoading || membersLoading
+  const error = reportsError || membersError
 
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            FFA Hero Dashboard
-          </h1>
-          <p className="text-sm text-gray-500">
-            Overview of the club and growth over time.
-          </p>
+    <Page
+      title="Partner Dashboard"
+      subtitle="Track how the club and partners have grown over time."
+    >
+      {error && (
+        <div className="card mb-4 bg-primary-soft border border-border text-default p-3 rounded-xl">
+          {error.message || String(error)}
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium text-gray-500">
-            Assets Under Management
-          </div>
-          <div className="mt-2 text-2xl font-bold">
-            ${totalAUM.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-          </div>
-          <div className="mt-1 text-xs text-gray-500">
-            Unit price: ${unitPrice.toFixed(2)}
-          </div>
+      {loading ? (
+        <div className="py-16 text-center text-muted text-sm">Loading meeting history…</div>
+      ) : !reports || reports.length === 0 ? (
+        <div className="py-16 text-center text-muted text-sm">
+          No meeting reports found yet. Import or create your first meeting snapshot to see analytics here.
         </div>
-
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium text-gray-500">
-            Members
-          </div>
-          <div className="mt-2 text-2xl font-bold">
-            {totalMembers}
-          </div>
-          <div className="mt-1 text-xs text-gray-500">
-            With current valuation history
-          </div>
-        </div>
-
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium text-gray-500">
-            Latest Growth
-          </div>
-          <div className="mt-2 text-2xl font-bold">
-            {latestGrowthAmount >= 0 ? '+' : '-'}$
-            {Math.abs(latestGrowthAmount).toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}
-          </div>
-          <div
-            className={
-              'mt-1 text-xs ' +
-              (latestGrowthPct >= 0 ? 'text-emerald-600' : 'text-red-600')
-            }
-          >
-            {latestGrowthPct >= 0 ? '▲' : '▼'}{' '}
-            {(latestGrowthPct * 100).toFixed(2)}% vs last meeting
-          </div>
-        </div>
-
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="text-xs font-medium text-gray-500">
-            Total Units Outstanding
-          </div>
-          <div className="mt-2 text-2xl font-bold">
-            {latest?.total_units_outstanding?.toLocaleString(undefined, {
-              maximumFractionDigits: 4,
-            }) || '0'}
-          </div>
-          <div className="mt-1 text-xs text-gray-500">
-            Based on latest meeting report
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border bg-white p-4 shadow-sm md:col-span-2">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="text-sm font-semibold">
-              Club Value Over Time
+      ) : (
+        <div className="flex flex-col gap-6">
+          <section>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {overviewCards.map(card => (
+                <div key={card.label} className="card rounded-xl border border-border bg-surface p-4 flex flex-col gap-1">
+                  <div className="text-xs uppercase tracking-wide text-muted">{card.label}</div>
+                  <div className="text-2xl font-semibold text-default">{card.value}</div>
+                  {card.helper ? (
+                    <div className="text-xs text-muted mt-1">{card.helper}</div>
+                  ) : null}
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={clubData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="report_month"
-                  tickFormatter={(value) =>
-                    new Date(value).toLocaleDateString('en-US', {
-                      month: 'short',
-                      year: '2-digit',
-                    })
-                  }
-                  tick={{ fontSize: 10 }}
-                />
-                <YAxis
-                  tickFormatter={(value) =>
-                    `$${(value / 1000).toFixed(0)}k`
-                  }
-                  tick={{ fontSize: 10 }}
-                />
-                <Tooltip
-                  formatter={(value, name) => {
-                    if (name === 'portfolio_total_value') {
-                      return [
-                        `$${Number(value).toLocaleString(undefined, {
-                          maximumFractionDigits: 2,
-                        })}`,
-                        'Total Value',
-                      ]
-                    }
-                    if (name === 'growth_pct') {
-                      return [
-                        `${(Number(value) * 100).toFixed(2)}%`,
-                        'Growth %',
-                      ]
-                    }
-                    return [value, name]
-                  }}
-                  labelFormatter={(label) =>
-                    new Date(label).toLocaleDateString('en-US', {
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="portfolio_total_value"
-                  stroke="#2563eb"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Total Value"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+          </section>
 
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
-          <div className="mb-2 text-sm font-semibold">
-            Top Members by Portfolio
-          </div>
-          <div className="space-y-2">
-            {topMembers.map((m) => (
-              <div
-                key={m.member_id || m.member_name}
-                className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2"
-              >
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
                 <div>
-                  <div className="text-xs font-medium">
-                    {m.member_name}
-                  </div>
-                  <div className="text-[11px] text-gray-500">
-                    {(m.ownership_pct_of_club * 100).toFixed(2)}% of club
-                  </div>
-                </div>
-                <div className="text-xs font-semibold">
-                  $
-                  {Number(m.portfolio_value || 0).toLocaleString(undefined, {
-                    maximumFractionDigits: 2,
-                  })}
+                  <div className="text-sm font-medium text-default">Unit Value Over Time</div>
+                  <div className="text-xs text-muted">Per-meeting NAV per unit</div>
                 </div>
               </div>
-            ))}
-            {!topMembers.length && (
-              <div className="text-xs text-gray-500">
-                No member data yet.
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={series}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) =>
+                        name === 'unit_value'
+                          ? [`$${Number(value).toFixed(4)}`, 'Unit value']
+                          : [value, name]
+                      }
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="unit_value"
+                      stroke="rgb(59,130,246)"
+                      strokeWidth={2}
+                      dot={false}
+                      name="Unit value"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            )}
-          </div>
+            </div>
+
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">Portfolio Value Over Time</div>
+                  <div className="text-xs text-muted">Total club portfolio at each meeting</div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={series}>
+                    <defs>
+                      <linearGradient id="portfolioValueGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.7} />
+                        <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) =>
+                        name === 'portfolio_total_value'
+                          ? [formatCurrencyShort(value), 'Portfolio value']
+                          : [value, name]
+                      }
+                    />
+                    <Legend />
+                    <Area
+                      type="monotone"
+                      dataKey="portfolio_total_value"
+                      stroke="rgb(59,130,246)"
+                      strokeWidth={2}
+                      fill="url(#portfolioValueGradient)"
+                      name="Portfolio value"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">Stock vs Cash Breakdown</div>
+                  <div className="text-xs text-muted">How the portfolio mix has evolved</div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={series}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) =>
+                        [formatCurrencyShort(value), name === 'stock_value' ? 'Stock' : 'Cash']
+                      }
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="stock_value"
+                      stackId="a"
+                      fill="rgb(59,130,246)"
+                      name="Stock"
+                    />
+                    <Bar
+                      dataKey="cash_credit_union"
+                      stackId="a"
+                      fill="rgb(16,185,129)"
+                      name="Credit union"
+                    />
+                    <Bar
+                      dataKey="cash_schwab"
+                      stackId="a"
+                      fill="rgb(234,179,8)"
+                      name="Schwab cash"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">Dues & Contributions</div>
+                  <div className="text-xs text-muted">How much members are putting into the club</div>
+                </div>
+              </div>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={series}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      formatter={(value, name) => {
+                        if (name === 'total_member_contribution') {
+                          return [formatCurrencyShort(value), 'Member contributions']
+                        }
+                        if (name === 'total_dues_paid') {
+                          return [formatCurrencyShort(value), 'Dues paid']
+                        }
+                        if (name === 'total_dues_owed') {
+                          return [formatCurrencyShort(value), 'Dues owed']
+                        }
+                        return [value, name]
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="total_member_contribution"
+                      fill="rgb(59,130,246)"
+                      name="Contributions"
+                    />
+                    <Bar
+                      dataKey="total_dues_paid"
+                      fill="rgb(16,185,129)"
+                      name="Dues paid"
+                    />
+                    <Bar
+                      dataKey="total_dues_owed"
+                      fill="rgb(239,68,68)"
+                      name="Dues owed"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <div className="card rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-sm font-medium text-default">
+                    Top Holders at Latest Meeting
+                  </div>
+                  <div className="text-xs text-muted">
+                    {latestMeeting
+                      ? `As of ${formatMonthLabel(latestMeeting.report_month)}`
+                      : 'No latest meeting found'}
+                  </div>
+                </div>
+              </div>
+              {(!latestMembers || latestMembers.length === 0) ? (
+                <div className="text-sm text-muted py-4">
+                  No member breakdown found for the latest meeting.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-xs text-muted border-b border-border">
+                        <th className="text-left py-2 pr-2">Member</th>
+                        <th className="text-right py-2 px-2">Units</th>
+                        <th className="text-right py-2 px-2">Portfolio</th>
+                        <th className="text-right py-2 pl-2">Ownership</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {latestMembers.slice(0, 10).map(m => (
+                        <tr key={m.id} className="border-b border-border/40 last:border-b-0">
+                          <td className="py-2 pr-2 text-default">{m.member_name}</td>
+                          <td className="py-2 px-2 text-right text-default">
+                            {m.total_units ? Number(m.total_units).toFixed(3) : '—'}
+                          </td>
+                          <td className="py-2 px-2 text-right text-default">
+                            {m.portfolio_value ? formatCurrencyShort(m.portfolio_value) : '—'}
+                          </td>
+                          <td className="py-2 pl-2 text-right text-default">
+                            {m.ownership_pct_of_club ? formatPercent(m.ownership_pct_of_club) : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </div>
-    </div>
+      )}
+    </Page>
   )
 }
 
