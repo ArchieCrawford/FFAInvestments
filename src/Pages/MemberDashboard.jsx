@@ -1,8 +1,8 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import Page from '../components/Page'
-import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { Page } from '@/components/Page'
+import { useAuth } from '@/contexts/AuthContext'
 
 const fetchMemberRecord = async (authUserId) => {
   if (!authUserId) return null
@@ -122,7 +122,7 @@ const MemberDashboard = () => {
         title="Member Dashboard"
         subtitle="We ran into a problem loading your data."
       >
-        <div className="card p-4 text-sm text-red-500">
+        <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
           Error: {errorMsg}
         </div>
       </Page>
