@@ -16,8 +16,10 @@ import AdminDashboard_Debug from './Pages/AdminDashboard_Debug.jsx'
 import DebugDataProbe from './DebugDataProbe.jsx'
 import AdminUsers from './components/AdminUsersNew.jsx'
 import AdminAccounts from './components/AdminAccounts.jsx'
+import AdminPositions from './Pages/AdminPositions.jsx'
 import AdminLedger from './Pages/AdminLedger.jsx'
-import AdminUnitPrice from './components/AdminUnitPriceNew.jsx'
+import AdminUnitPriceComponent from './components/AdminUnitPriceNew.jsx'
+import AdminUnitPricePage from './Pages/AdminUnitPrice.jsx'
 import AdminEducation from './Pages/AdminEducation.jsx'
 import AdminImport from './components/AdminImport.jsx'
 import AdminSettings from './Pages/AdminSettings.jsx'
@@ -117,9 +119,9 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/accounts" element={
-            <ProtectedRoute requireAdmin={true}>
-              <Layout currentPageName="AdminAccounts">
-                <AdminAccounts />
+            <ProtectedRoute>
+              <Layout currentPageName="AdminPositions">
+                <AdminPositions />
               </Layout>
             </ProtectedRoute>
           } />
@@ -131,9 +133,9 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/unit-price" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminUnitPrice">
-                <AdminUnitPrice />
+                <AdminUnitPricePage />
               </Layout>
             </ProtectedRoute>
           } />
@@ -159,7 +161,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/user-management" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="UserManagement">
                 <UserManagement />
               </Layout>
@@ -173,7 +175,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/members" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminMembers">
                 <AdminMembers />
               </Layout>
@@ -264,7 +266,7 @@ function App() {
           <Route path="/unit-price" element={
             <ProtectedRoute>
               <Layout currentPageName="UnitPrice">
-                <AdminUnitPrice />
+                <AdminUnitPricePage />
               </Layout>
             </ProtectedRoute>
           } />
@@ -286,7 +288,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/dues" element={
-            <ProtectedRoute requireAdmin={true}>
+            <ProtectedRoute>
               <Layout currentPageName="AdminDues">
                 <AdminDues />
               </Layout>
