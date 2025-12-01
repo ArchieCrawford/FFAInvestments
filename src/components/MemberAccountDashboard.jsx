@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { getMemberTimeline } from '../lib/ffaApi'
 import { Page } from './Page'
+import { useAuth } from '../contexts/AuthContext'
 import {
   AreaChart,
   Area,
@@ -49,27 +50,47 @@ function formatDateLabel(d) {
   }
 }
 
-async function fetchMemberAccountData(memberId) {
-  const { data: account, error: accountError } = await supabase
+async function fetchMemberAccountData(memberId, userEmail) {
+  let resolvedMemberId = memberId
+
+  // If no memberId in route, try to resolve from logged-in email (active members only)
+  if (!resolvedMemberId && userEmail) {
+    const { data: memberRow, error: memberError } = await supabase
+      .from('members')
+      .select('id, member_name, email')
+      .eq('email', userEmail)
+      .eq('is_active', true)
+      .order('auth_user_id', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (memberError) throw memberError
+    resolvedMemberId = memberRow?.id || null
+  }
+
+  if (!resolvedMemberId) {
+    throw new Error('Member not found or inactive')
+  }
+
+  const { data: memberAccount, error: accountError } = await supabase
     .from('member_accounts')
     .select('*')
-    .eq('member_id', memberId)
+    .eq('member_id', resolvedMemberId)
     .eq('is_active', true)
     .maybeSingle()
   if (accountError) throw accountError
-  if (!account) throw new Error('Member account not found')
+  if (!memberAccount) throw new Error('Member account not found or inactive')
 
-  const timeline = await getMemberTimeline(memberId)
+  const timeline = await getMemberTimeline(resolvedMemberId)
 
   const { data: meetingRows, error: meetingError } = await supabase
     .from('meeting_report_members')
     .select('*, meeting_reports(report_month, unit_value)')
-    .eq('member_id', memberId)
+    .eq('member_id', resolvedMemberId)
     .order('created_at', { ascending: true })
   if (meetingError) throw meetingError
 
   return {
-    account,
+    account: memberAccount,
     timeline: timeline || [],
     meetingRows: meetingRows || [],
   }
@@ -77,15 +98,16 @@ async function fetchMemberAccountData(memberId) {
 
 const MemberAccountDashboard = () => {
   const { memberId } = useParams()
+  const { user } = useAuth()
 
   const {
     data,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['member_account_dashboard', memberId],
-    queryFn: () => fetchMemberAccountData(memberId),
-    enabled: !!memberId,
+    queryKey: ['member_account_dashboard', memberId || user?.email],
+    queryFn: () => fetchMemberAccountData(memberId, user?.email || null),
+    enabled: !!memberId || !!user?.email,
   })
 
   const account = data?.account || null
