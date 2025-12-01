@@ -42,6 +42,8 @@ const adminNav = [
 const memberNav = [
   { title: "Partner Dashboard", url: "/admin/dashboard", icon: "fas fa-chart-line" },
   { title: "My Dashboard", url: "/member/dashboard", icon: "fas fa-table" },
+  { title: "Member Account Dashboard 1", url: "/member/dashboard", icon: "fas fa-gauge-high" },
+  { title: "Member Account Dashboard 2", url: "__member_account_dashboard__", icon: "fas fa-id-card" },
   { title: "Member Directory", url: "/member/directory", icon: "fas fa-address-book" },
   { title: "Accounts / Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
   { title: "My Accounts", url: createPageUrl("MemberAccounts"), icon: "fas fa-wallet" },
@@ -100,18 +102,27 @@ export default function Layout({ children, currentPageName }) {
       })()
     : memberNav;
 
+  // Resolve any dynamic member dashboard links that need the current user id
+  const resolvedNavigationItems = navigationItems.map(item => {
+    if (item.url === '__member_account_dashboard__') {
+      const target = user?.id ? `/member/${user.id}/dashboard` : '/member/dashboard';
+      return { ...item, url: target };
+    }
+    return item;
+  });
+
   // Initialize expanded state for active submenus
   useEffect(() => {
-    if (navigationItems) {
+    if (resolvedNavigationItems) {
       const initialExpanded = {};
-      navigationItems.forEach(item => {
+      resolvedNavigationItems.forEach(item => {
         if (item.submenu && isSubmenuActive(item.submenu)) {
           initialExpanded[item.title] = true;
         }
       });
       setExpandedMenus(prev => ({ ...prev, ...initialExpanded }));
     }
-  }, [location.pathname, navigationItems]);
+  }, [location.pathname, resolvedNavigationItems]);
 
   // If user is a member, redirect them to their own dashboard
   React.useEffect(() => {
@@ -150,7 +161,7 @@ export default function Layout({ children, currentPageName }) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-2">
-            {navigationItems.map((item) => (
+            {resolvedNavigationItems.map((item) => (
               <div key={item.title} className="mb-1">
                 {item.submenu ? (
                   <>
