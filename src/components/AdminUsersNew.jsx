@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase';
 import { getMembers } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  Users, Mail, UserPlus, Edit2, Trash2, Shield, 
-  Search, Filter, Download, Upload, AlertCircle
+  Users, Mail, UserPlus, Shield, 
+  Search, AlertCircle
 } from 'lucide-react';
 import { Page } from './Page';
 
@@ -27,6 +27,7 @@ const AdminUsersNew = () => {
       const data = await getMembers()
       const mapped = (data || []).map(m => ({
         id: m.id,
+        member_id: m.id,
         email: m.email,
         full_name: m.full_name || m.member_name,
         user_role: 'member',
@@ -41,18 +42,37 @@ const AdminUsersNew = () => {
     }
   };
 
-  const sendInvite = async (memberEmail, memberName) => {
+  const sendInvite = async (memberId, memberEmail, memberName) => {
     try {
-      // Here you would implement your invite logic
-      // For now, we'll just copy the signup URL with the email
-      const signupUrl = `${window.location.origin}/signup?email=${encodeURIComponent(memberEmail)}`;
-      
-      await navigator.clipboard.writeText(signupUrl);
-      setMessage({ type: 'success', text: `Invite link for ${memberName} copied to clipboard!` });
-      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      setMessage({ type: '', text: '' })
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !sessionData?.session?.access_token) {
+          throw new Error('Not authenticated')
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invite`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ member_id: memberId }),
+        }
+      )
+
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || payload?.status === 'error') {
+        const errText = payload?.error || payload?.error_message || (await response.text())
+        throw new Error(errText || 'Failed to send invite')
+      }
+
+      setMessage({ type: 'success', text: `Invite sent to ${memberName || memberEmail || 'member'}` })
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
     } catch (error) {
       console.error('Error sending invite:', error);
-      setMessage({ type: 'error', text: 'Failed to copy invite link' });
+      setMessage({ type: 'error', text: 'Failed to send invite' });
     }
   };
 
@@ -224,7 +244,7 @@ const AdminUsersNew = () => {
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredMembers.map((member) => (
-                  <tr key={member.member_id} className="hover:bg-surface">
+                  <tr key={member.id} className="hover:bg-surface">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -282,15 +302,13 @@ const AdminUsersNew = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        {member.account_status !== 'registered' && (
-                          <button
-                            onClick={() => sendInvite(member.email, member.full_name)}
-                            className="text-primary hover:text-primary/80 flex items-center"
-                          >
-                            <Mail className="w-4 h-4 mr-1" />
-                            Invite
-                          </button>
-                        )}
+                        <button
+                          onClick={() => sendInvite(member.id, member.email, member.full_name)}
+                          className="text-primary hover:text-primary/80 flex items-center"
+                        >
+                          <Mail className="w-4 h-4 mr-1" />
+                          Send Invite
+                        </button>
                       </div>
                     </td>
                   </tr>
