@@ -15,6 +15,18 @@ const fetchLoginLogs = async () => {
   if (error) throw error
   return data || []
 }
+const { error: logErr } = await supabase
+  .from('member_login_logs')
+  .insert({
+    member_id,
+    email,
+    event_type: 'login_success',
+    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+  })
+
+if (logErr) {
+  console.error('[login log insert failed]', logErr)
+}
 
 const AdminLoginActivity = () => {
   const [emailFilter, setEmailFilter] = useState('')
