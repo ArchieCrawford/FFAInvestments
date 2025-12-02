@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 
 export default function Login() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const legacyMemberId = params.get('memberId');
+  const rawRedirectParam = params.get('redirect');
+  const decodedRedirect = rawRedirectParam
+    ? decodeURIComponent(rawRedirectParam)
+    : legacyMemberId
+    ? `/member/claim?memberId=${encodeURIComponent(legacyMemberId)}`
+    : null;
+  const safeRedirect = decodedRedirect && decodedRedirect.startsWith('/') ? decodedRedirect : null;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [forgotPasswordState, setForgotPasswordState] = useState({ loading: false, message: '', error: '' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setLoginError('');
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -50,14 +65,48 @@ export default function Login() {
         .eq('id', user.id)
         .single();
 
-      if (!profileError && profile?.role === 'admin') {
-        window.location.href = '/admin/dashboard';
-      } else {
-        window.location.href = '/member/dashboard';
-      }
+      const defaultDestination = !profileError && profile?.role === 'admin'
+        ? '/admin/dashboard'
+        : '/member/dashboard';
+
+      const destination = safeRedirect || defaultDestination;
+
+      navigate(destination, { replace: true });
     } catch (error) {
-      alert('Login failed: ' + (error.message || 'Unknown error'));
+      setLoginError(error.message || 'Login failed. Please try again.');
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setForgotPasswordState({ loading: false, message: '', error: 'Enter your email first so we know where to send the reset link.' });
+      return;
+    }
+
+    const redirectTo = `${window.location.origin}/auth/callback`;
+    setForgotPasswordState({ loading: true, message: '', error: '' });
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setForgotPasswordState({
+        loading: false,
+        message: 'Check your email for a password reset link. Use it to set (or reset) your password, then return here to log in.',
+        error: ''
+      });
+    } catch (error) {
+      setForgotPasswordState({
+        loading: false,
+        message: '',
+        error: error.message || 'Unable to start password reset. Try again in a moment.',
+      });
     }
   };
 
@@ -106,7 +155,38 @@ export default function Login() {
                 required
                 placeholder="Enter your password"
               />
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={handleForgotPassword}
+                  disabled={forgotPasswordState.loading}
+                >
+                  {forgotPasswordState.loading ? 'Sending reset link…' : 'Forgot your password?'}
+                </button>
+                {safeRedirect && (
+                  <span className="text-muted">Redirecting to your invite after login</span>
+                )}
+              </div>
             </div>
+
+            {loginError && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                {loginError}
+              </div>
+            )}
+
+            {forgotPasswordState.message && (
+              <div className="text-sm text-green-700 bg-green-50 border border-green-200 rounded px-3 py-2">
+                {forgotPasswordState.message}
+              </div>
+            )}
+
+            {forgotPasswordState.error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                {forgotPasswordState.error}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -124,10 +204,13 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="text-center mt-4">
-            <small className="text-muted">
-              This app uses your Supabase login. Contact an admin if you don't
-              have access yet.
+          <div className="text-center mt-4 space-y-2">
+            <small className="block text-muted">
+              If you were pre-invited and never set a password, use “Forgot password” with the email
+              on file to create one, then log in and return to your claim link.
+            </small>
+            <small className="block text-muted">
+              This app uses your Supabase login. Contact an admin if you don't have access yet.
             </small>
           </div>
         </div>

@@ -132,6 +132,33 @@ create table if not exists public.unit_prices (
   unique(price_date)
 );
 
+-- Members Table
+create table if not exists public.members (
+  id uuid primary key default uuid_generate_v4(),
+  member_name text,
+  full_name text,
+  first_name text,
+  last_name text,
+  email text not null unique,
+  role text not null default 'member' check (role in ('member','admin')),
+  phone text,
+  join_date date default current_date,
+  membership_status text not null default 'active' check (membership_status in ('active','inactive','pending','invited')),
+  dues_status text not null default 'pending' check (dues_status in ('current','overdue','pending')),
+  last_payment_date date,
+  notes text,
+  auth_user_id uuid references auth.users(id),
+  claimed_at timestamptz,
+  invite_token text,
+  invite_token_expires_at timestamptz,
+  member_account_id uuid references public.member_accounts(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_members_auth_user_id on public.members(auth_user_id);
+create index if not exists idx_members_membership_status on public.members(membership_status);
+
 -- Member Accounts Table
 create table if not exists public.member_accounts (
   id uuid primary key default uuid_generate_v4(),
@@ -218,6 +245,11 @@ end $$;
 
 do $$ begin
   alter table public.education_progress enable row level security;
+exception when others then null;
+end $$;
+
+do $$ begin
+  alter table public.members enable row level security;
 exception when others then null;
 end $$;
 
@@ -356,6 +388,29 @@ for select using (public.is_admin());
 create policy "audit_log insert all" on public.audit_log
 for insert with check (auth.uid() is not null);
 
+-- Members policies & claim helpers
+revoke update on public.members from anon, authenticated;
+
+drop policy if exists "Members can read all member info" on public.members;
+drop policy if exists "Admins can manage members" on public.members;
+drop policy if exists "Authenticated users can claim" on public.members;
+
+create policy "Members can read all member info" on public.members
+for select using (true);
+
+create policy "Admins can manage members" on public.members
+for all using (
+  exists (
+    select 1 from public.profiles p
+    where p.id = auth.uid()
+      and p.role = 'admin'
+  )
+);
+
+create policy "Authenticated users can claim" on public.members
+for update using (auth.role() = 'authenticated')
+with check (auth.role() = 'authenticated');
+
 -- 5) Triggers and Functions
 
 -- Auto-update timestamps
@@ -382,6 +437,8 @@ begin
     case 
       when new.email = 'admin@ffa.com' then 'admin'
       when new.email = 'archie.crawford1@gmail.com' then 'admin'
+  
+    begin
       else 'member'
     end
   )
@@ -389,6 +446,50 @@ begin
   return new;
 end; $$;
 
+create or replace function public.claim_member_for_current_user(member_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_member record;
+
+  if v_user_id is null then
+    raise exception using errcode = '42501', message = 'not_authenticated';
+  end if;
+
+  select id, email, auth_user_id, claimed_at
+    into v_member
+  from public.members
+  where id = member_id
+  for update;
+
+  if not found then
+    raise exception using errcode = 'P0002', message = 'member_not_found';
+  end if;
+
+  if v_member.auth_user_id is not null and v_member.auth_user_id <> v_user_id then
+    raise exception using errcode = 'P0001', message = 'already_claimed_by_another';
+  end if;
+
+  update public.members
+  set auth_user_id = v_user_id,
+      claimed_at = now(),
+      updated_at = now()
+  where id = member_id
+  returning id, email, auth_user_id, claimed_at
+  into v_member;
+
+  return jsonb_build_object(
+    'success', true,
+    'member_id', v_member.id,
+    'email', v_member.email,
+    'claimed_at', v_member.claimed_at
+  );
+end;
+$$;
 -- Note: In some Supabase environments, creating triggers on auth.users may be restricted.
 -- If the following trigger creation fails, you can:
 -- 1. Use Supabase Auth webhooks to call handle_new_user via API

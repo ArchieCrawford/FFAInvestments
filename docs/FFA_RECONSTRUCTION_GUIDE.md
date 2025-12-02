@@ -103,7 +103,7 @@ FFAInvestments/
 
 | Table/View | Columns | Usage |
 |------------|---------|-------|
-| `public.members` (from `clean_members_setup.sql` / `unified_member_system.sql`) | `id UUID`, `email TEXT UNIQUE`, `full_name`, `first_name`, `last_name`, `phone`, `join_date`, `membership_status`, `dues_status`, `last_payment_date`, `notes`, `profile_user_id`, timestamps, `member_account_id` | Core roster. Trigger `link_member_to_user` auto-links Supabase auth users based on email. RLS allows broad read, admin manage. |
+| `public.members` (from `database/members_setup.sql`) | `id UUID`, `email TEXT UNIQUE`, `member_name`, `full_name`, `first_name`, `last_name`, `phone`, `join_date`, `membership_status`, `dues_status`, `last_payment_date`, `notes`, `role`, `auth_user_id`, `claimed_at`, timestamps, `member_account_id` | Core roster. Linking now happens exclusively through the `claim_member_for_current_user` RPC invoked by the claim UI; no auto-link triggers remain. RLS allows broad read plus RPC-driven updates. |
 | `public.member_accounts` | `id UUID`, `user_id UUID`, `member_name TEXT`, `current_units`, `total_contributions`, `current_value`, `ownership_percentage`, etc. | Admin-managed investment account metrics. RLS differentiates admin vs member privileges (`member_accounts self read`, etc.). |
 | `public.unit_prices` | `price_date DATE UNIQUE`, `unit_price DECIMAL(10,4)`, totals, `created_by`, timestamps | Admin enters NAV/unit price history; members get read-only access. |
 | `public.transactions` | `member_account_id FK`, `transaction_type`, `amount`, `units`, `unit_price`, `transaction_date`, `description`, `processed_by`, `created_at` | Tracks contributions, withdrawals. RLS allows admins full CRUD; members view own via `member_accounts` link.
@@ -120,7 +120,7 @@ FFAInvestments/
 - `public.api_get_member_feed(limit_count integer, cursor_timestamp timestamptz)` – paginated member feed with `like_count`, `comment_count`, `liked_by_me` (uses `auth.uid()` and admin role checks).
 - `public.api_roll_schwab_into_org_balance(p_date date)` – merges `schwab_account_snapshots` + `v_schwab_positions_daily` data into `org_balance_history` with UPSERT semantics.
 - `public.is_admin()` – security definer used in RLS to test caller role.
-- `link_member_to_user` trigger – syncs `members.profile_user_id` on new auth signups.
+- `claim_member_for_current_user` RPC – security-definer function used by the claim UI to attach Supabase users to imported member rows.
 
 ---
 

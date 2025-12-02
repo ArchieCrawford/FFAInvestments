@@ -1,7 +1,4 @@
 # Complete Member Management System Setup
-
-## 🎯 **MISSION ACCOMPLISHED!**
-
 You now have a **complete member management system** that transforms your FFA Investments app from "each browser living in its own fantasy" to "everyone reading and writing the same book" PLUS manages all your club members and their account connections!
 
 ## 📊 **What's New**
@@ -9,9 +6,7 @@ You now have a **complete member management system** that transforms your FFA In
 ### **1. Admin Member Management** (`/admin/members`)
 - ✅ **Complete member database** with all 22 members you provided
 - ✅ **Smart account linking** - automatically connects members when they sign up
-- ✅ **Full CRUD operations** - add, edit, delete members
 - ✅ **Comprehensive member tracking**: status, dues, contact info, notes
-- ✅ **Search & filter** - find members by name, email, status
 - ✅ **Account status tracking** - see who has registered vs who hasn't
 - ✅ **Beautiful dark UI** matching your app's design
 
@@ -29,7 +24,6 @@ You now have a **complete member management system** that transforms your FFA In
 
 ## 🛠️ **Quick Setup (2 Steps)**
 
-### **Step 1: Run the Database SQL**
 Copy and paste this into your Supabase SQL Editor:
 
 ```sql
@@ -39,26 +33,29 @@ Copy and paste this into your Supabase SQL Editor:
 CREATE TABLE IF NOT EXISTS members (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email text UNIQUE NOT NULL,
+  member_name text,
   full_name text,
   first_name text,
   last_name text,
   phone text,
+  role text NOT NULL DEFAULT 'member' CHECK (role IN ('member','admin')),
   join_date date DEFAULT CURRENT_DATE,
-  membership_status text DEFAULT 'active' CHECK (membership_status IN ('active', 'inactive', 'pending')),
+  membership_status text DEFAULT 'active' CHECK (membership_status IN ('active', 'inactive', 'pending','invited')),
   dues_status text DEFAULT 'pending' CHECK (dues_status IN ('current', 'overdue', 'pending')),
   last_payment_date date,
   notes text,
-  profile_user_id uuid REFERENCES auth.users(id),
+  auth_user_id uuid REFERENCES auth.users(id),
+  claimed_at timestamptz,
+  invite_token text,
+  invite_token_expires_at timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
 
 -- Insert your 22 club members
 INSERT INTO members (email, full_name, first_name, last_name, membership_status) VALUES
-  ('pkirby@kirbycpa.com', 'Phillip Kirby', 'Phillip', 'Kirby', 'active'),
   ('lequan.hylton@gmail.com', 'LeQuan Hylton', 'LeQuan', 'Hylton', 'active'),
   ('james.erodgers@yahoo.com', 'James Rodgers', 'James', 'Rodgers', 'active'),
-  ('rgwalt6145@aol.com', 'rgwalt6145', NULL, NULL, 'active'),
   ('faburrell1@verizon.net', 'Felecia Burrell', 'Felecia', 'Burrell', 'active'),
   ('beulenner@aol.com', 'beulenner', NULL, NULL, 'active'),
   ('foursharpes@yahoo.com', 'FAMILY SHARPE', 'FAMILY', 'SHARPE', 'active'),
@@ -71,7 +68,6 @@ INSERT INTO members (email, full_name, first_name, last_name, membership_status)
   ('kristenkirby22@gmail.com', 'Kristen Greene', 'Kristen', 'Greene', 'active'),
   ('kadih1@msn.com', 'Kofi Adih', 'Kofi', 'Adih', 'active'),
   ('shedrickmccall@gmail.com', 'Shedrick McCall', 'Shedrick', 'McCall', 'active'),
-  ('abck115@aol.com', 'abck115', NULL, NULL, 'active'),
   ('joeljean86@hotmail.com', 'Joel Jean', 'Joel', 'Jean', 'active'),
   ('miltonmnichols2@gmail.com', 'Milton Nichols', 'Milton', 'Nichols', 'active'),
   ('donotreply.resumebuilder@asamra.hoffman.army.mil', 'Asamra Hoffman Army Donotreply.resumebuilder', 'Asamra', 'Hoffman', 'active'),
@@ -86,49 +82,11 @@ ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Members can read all member info" ON members
   FOR SELECT USING (true);
 
-CREATE POLICY "Admins can manage members" ON members
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role = 'admin'
-    )
-  );
-
--- Create view to show member account connections
-CREATE OR REPLACE VIEW member_accounts AS
-SELECT 
-  m.*,
-  p.id as user_id,
-  p.role as user_role,
-  au.email as user_email,
-  CASE 
-    WHEN au.id IS NOT NULL THEN 'registered'
-    ELSE 'not_registered'
+> 🔁 **Linking members to Supabase auth** now happens through the `claim_member_for_current_user` RPC (see `database/members_setup.sql`). Users reset or set their password through the Supabase forgot-password flow and then visit a claim link, which calls the RPC to set `auth_user_id`/`claimed_at`. The legacy auto-link trigger has been removed.
   END as account_status
 FROM members m
 LEFT JOIN auth.users au ON m.email = au.email
 LEFT JOIN profiles p ON au.id = p.id;
-
--- Auto-link function when users sign up
-CREATE OR REPLACE FUNCTION link_member_to_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- When a new user signs up, try to link them to existing member record
-  UPDATE members 
-  SET profile_user_id = NEW.id, updated_at = now()
-  WHERE email = NEW.email AND profile_user_id IS NULL;
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Auto-link trigger on auth.users (when someone signs up)
-DROP TRIGGER IF EXISTS trigger_link_member_to_user ON auth.users;
-CREATE TRIGGER trigger_link_member_to_user
-  AFTER INSERT ON auth.users
-  FOR EACH ROW
-  EXECUTE FUNCTION link_member_to_user();
 ```
 
 ### **Step 2: Test Everything!**

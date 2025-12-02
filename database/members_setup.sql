@@ -1,22 +1,32 @@
--- Create members table for tracking club membership
-CREATE TABLE IF NOT EXISTS members (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  email text UNIQUE NOT NULL,
+-- Canonical members table for the club roster + claim metadata
+create table if not exists public.members (
+  id uuid primary key default gen_random_uuid(),
+  member_name text,
   full_name text,
   first_name text,
   last_name text,
+  email text not null unique,
+  role text not null default 'member' check (role in ('member','admin')),
   phone text,
-  join_date date DEFAULT CURRENT_DATE,
-  membership_status text DEFAULT 'active' CHECK (membership_status IN ('active', 'inactive', 'pending')),
-  dues_status text DEFAULT 'pending' CHECK (dues_status IN ('current', 'overdue', 'pending')),
+  join_date date default current_date,
+  membership_status text not null default 'active' check (membership_status in ('active','inactive','pending','invited')),
+  dues_status text not null default 'pending' check (dues_status in ('current','overdue','pending')),
   last_payment_date date,
   notes text,
-  profile_user_id uuid REFERENCES auth.users(id), -- Links to actual user account if they've signed up
-  auth_user_id uuid REFERENCES auth.users(id),
+  auth_user_id uuid references auth.users(id),
   claimed_at timestamptz,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  invite_token text,
+  invite_token_expires_at timestamptz,
+  member_account_id uuid references public.member_accounts(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+create index if not exists idx_members_auth_user_id on public.members(auth_user_id);
+create index if not exists idx_members_membership_status on public.members(membership_status);
+
+-- Keep this table deterministic by revoking direct write access from client roles
+revoke update on public.members from anon, authenticated;
 
 -- Insert the member data you provided
 INSERT INTO members (email, full_name, first_name, last_name, membership_status) VALUES
@@ -48,51 +58,22 @@ ON CONFLICT (email) DO NOTHING;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for member access
-CREATE POLICY "Members can read all member info" ON members
-  FOR SELECT USING (true);
+drop policy if exists "Members can read all member info" on public.members;
+drop policy if exists "Admins can manage members" on public.members;
+drop policy if exists "Members can claim themselves" on public.members;
 
-CREATE POLICY "Admins can manage members" ON members
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role = 'admin'
+create policy "Members can read all member info" on public.members
+  for select using (true);
+
+create policy "Admins can manage members" on public.members
+  for all using (
+    exists (
+      select 1 from public.profiles 
+      where profiles.id = auth.uid() 
+        and profiles.role = 'admin'
     )
   );
 
--- Create a view to match members with user accounts
-CREATE OR REPLACE VIEW member_accounts AS
-SELECT 
-  m.*,
-  p.id as user_id,
-  p.role as user_role,
-  CASE 
-    WHEN p.id IS NOT NULL THEN 'registered'
-    ELSE 'not_registered'
-  END as account_status
-FROM members m
-LEFT JOIN profiles p ON m.email = p.email;
-
--- Create function to update member profile when user signs up
-CREATE OR REPLACE FUNCTION link_member_to_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- When a new user signs up, try to link them to existing member record
-  UPDATE members 
-  SET profile_user_id = COALESCE(profile_user_id, NEW.id),
-      auth_user_id = COALESCE(auth_user_id, NEW.id),
-      claimed_at = COALESCE(claimed_at, now()),
-      updated_at = now()
-  WHERE email = NEW.email
-    AND (profile_user_id IS NULL OR auth_user_id IS NULL);
-  
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create trigger to automatically link members when users sign up
-DROP TRIGGER IF EXISTS trigger_link_member_to_user ON profiles;
-CREATE TRIGGER trigger_link_member_to_user
-  AFTER INSERT ON profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION link_member_to_user();
+create policy "Authenticated users can claim" on public.members
+  for update using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');

@@ -1,53 +1,93 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
-import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, CheckCircle, User, Link as LinkIcon } from 'lucide-react'
+import { AlertCircle, CheckCircle, User, Link as LinkIcon, Loader2 } from 'lucide-react'
 
-function getClaimErrorMessage(error) {
-  const raw = error?.message || ''
-  const lower = raw.toLowerCase()
+const redirectDelayMs = 1800
 
-  if (lower.includes('already claimed')) {
-    return 'This member is already claimed. Please contact an admin if this is unexpected.'
-  }
-
-  if (lower.includes('not found')) {
-    return 'We could not find the member associated with this claim link.'
-  }
-
-  if (lower.includes('must be signed in')) {
-    return 'You need to be signed in before you can claim your account.'
-  }
-
-  return raw || 'Failed to claim account.'
+const loginRedirectUrl = (memberId) => {
+  if (!memberId) return '/login'
+  const claimPath = `/member/claim?memberId=${encodeURIComponent(memberId)}`
+  return `/login?redirect=${encodeURIComponent(claimPath)}`
 }
 
-/**
- * ClaimAccount Component
- *
- * Allows authenticated users to claim their member account by linking
- * their auth user ID to a specific member record in the members table.
- *
- * Flow:
- * 1. Reads memberId from query string (?memberId=...)
- * 2. Requires login (Prompts to log in if not authenticated)
- * 3. If member is unclaimed, lets the user claim it
- * 4. On success, redirects to member dashboard
- */
+const interpretClaimError = (error) => {
+  const details = (error?.message || error?.details || '').toLowerCase()
+
+  if (details.includes('already_claimed_by_another')) {
+    return {
+      state: 'already_claimed_other',
+      message:
+        'This member account is already claimed by a different user. Please contact an admin if this is unexpected.',
+    }
+  }
+
+  if (details.includes('already_claimed_by_you')) {
+    return {
+      state: 'already_claimed_self',
+      message: 'Your account is already claimed. You can continue to your dashboard.',
+    }
+  }
+
+  if (details.includes('member_not_found')) {
+    return {
+      state: 'not_found',
+      message: 'We could not find a member record for this claim link.',
+    }
+  }
+
+  if (details.includes('not_authenticated')) {
+    return {
+      state: 'error',
+      message: 'You need to log in before claiming your member account.',
+    }
+  }
+
+  return {
+    state: 'error',
+    message: error?.message || 'Failed to claim member account.',
+  }
+}
+
 export default function ClaimAccount() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
-  const { user } = useAuth()
+  const [authState, setAuthState] = useState({ loading: true, user: null, error: null })
+  const [claimState, setClaimState] = useState({ state: 'idle', message: '' })
+  const [isClaiming, setIsClaiming] = useState(false)
+  const redirectTimerRef = useRef(null)
 
   // Support both memberId and legacy member_id params
   const memberId = searchParams.get('memberId') || searchParams.get('member_id') || null
+
+  useEffect(() => {
+    let isMounted = true
+    const fetchUser = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+        if (!isMounted) return
+        setAuthState({ loading: false, user: data?.user ?? null, error })
+      } catch (error) {
+        if (!isMounted) return
+        setAuthState({ loading: false, user: null, error })
+      }
+    }
+
+    fetchUser()
+
+    return () => {
+      isMounted = false
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current)
+      }
+    }
+  }, [])
 
   const {
     data: member,
@@ -59,7 +99,7 @@ export default function ClaimAccount() {
     async () => {
       const { data, error: fetchError } = await supabase
         .from('members')
-        .select('*')
+        .select('id, member_name, full_name, email, auth_user_id')
         .eq('id', memberId)
         .maybeSingle()
       if (fetchError) throw fetchError
@@ -68,23 +108,63 @@ export default function ClaimAccount() {
     { enabled: !!memberId }
   )
 
-  const claimMutation = useMutation(
-    async () => {
-      const { data, error: rpcError } = await supabase.rpc(
-        'claim_member_for_current_user',
-        { p_member_id: memberId }
+  const currentUser = authState.user
+
+  const setStatus = (state, message) => {
+    setClaimState({ state, message })
+  }
+
+  const handleClaim = async () => {
+    if (!memberId || !currentUser) return
+
+    // Prevent duplicate work if the member is already linked
+    if (member?.auth_user_id === currentUser.id) {
+      setStatus(
+        'already_claimed_self',
+        'Your account is already claimed. You can head directly to your dashboard.'
       )
-      if (rpcError) throw rpcError
-      return data
-    },
-    {
-      onSuccess: () => {
+      return
+    }
+
+    if (member?.auth_user_id && member.auth_user_id !== currentUser.id) {
+      setStatus(
+        'already_claimed_other',
+        'This member account is already claimed by another user. Please reach out to an admin if this is unexpected.'
+      )
+      return
+    }
+
+    setIsClaiming(true)
+    setStatus('idle', '')
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc('claim_member_for_current_user', {
+        member_id: memberId,
+      })
+
+      if (rpcError) {
+        const mapped = interpretClaimError(rpcError)
+        setStatus(mapped.state, mapped.message)
+        return
+      }
+
+      if (data?.success) {
+        setStatus('success', 'Your member account has been linked. Redirecting you now…')
         queryClient.invalidateQueries(['claim_member', memberId])
         queryClient.invalidateQueries(['member_record'])
-        navigate('/member/dashboard')
-      },
+        redirectTimerRef.current = setTimeout(() => {
+          navigate('/member/dashboard')
+        }, redirectDelayMs)
+      } else {
+        setStatus('error', 'Unexpected response from the server. Please try again.')
+      }
+    } catch (err) {
+      const mapped = interpretClaimError(err)
+      setStatus(mapped.state, mapped.message)
+    } finally {
+      setIsClaiming(false)
     }
-  )
+  }
 
   if (!memberId) {
     return (
@@ -96,7 +176,17 @@ export default function ClaimAccount() {
     )
   }
 
-  if (!user) {
+  if (authState.loading) {
+    return (
+      <Page title="Claim Your Account" subtitle="Checking your session">
+        <div className="card p-4 text-sm text-muted flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking your login status…
+        </div>
+      </Page>
+    )
+  }
+
+  if (!currentUser) {
     return (
       <Page title="Claim Your Account" subtitle="Authentication Required">
         <Card>
@@ -108,11 +198,12 @@ export default function ClaimAccount() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted">
-              You need to log in to claim your member account. After logging in,
-              return to this link to finish claiming.
+              You already have an account in our system. To claim it, first log in or
+              use “Forgot password” with the email on file, then come back to this
+              link to finish claiming.
             </p>
             <Button
-              onClick={() => navigate(`/login?memberId=${memberId}`)}
+              onClick={() => navigate(loginRedirectUrl(memberId))}
               className="w-full"
             >
               <LinkIcon className="w-4 h-4 mr-2" />
@@ -139,6 +230,12 @@ export default function ClaimAccount() {
           </div>
         )}
 
+        {!isLoading && !isError && !member && (
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
+            We couldn’t find this member record. Double-check the link or contact an admin.
+          </div>
+        )}
+
         {!isLoading && !isError && member && (
           <Card>
             <CardHeader>
@@ -149,10 +246,10 @@ export default function ClaimAccount() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-xs text-muted">
-                Logged in as: {user.email}
+                Logged in as: {currentUser.email}
               </div>
 
-              {member.auth_user_id && member.auth_user_id !== user.id && (
+              {member.auth_user_id && member.auth_user_id !== currentUser.id && (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -162,7 +259,7 @@ export default function ClaimAccount() {
                 </Alert>
               )}
 
-              {member.auth_user_id === user.id && (
+              {member.auth_user_id === currentUser.id && (
                 <Alert>
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
@@ -177,35 +274,44 @@ export default function ClaimAccount() {
                   type="button"
                   className="w-full"
                   size="lg"
-                  onClick={() => claimMutation.mutate()}
-                  disabled={claimMutation.isLoading}
+                  onClick={handleClaim}
+                  disabled={isClaiming}
                 >
-                  {claimMutation.isLoading ? 'Claiming…' : 'Claim this account'}
+                  {isClaiming ? 'Claiming…' : 'Claim this account'}
                 </Button>
               )}
 
-              {member.auth_user_id === user.id && (
-                <Button type="button" variant="outline" className="w-full" onClick={() => navigate('/member/dashboard')}>
+              {member.auth_user_id === currentUser.id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/member/dashboard')}
+                >
                   Go to dashboard
                 </Button>
               )}
 
-              {claimMutation.isError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    {getClaimErrorMessage(claimMutation.error)}
-                  </AlertDescription>
+              {claimState.state !== 'idle' && claimState.message && (
+                <Alert variant={claimState.state === 'error' ? 'destructive' : undefined}>
+                  {claimState.state === 'success' || claimState.state === 'already_claimed_self' ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4" />
+                  )}
+                  <AlertDescription>{claimState.message}</AlertDescription>
                 </Alert>
               )}
 
-              {claimMutation.isSuccess && !member.auth_user_id && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Account claimed successfully! Redirecting…
-                  </AlertDescription>
-                </Alert>
+              {(claimState.state === 'success' || claimState.state === 'already_claimed_self') && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => navigate('/member/dashboard')}
+                >
+                  Go to dashboard
+                </Button>
               )}
             </CardContent>
           </Card>

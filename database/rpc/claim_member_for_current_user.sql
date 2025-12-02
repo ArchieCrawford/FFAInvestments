@@ -12,37 +12,35 @@ declare
   v_member record;
 begin
   if v_user_id is null then
-    raise exception 'You must be signed in to claim a member account.' using errcode = '42501';
+    raise exception using errcode = '42501', message = 'not_authenticated';
   end if;
 
-  select id, auth_user_id, claimed_at into v_member
+  select id, email, auth_user_id, claimed_at
+    into v_member
   from public.members
   where id = p_member_id
   for update;
 
   if not found then
-    raise exception 'Member not found for supplied ID.' using errcode = 'P0002';
+    raise exception using errcode = 'P0002', message = 'member_not_found';
   end if;
 
   if v_member.auth_user_id is not null and v_member.auth_user_id <> v_user_id then
-    raise exception 'This member is already claimed by another user.' using errcode = 'P0001';
+    raise exception using errcode = 'P0001', message = 'already_claimed_by_another';
   end if;
 
   update public.members
   set auth_user_id = v_user_id,
-      claimed_at = coalesce(v_member.claimed_at, now()),
+      claimed_at = now(),
       updated_at = now()
   where id = p_member_id
-  returning id, auth_user_id, claimed_at
+  returning id, email, auth_user_id, claimed_at
   into v_member;
 
-  if not found then
-    raise exception 'Unable to claim member. Please try again.' using errcode = 'P0001';
-  end if;
-
   return jsonb_build_object(
+    'success', true,
     'member_id', v_member.id,
-    'auth_user_id', v_member.auth_user_id,
+    'email', v_member.email,
     'claimed_at', v_member.claimed_at
   );
 end;
