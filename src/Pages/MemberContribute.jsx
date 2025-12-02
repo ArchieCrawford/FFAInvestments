@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, CheckCircle, AlertCircle } from "lucide-react";
+import { DollarSign, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
 import { useCurrentMember } from "@/lib/authHooks";
 import { createMemberUnitTransaction, getLatestUnitValuation } from "@/lib/ffaApi";
 import { supabase } from "@/lib/supabase";
@@ -10,7 +10,7 @@ import { Page } from "../components/Page";
 
 export default function MemberContribute() {
   const navigate = useNavigate();
-  const { member, loading: memberLoading } = useCurrentMember();
+  const { member, loading: memberLoading, needsClaim, pendingMemberId } = useCurrentMember();
 
   const [formData, setFormData] = useState({
     account_id: "",
@@ -24,10 +24,10 @@ export default function MemberContribute() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!memberLoading && !member) {
+    if (!memberLoading && !member && !needsClaim) {
       navigate("/login", { replace: true });
     }
-  }, [memberLoading, member, navigate]);
+  }, [memberLoading, member, needsClaim, navigate]);
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ["member-accounts", member?.member_id],
@@ -124,6 +124,37 @@ export default function MemberContribute() {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             <p className="text-muted mt-4">Loading...</p>
           </div>
+        </div>
+      </Page>
+    );
+  }
+
+  if (needsClaim) {
+    const claimUrl = pendingMemberId
+      ? `/claim-account?memberId=${pendingMemberId}`
+      : '/claim-account'
+
+    return (
+      <Page title="Make a Contribution" subtitle="Finish linking your profile">
+        <div className="card p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="text-default font-medium">Claim required</p>
+              <p className="text-sm text-muted">
+                Contributions are disabled until your Supabase user is linked to the
+                member roster. Use the claim wizard to finish setup, then return here.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-primary w-full sm:w-auto"
+            onClick={() => navigate(claimUrl)}
+          >
+            <ArrowRight className="w-4 h-4 mr-2 inline-block" />
+            Open claim tool
+          </button>
         </div>
       </Page>
     );

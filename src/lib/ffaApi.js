@@ -79,10 +79,21 @@ export async function getCurrentMemberAccount() {
   const user = authData?.user
   if (!user) return null
 
+  const { data: memberRow, error: memberError } = await supabase
+    .from('members')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  if (memberError && memberError.code !== 'PGRST116') throw memberError
+
+  const memberId = memberRow?.id || null
+  if (!memberId) return null
+
   const { data, error } = await supabase
     .from('member_accounts')
     .select(MEMBER_ACCOUNT_FIELDS)
-    .eq('email', user.email)
+    .eq('member_id', memberId)
     .eq('is_active', true)
     .limit(1)
     .maybeSingle()

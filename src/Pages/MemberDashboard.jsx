@@ -4,17 +4,14 @@ import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 import { useAuth } from '@/contexts/AuthContext'
 
-const fetchMemberRecord = async (authUserId, email) => {
-  if (!authUserId && !email) return null
+const fetchMemberRecord = async (authUserId) => {
+  if (!authUserId) return null
 
-  // Prefer auth_user_id; fall back to email to avoid orphaned accounts causing loading loops
   const { data, error } = await supabase
     .from('members')
     .select('id, member_name, email')
     .eq('is_active', true)
-    .or(`auth_user_id.eq.${authUserId || ''},email.eq.${email || ''}`)
-    .order('auth_user_id', { ascending: false }) // prefer claimed record
-    .limit(1)
+    .eq('auth_user_id', authUserId)
     .maybeSingle()
 
   if (error) throw error
@@ -57,8 +54,8 @@ const MemberDashboard = () => {
     isError: memberError,
     error: memberErrorObj,
   } = useQuery(
-    ['member_record', authUserId, authUserId ? undefined : user?.email],
-    () => fetchMemberRecord(authUserId, user?.email || null),
+    ['member_record', authUserId],
+    () => fetchMemberRecord(authUserId),
     {
       enabled: !!authUserId || !!user?.email,
     }
@@ -141,11 +138,18 @@ const MemberDashboard = () => {
     return (
       <Page
         title="Member Dashboard"
-        subtitle="We could not find a member profile linked to your login."
+        subtitle="Link required before showing balances."
       >
-        <div className="card p-4 text-sm text-muted">
-          Your login is not currently linked to a member record. Contact an
-          admin so they can link your account.
+        <div className="card p-4 text-sm text-muted space-y-2">
+          <p>
+            We could not find a claimed member profile for this login. Use your
+            claim link (or visit <code>/claim-account</code>) to attach this
+            user to the roster, then return to this page.
+          </p>
+          <p>
+            Need help? Contact an administrator so they can resend your claim
+            invitation.
+          </p>
         </div>
       </Page>
     )

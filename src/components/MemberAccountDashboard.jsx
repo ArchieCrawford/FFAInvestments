@@ -50,25 +50,22 @@ function formatDateLabel(d) {
   }
 }
 
-async function fetchMemberAccountData(memberId, userEmail) {
+async function fetchMemberAccountData(memberId, user) {
   let resolvedMemberId = memberId
 
   // If no memberId in route, try to resolve from logged-in email (active members only)
-  if (!resolvedMemberId && userEmail) {
+  if (!resolvedMemberId && user?.id) {
     const { data: memberRow, error: memberError } = await supabase
       .from('members')
-      .select('id, member_name, email')
-      .eq('email', userEmail)
-      .eq('is_active', true)
-      .order('auth_user_id', { ascending: false })
-      .limit(1)
+      .select('id')
+      .eq('auth_user_id', user.id)
       .maybeSingle()
     if (memberError) throw memberError
     resolvedMemberId = memberRow?.id || null
   }
 
   if (!resolvedMemberId) {
-    throw new Error('Member not found or inactive')
+    throw new Error('No claimed member profile found for this login')
   }
 
   const { data: memberAccount, error: accountError } = await supabase
@@ -105,9 +102,9 @@ const MemberAccountDashboard = () => {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['member_account_dashboard', memberId || user?.email],
-    queryFn: () => fetchMemberAccountData(memberId, user?.email || null),
-    enabled: !!memberId || !!user?.email,
+    queryKey: ['member_account_dashboard', memberId || user?.id],
+    queryFn: () => fetchMemberAccountData(memberId, user),
+    enabled: !!memberId || !!user?.id,
   })
 
   const account = data?.account || null

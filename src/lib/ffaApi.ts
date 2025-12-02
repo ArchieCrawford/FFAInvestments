@@ -64,7 +64,28 @@ export async function getCurrentMemberAccount() {
   if (authError) throw authError
   const user = authData?.user
   if (!user) return null
-  return getMemberAccountByEmail(user.email as string)
+
+  const { data: memberRow, error: memberError } = await supabase
+    .from('members')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  if (memberError && (memberError as any).code !== 'PGRST116') throw memberError
+
+  const memberId = memberRow?.id || null
+  if (!memberId) return null
+
+  const { data, error } = await supabase
+    .from('member_accounts')
+    .select(MEMBER_ACCOUNT_FIELDS)
+    .eq('member_id', memberId)
+    .eq('is_active', true)
+    .limit(1)
+    .maybeSingle()
+
+  if (error && (error as any).code !== 'PGRST116') throw error
+  return data || null
 }
 
 export async function getMemberTimeline(memberId: string) {

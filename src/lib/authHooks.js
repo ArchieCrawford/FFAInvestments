@@ -4,6 +4,8 @@ import { supabase } from "@/lib/supabase";
 export function useCurrentMember() {
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsClaim, setNeedsClaim] = useState(false);
+  const [pendingMemberId, setPendingMemberId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +24,11 @@ export function useCurrentMember() {
 
         if (!session) {
           console.warn("[useCurrentMember] No auth session found.");
-          if (!cancelled) setMember(null);
+          if (!cancelled) {
+            setMember(null);
+            setNeedsClaim(false);
+            setPendingMemberId(null);
+          }
           return;
         }
 
@@ -54,7 +60,11 @@ export function useCurrentMember() {
           console.error("[useCurrentMember] Unexpected error querying by auth_user_id:", err);
         }
 
-        // 2) Fallback: try matching by email
+        // 2) Fallback: try matching by email so we can warn the user that they still
+        // need to run the explicit claim flow. We no longer auto-link rows here.
+        let requiresClaim = false
+        let pendingId = null
+
         if (!foundMember && user.email) {
           try {
             const { data: byEmail, error: byEmailError } = await supabase
@@ -69,31 +79,12 @@ export function useCurrentMember() {
 
             if (byEmail) {
               console.log("[useCurrentMember] Found member by email:", byEmail.id);
-
-              // 2a) If this member row hasn't been claimed yet, attach auth_user_id now
               if (!byEmail.auth_user_id) {
-                console.log(
-                  "[useCurrentMember] Claiming member row by attaching auth_user_id:",
-                  user.id
+                console.info(
+                  "[useCurrentMember] Member row is still unclaimed; prompting user to claim via UI instead of auto-linking."
                 );
-                const { data: updated, error: updateError } = await supabase
-                  .from("members")
-                  .update({ auth_user_id: user.id })
-                  .eq("id", byEmail.id)
-                  .select("*")
-                  .maybeSingle();
-
-                if (updateError) {
-                  console.error(
-                    "[useCurrentMember] Error updating member.auth_user_id:",
-                    updateError
-                  );
-                  foundMember = byEmail; // fall back to original
-                } else if (updated) {
-                  foundMember = updated;
-                } else {
-                  foundMember = byEmail;
-                }
+                requiresClaim = true
+                pendingId = byEmail.id
               } else {
                 foundMember = byEmail;
               }
@@ -106,15 +97,27 @@ export function useCurrentMember() {
         if (!cancelled) {
           if (!foundMember) {
             console.warn(
-              "[useCurrentMember] No member row found for this user. Check members table."
+              "[useCurrentMember] No member row found for this user. Check members table or have the user claim their account."
             );
+            setNeedsClaim(requiresClaim);
+            setPendingMemberId(requiresClaim ? pendingId : null);
+            setMember(null);
+          } else {
+            const normalized = {
+              ...foundMember,
+              member_id: foundMember.member_id || foundMember.id,
+            };
+            setNeedsClaim(false);
+            setPendingMemberId(null);
+            setMember(normalized);
           }
-          setMember(foundMember);
         }
       } catch (err) {
         console.error("[useCurrentMember] Fatal error:", err);
         if (!cancelled) {
           setMember(null);
+          setNeedsClaim(false);
+          setPendingMemberId(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -128,5 +131,5 @@ export function useCurrentMember() {
     };
   }, []);
 
-  return { member, loading };
+  return { member, loading, needsClaim, pendingMemberId };
 }
