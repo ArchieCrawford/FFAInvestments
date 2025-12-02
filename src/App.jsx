@@ -51,6 +51,8 @@ import AdminDues from './Pages/AdminDues.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
 import AdminSeedUnitValuation from './Pages/AdminSeedUnitValuation.jsx'
 
+import OrgDocuments from './Pages/OrgDocuments.jsx'
+
 
 const queryClient = new QueryClient()
 function App() {
@@ -155,6 +157,13 @@ function App() {
             <ProtectedRoute requireAdmin={true}>
               <Layout currentPageName="AdminSettings">
                 <AdminSettings />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/documents" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminDocuments">
+                <OrgDocuments />
               </Layout>
             </ProtectedRoute>
           } />
@@ -284,6 +293,7 @@ function App() {
               </Layout>
             </ProtectedRoute>
           } />
+
 
           <Route path="/admin/debug-auth" element={
             <ProtectedRoute requireAdmin={true}>
