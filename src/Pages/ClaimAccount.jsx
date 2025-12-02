@@ -9,6 +9,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, CheckCircle, User, Link as LinkIcon } from 'lucide-react'
 
+function getClaimErrorMessage(error) {
+  const raw = error?.message || ''
+  const lower = raw.toLowerCase()
+
+  if (lower.includes('already claimed')) {
+    return 'This member is already claimed. Please contact an admin if this is unexpected.'
+  }
+
+  if (lower.includes('not found')) {
+    return 'We could not find the member associated with this claim link.'
+  }
+
+  if (lower.includes('must be signed in')) {
+    return 'You need to be signed in before you can claim your account.'
+  }
+
+  return raw || 'Failed to claim account.'
+}
+
 /**
  * ClaimAccount Component
  *
@@ -51,15 +70,12 @@ export default function ClaimAccount() {
 
   const claimMutation = useMutation(
     async () => {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update({
-          auth_user_id: user.id,
-          claimed_at: new Date().toISOString(),
-        })
-        .eq('id', memberId)
-        .is('auth_user_id', null)
-      if (updateError) throw updateError
+      const { data, error: rpcError } = await supabase.rpc(
+        'claim_member_for_current_user',
+        { p_member_id: memberId }
+      )
+      if (rpcError) throw rpcError
+      return data
     },
     {
       onSuccess: () => {
@@ -136,14 +152,27 @@ export default function ClaimAccount() {
                 Logged in as: {user.email}
               </div>
 
-              {member.auth_user_id ? (
+              {member.auth_user_id && member.auth_user_id !== user.id && (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    This member record is already claimed.
+                    This member record is already claimed by another user. Reach out to an
+                    admin if you believe this is an error.
                   </AlertDescription>
                 </Alert>
-              ) : (
+              )}
+
+              {member.auth_user_id === user.id && (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    You already claimed this member profile. Continue to your dashboard to view
+                    your account information.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {!member.auth_user_id && (
                 <Button
                   type="button"
                   className="w-full"
@@ -155,11 +184,17 @@ export default function ClaimAccount() {
                 </Button>
               )}
 
+              {member.auth_user_id === user.id && (
+                <Button type="button" variant="outline" className="w-full" onClick={() => navigate('/member/dashboard')}>
+                  Go to dashboard
+                </Button>
+              )}
+
               {claimMutation.isError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {claimMutation.error?.message || 'Failed to claim account.'}
+                    {getClaimErrorMessage(claimMutation.error)}
                   </AlertDescription>
                 </Alert>
               )}

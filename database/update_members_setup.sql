@@ -55,6 +55,16 @@ BEGIN
     ALTER TABLE members ADD COLUMN profile_user_id uuid REFERENCES auth.users(id);
   END IF;
   
+  -- Add auth_user_id column if it doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'auth_user_id') THEN
+    ALTER TABLE members ADD COLUMN auth_user_id uuid REFERENCES auth.users(id);
+  END IF;
+  
+  -- Add claimed_at column if it doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'claimed_at') THEN
+    ALTER TABLE members ADD COLUMN claimed_at timestamptz;
+  END IF;
+  
   -- Add created_at column if it doesn't exist
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'created_at') THEN
     ALTER TABLE members ADD COLUMN created_at timestamptz DEFAULT now();
@@ -142,8 +152,12 @@ CREATE OR REPLACE FUNCTION link_member_to_user()
 RETURNS TRIGGER AS $$
 BEGIN
   UPDATE members 
-  SET profile_user_id = NEW.id, updated_at = now()
-  WHERE email = NEW.email AND profile_user_id IS NULL;
+  SET profile_user_id = COALESCE(profile_user_id, NEW.id),
+      auth_user_id = COALESCE(auth_user_id, NEW.id),
+      claimed_at = COALESCE(claimed_at, now()),
+      updated_at = now()
+  WHERE email = NEW.email
+    AND (profile_user_id IS NULL OR auth_user_id IS NULL);
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

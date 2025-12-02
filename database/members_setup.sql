@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS members (
   last_payment_date date,
   notes text,
   profile_user_id uuid REFERENCES auth.users(id), -- Links to actual user account if they've signed up
+  auth_user_id uuid REFERENCES auth.users(id),
+  claimed_at timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -77,8 +79,12 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- When a new user signs up, try to link them to existing member record
   UPDATE members 
-  SET profile_user_id = NEW.id, updated_at = now()
-  WHERE email = NEW.email AND profile_user_id IS NULL;
+  SET profile_user_id = COALESCE(profile_user_id, NEW.id),
+      auth_user_id = COALESCE(auth_user_id, NEW.id),
+      claimed_at = COALESCE(claimed_at, now()),
+      updated_at = now()
+  WHERE email = NEW.email
+    AND (profile_user_id IS NULL OR auth_user_id IS NULL);
   
   RETURN NEW;
 END;

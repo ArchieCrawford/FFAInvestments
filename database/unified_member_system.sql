@@ -45,6 +45,14 @@ BEGIN
     ALTER TABLE members ADD COLUMN profile_user_id uuid REFERENCES auth.users(id);
   END IF;
   
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'auth_user_id') THEN
+    ALTER TABLE members ADD COLUMN auth_user_id uuid REFERENCES auth.users(id);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'claimed_at') THEN
+    ALTER TABLE members ADD COLUMN claimed_at timestamptz;
+  END IF;
+  
   -- Link to member_accounts table for investment data
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'member_account_id') THEN
     ALTER TABLE members ADD COLUMN member_account_id uuid REFERENCES member_accounts(id);
@@ -323,8 +331,12 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Update member record with user ID
   UPDATE members 
-  SET profile_user_id = NEW.id, updated_at = now()
-  WHERE email = NEW.email AND profile_user_id IS NULL;
+  SET profile_user_id = COALESCE(profile_user_id, NEW.id),
+      auth_user_id = COALESCE(auth_user_id, NEW.id),
+      claimed_at = COALESCE(claimed_at, now()),
+      updated_at = now()
+  WHERE email = NEW.email
+    AND (profile_user_id IS NULL OR auth_user_id IS NULL);
   
   -- Link member data if not already linked
   PERFORM link_member_data();
