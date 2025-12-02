@@ -1,12 +1,28 @@
 import { serve } from "https://deno.land/std/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-serve(async (req) => {
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+}
+
+const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  })
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
+  }
+
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    })
+    return jsonResponse({ success: false, error: "Method not allowed" }, 405)
   }
 
   try {
@@ -15,51 +31,40 @@ serve(async (req) => {
     const sendgridKey = Deno.env.get("SENDGRID_API_KEY")
 
     if (!supabaseUrl || !serviceKey || !sendgridKey) {
-      return new Response(JSON.stringify({ error: "Missing environment configuration" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      })
+      return jsonResponse({ success: false, error: "Missing environment configuration" }, 500)
     }
 
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    let parsed: { member_id?: string } = {}
+    let parsed: { memberId?: string; member_id?: string; email?: string } = {}
     try {
       parsed = await req.json()
     } catch (_err) {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      })
+      return jsonResponse({ success: false, error: "Invalid JSON body" }, 400)
     }
 
-    const { member_id } = parsed
+    const memberId = parsed.memberId || parsed.member_id
+    const suppliedEmail = parsed.email
 
-    if (!member_id) {
-      return new Response(JSON.stringify({ error: "member_id is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      })
+    if (!memberId) {
+      return jsonResponse({ success: false, error: "memberId is required" }, 400)
     }
 
     const { data: member, error: memberError } = await supabase
       .from("members")
-      .select("id, full_name, member_name, email, claim_token")
-      .eq("id", member_id)
+      .select("id, full_name, member_name, email, invite_token, claim_token")
+      .eq("id", memberId)
       .single()
 
     if (memberError || !member) {
-      return new Response(JSON.stringify({ error: "Member not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      })
+      return jsonResponse({ success: false, error: "Member not found" }, 404)
     }
 
     const memberName = member.full_name || member.member_name || "Member"
-    const claimToken = member.claim_token || null
+    const claimToken = member.invite_token || member.claim_token || null
     const claim_link = claimToken
-      ? `https://www.ffainvestments.com/claim/${claimToken}`
-      : `https://www.ffainvestments.com/claim-account?memberId=${member.id}`
+      ? `https://www.ffainvestments.com/member/claim?memberId=${member.id}&token=${claimToken}`
+      : `https://www.ffainvestments.com/member/claim?memberId=${member.id}`
 
     const textBody =
 `Hi ${memberName},
@@ -204,21 +209,20 @@ FFA Investments Admin`
 
     await supabase.from("member_invite_logs").insert({
       member_id: member.id,
-      email: member.email,
+      email: suppliedEmail || member.email,
       claim_link,
       status,
       http_status: sg.status,
       error_message: status === "error" ? responseText.slice(0, 500) : null,
     })
 
-    return new Response(JSON.stringify({ status, http_status: sg.status }), {
-      status: sg.status === 202 ? 200 : 500,
-      headers: { "Content-Type": "application/json" },
-    })
-  } catch (_err) {
-    return new Response(JSON.stringify({ error: "Internal error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    })
+    if (status === "error") {
+      return jsonResponse({ success: false, error: "Failed to send invite" }, 500)
+    }
+
+    return jsonResponse({ success: true })
+  } catch (err) {
+    console.error("send-invite error", err)
+    return jsonResponse({ success: false, error: "Internal error" }, 500)
   }
 })

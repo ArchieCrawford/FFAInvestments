@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { getMembers } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -45,36 +45,28 @@ const AdminUsersNew = () => {
   const sendInvite = async (memberId, memberEmail, memberName) => {
     try {
       setMessage({ type: '', text: '' })
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError || !sessionData?.session?.access_token) {
-          throw new Error('Not authenticated')
+
+      const { data, error } = await supabase.functions.invoke('send-invite', {
+        body: {
+          memberId,
+          email: memberEmail,
+        },
+      })
+
+      if (error || data?.success !== true) {
+        throw new Error(error?.message || data?.error || 'Failed to send invite')
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-invite`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ member_id: memberId }),
-        }
-      )
-
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || payload?.status === 'error') {
-        const errText = payload?.error || payload?.error_message || (await response.text())
-        throw new Error(errText || 'Failed to send invite')
-      }
-
-      setMessage({ type: 'success', text: `Invite sent to ${memberName || memberEmail || 'member'}` })
+      setMessage({
+        type: 'success',
+        text: `Invite sent to ${memberName || memberEmail || 'member'}`,
+      })
       setTimeout(() => setMessage({ type: '', text: '' }), 3000)
     } catch (error) {
-      console.error('Error sending invite:', error);
-      setMessage({ type: 'error', text: 'Failed to send invite' });
+      console.error('Error sending invite:', error)
+      setMessage({ type: 'error', text: 'Failed to send invite' })
     }
-  };
+  }
 
   const updateMemberRole = async (userId, newRole) => {
     try {
