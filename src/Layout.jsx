@@ -17,6 +17,7 @@ const adminNav = [
   
   // === Club Management ===
   { title: "Accounts / Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
+  { title: 'Documents', url: '/admin/documents', icon: 'fa-regular fa-folder' },
   { title: "Dues", url: "/admin/dues", icon: "fas fa-money-check-alt" },
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
   { title: "Unit Price", url: "/admin/unit-price", icon: "fas fa-chart-line" },
