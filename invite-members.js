@@ -15,7 +15,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1)
 }
 
-const limit = Number.isFinite(Number(PROCESS_LIMIT)) && Number(PROCESS_LIMIT) > 0 ? Number(PROCESS_LIMIT) : 1000
+const limit =
+  Number.isFinite(Number(PROCESS_LIMIT)) && Number(PROCESS_LIMIT) > 0
+    ? Number(PROCESS_LIMIT)
+    : 1000
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 })
@@ -78,51 +82,75 @@ async function main() {
       continue
     }
 
-        try {
+    try {
       let userId = null
       let usedExistingUser = false
 
-      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: false,
-      })
+      const { data: created, error: createErr } =
+        await supabase.auth.admin.createUser({
+          email,
+          email_confirm: false,
+        })
 
       if (!createErr && created?.user?.id) {
         userId = created.user.id
       } else {
-        console.error('Create user error for', email, JSON.stringify(createErr, null, 2))
+        const createMsg = createErr?.message || String(createErr)
+        const createStatus = createErr?.status ?? null
 
-        // Always try lookup by email on any create error
-        const { data: existing, error: lookupErr } = await supabase.auth.admin.getUserByEmail(email)
+        console.error('Create user error for', email, {
+          status: createStatus,
+          message: createMsg,
+        })
+
+        const isAlreadyExists =
+          createStatus === 409 ||
+          /already exists|already registered|duplicate|unique/i.test(createMsg)
+
+        if (!isAlreadyExists) {
+          results.push({
+            member_id: m.id,
+            email,
+            auth_user_id: '',
+            status: 'create_failed',
+            error: createMsg,
+          })
+          continue
+        }
+
+        const { data: listData, error: lookupErr } =
+          await supabase.auth.admin.listUsers({ email })
 
         if (lookupErr) {
           results.push({
             member_id: m.id,
             email,
             auth_user_id: '',
-            status: 'error_create_or_lookup',
-            error: lookupErr?.message || `create error: ${createErr?.message || String(createErr)}`,
+            status: 'lookup_failed',
+            error: lookupErr?.message || String(lookupErr),
           })
           continue
         }
 
-        if (!existing?.user || (existing.user.email || '').toLowerCase() !== email) {
+        const existingUser =
+          listData?.users?.find(
+            (u) => (u.email || '').toLowerCase() === email
+          ) ?? null
+
+        if (!existingUser) {
           results.push({
             member_id: m.id,
             email,
             auth_user_id: '',
-            status: 'error_create_or_lookup',
-            error:
-              createErr?.message ||
-              'could not find existing user after create error',
+            status: 'create_failed_no_existing',
+            error: createMsg,
           })
           continue
         }
 
-        userId = existing.user.id
+        userId = existingUser.id
         usedExistingUser = true
       }
-
 
       if (!userId) {
         results.push({
@@ -139,17 +167,21 @@ async function main() {
         .from('members')
         .update({ auth_user_id: userId })
         .eq('id', m.id)
+        .is('auth_user_id', null)
 
       if (updateError) {
         const msg = updateError.message || String(updateError)
         const isDuplicateAuthUserId =
-          msg.includes('duplicate key value') && msg.includes('uq_members_auth_user_id')
+          msg.includes('duplicate key value') &&
+          msg.includes('uq_members_auth_user_id')
 
         results.push({
           member_id: m.id,
           email,
           auth_user_id: userId,
-          status: isDuplicateAuthUserId ? 'duplicate_auth_user_id' : 'created_but_update_failed',
+          status: isDuplicateAuthUserId
+            ? 'duplicate_auth_user_id'
+            : 'created_but_update_failed',
           error: msg,
         })
         continue
@@ -164,10 +196,10 @@ async function main() {
         error: '',
       })
     } catch (err) {
-      console.error(`Unexpected error for ${email}:`, err)
+      console.error(`Unexpected error for ${m.email}:`, err)
       results.push({
         member_id: m.id,
-        email,
+        email: m.email,
         auth_user_id: '',
         status: 'error_create_or_lookup',
         error: err?.message || String(err),
