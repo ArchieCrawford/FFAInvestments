@@ -78,7 +78,7 @@ async function main() {
       continue
     }
 
-    try {
+        try {
       let userId = null
       let usedExistingUser = false
 
@@ -91,34 +91,30 @@ async function main() {
         userId = created.user.id
       } else {
         console.error('Create user error for', email, JSON.stringify(createErr, null, 2))
-        const msg = createErr?.message || ''
-        const looksLikeDuplicate =
-          msg.includes('already registered') ||
-          msg.includes('duplicate key value') ||
-          msg.includes('users_email_key')
 
-        if (!looksLikeDuplicate) {
+        // Always try lookup by email on any create error
+        const { data: existing, error: lookupErr } = await supabase.auth.admin.getUserByEmail(email)
+
+        if (lookupErr) {
           results.push({
             member_id: m.id,
             email,
             auth_user_id: '',
-            status: 'error_create_user',
-            error: msg || String(createErr),
+            status: 'error_create_or_lookup',
+            error: lookupErr?.message || `create error: ${createErr?.message || String(createErr)}`,
           })
           continue
         }
 
-        const { data: existing, error: lookupErr } = await supabase.auth.admin.getUserByEmail(email)
-
-        if (lookupErr || !existing?.user || (existing.user.email || '').toLowerCase() !== email) {
+        if (!existing?.user || (existing.user.email || '').toLowerCase() !== email) {
           results.push({
             member_id: m.id,
             email,
             auth_user_id: '',
             status: 'error_create_or_lookup',
             error:
-              lookupErr?.message ||
-              'could not find existing user after duplicate-email error',
+              createErr?.message ||
+              'could not find existing user after create error',
           })
           continue
         }
@@ -126,6 +122,7 @@ async function main() {
         userId = existing.user.id
         usedExistingUser = true
       }
+
 
       if (!userId) {
         results.push({
