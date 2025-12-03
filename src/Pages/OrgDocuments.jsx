@@ -4,24 +4,29 @@ import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 
 const BUCKET = 'org-docs'
+const TABLE = 'org_documents'
 
 const fetchOrgDocs = async () => {
-  const { data, error } = await supabase.storage.from(BUCKET).list('', {
-    limit: 200,
-    offset: 0,
-    sortBy: { column: 'name', order: 'asc' },
-  })
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('*')
+    .order('created_at', { ascending: false })
+
   if (error) throw error
 
-  const files = data || []
-  return files.map((f) => {
-    const { data: publicUrlData } = supabase.storage.from(BUCKET).getPublicUrl(f.name)
+  const docs = data || []
+  return docs.map((doc) => {
+    const { data: publicUrlData } = supabase
+      .storage
+      .from(doc.bucket || BUCKET)
+      .getPublicUrl(doc.path)
+
     return {
-      name: f.name,
-      updated_at: f.updated_at,
-      id: `${BUCKET}/${f.name}`,
+      id: doc.id,
+      name: doc.file_name,
+      updated_at: doc.created_at,
       public_url: publicUrlData?.publicUrl || null,
-      size: f.metadata?.size || null,
+      size: doc.size,
     }
   })
 }
@@ -40,14 +45,35 @@ const OrgDocuments = () => {
 
   const uploadMutation = useMutation(
     async (files) => {
+      const { data: userResult } = await supabase.auth.getUser()
+      const userId = userResult?.user?.id ?? null
+
       const uploaded = []
       for (const file of files) {
         const path = `${Date.now()}-${file.name}`
-        const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
-          cacheControl: '3600',
-          upsert: false,
-        })
+
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, file, {
+            cacheControl: '3600',
+            upsert: false,
+          })
+
         if (upErr) throw upErr
+
+        const { error: insertErr } = await supabase
+          .from(TABLE)
+          .insert({
+            bucket: BUCKET,
+            path,
+            file_name: file.name,
+            mime_type: file.type,
+            size: file.size,
+            uploaded_by: userId,
+          })
+
+        if (insertErr) throw insertErr
+
         uploaded.push(path)
       }
       return uploaded
@@ -75,8 +101,6 @@ const OrgDocuments = () => {
     if (!filesToUpload.length || uploadMutation.isLoading) return
     uploadMutation.mutate(filesToUpload)
   }
-
-  const totalOwnership = docs.length
 
   return (
     <Page
