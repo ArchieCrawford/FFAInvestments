@@ -39,5 +39,21 @@
     "supabase": "^2.63.1",
     "tailwindcss": "^3.4.14",
     "vite": "^7.2.6"
-  }
+  },
+  "description": "A modern investment club management platform with beautiful dark theme UI, real-time data synchronization, and comprehensive member portfolio tracking.",
+  "main": "check-members.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArchieCrawford/FFAInvestments.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ArchieCrawford/FFAInvestments/issues"
+  },
+  "homepage": "https://github.com/ArchieCrawford/FFAInvestments#readme"
 }
