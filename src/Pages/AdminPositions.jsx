@@ -24,6 +24,48 @@ const AdminPositions = () => {
   const latestDate =
     positions.length > 0 ? positions[0].snapshot_date : null
 
+  const handleExportCsv = () => {
+    if (!positions || positions.length === 0) return
+
+    const headers = [
+      'symbol',
+      'description',
+      'quantity',
+      'market_value',
+      'asset_type',
+      'account_number',
+      'snapshot_date',
+    ]
+
+    const rows = positions.map((p) => [
+      p.symbol ?? '',
+      p.description ?? '',
+      p.quantity ?? '',
+      p.market_value ?? '',
+      p.asset_type ?? '',
+      p.account_number ?? '',
+      p.snapshot_date ?? '',
+    ])
+
+    const csv = [headers, ...rows]
+      .map((r) => r.map((v) => {
+        const s = String(v ?? '')
+        return s.includes(',') || s.includes('"') || s.includes('\n')
+          ? `"${s.replace(/"/g, '""')}"`
+          : s
+      }).join(','))
+      .join('\n')
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const datePart = latestDate ? new Date(latestDate).toISOString().split('T')[0] : 'latest'
+    a.download = `schwab_positions_${datePart}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Page
       title="Schwab Positions"
@@ -35,6 +77,17 @@ const AdminPositions = () => {
             As of {new Date(latestDate).toLocaleDateString()}
           </div>
         )}
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="btn-primary-soft text-xs px-3 py-2"
+                onClick={handleExportCsv}
+                disabled={!positions || positions.length === 0}
+              >
+                Export CSV
+              </button>
+            </div>
 
         {isLoading && (
           <div className="card p-4 text-sm text-muted">
