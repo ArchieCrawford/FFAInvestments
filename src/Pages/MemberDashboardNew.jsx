@@ -9,8 +9,6 @@ import {
   Area,
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -101,16 +99,16 @@ const MemberDashboardNew = () => {
 
   const chartTimeline = useMemo(
     () =>
-      (timeline || []).map(row => ({
-        report_date: row.report_date,
-        label: formatDateLabel(row.report_date),
+      ((timeline && timeline.length > 0 ? timeline : meetingRows) || []).map(row => ({
+        report_date: row.report_date || row.report_month,
+        label: formatDateLabel(row.report_date || row.report_month),
         portfolio_value: numberOrNull(row.portfolio_value),
         total_units: numberOrNull(row.total_units),
         total_contribution: numberOrNull(row.total_contribution),
         growth_amount: numberOrNull(row.growth_amount),
         growth_pct: numberOrNull(row.growth_pct),
       })),
-    [timeline],
+    [timeline, meetingRows],
   )
 
   const meetingSeries = useMemo(
@@ -138,19 +136,23 @@ const MemberDashboardNew = () => {
   const overviewCards = [
     {
       label: 'Current Portfolio Value',
-      value: latestTimeline
-        ? formatCurrencyShort(latestTimeline.portfolio_value)
-        : account
+      value: account
         ? formatCurrencyShort(account.current_value)
+        : latestTimeline
+        ? formatCurrencyShort(latestTimeline.portfolio_value)
         : '—',
-      helper: latestTimeline ? formatDateLabel(latestTimeline.report_date) : '',
+      helper: latestTimeline
+        ? formatDateLabel(latestTimeline.report_date)
+        : account?.updated_at
+        ? formatDateLabel(account.updated_at)
+        : '',
     },
     {
       label: 'Units Owned',
-      value: latestTimeline
-        ? Number(latestTimeline.total_units || 0).toFixed(3)
-        : account
+      value: account
         ? Number(account.current_units || 0).toFixed(3)
+        : latestTimeline
+        ? Number(latestTimeline.total_units || 0).toFixed(3)
         : '—',
       helper: latestMeeting && latestMeeting.units_added
         ? `+${Number(latestMeeting.units_added).toFixed(3)} last meeting`
@@ -158,10 +160,10 @@ const MemberDashboardNew = () => {
     },
     {
       label: 'Ownership in Club',
-      value: latestMeeting && latestMeeting.ownership_pct_of_club
-        ? formatPercent(latestMeeting.ownership_pct_of_club)
-        : account && account.ownership_percentage
+      value: account && account.ownership_percentage
         ? formatPercent(account.ownership_percentage)
+        : latestMeeting && latestMeeting.ownership_pct_of_club
+        ? formatPercent(latestMeeting.ownership_pct_of_club)
         : '—',
       helper: latestMeeting
         ? `As of ${latestMeeting.label || 'latest meeting'}`
@@ -169,10 +171,12 @@ const MemberDashboardNew = () => {
     },
     {
       label: 'Total Contributed',
-      value: latestTimeline && latestTimeline.total_contribution
-        ? formatCurrencyShort(latestTimeline.total_contribution)
-        : account
+      value: account && account.total_contributions
         ? formatCurrencyShort(account.total_contributions)
+        : latestTimeline && latestTimeline.total_contribution
+        ? formatCurrencyShort(latestTimeline.total_contribution)
+        : latestMeeting && latestMeeting.total_contribution
+        ? formatCurrencyShort(latestMeeting.total_contribution)
         : '—',
       helper: latestMeeting && latestMeeting.dues_owed
         ? `${formatCurrencyShort(latestMeeting.dues_owed)} dues outstanding last meeting`
@@ -182,8 +186,12 @@ const MemberDashboardNew = () => {
 
   return (
     <Page
-      title="My Dashboard"
-      subtitle="See how your ownership in the club has grown over time."
+      title={account?.member_name ? `${account.member_name}` : 'My Dashboard'}
+      subtitle={
+        account?.member_name
+          ? `Welcome back, ${account.member_name}. Here’s how your ownership has grown.`
+          : 'See how your ownership in the club has grown over time.'
+      }
     >
       {error && (
         <div className="card mb-4 bg-primary-soft border border-border text-default p-3 rounded-xl">
@@ -231,35 +239,41 @@ const MemberDashboardNew = () => {
                 </div>
               </div>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartTimeline}>
-                    <defs>
-                      <linearGradient id="memberPortfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.7} />
-                        <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.05} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      formatter={(value, name) =>
-                        name === 'portfolio_value'
-                          ? [formatCurrencyShort(value), 'Portfolio value']
-                          : [value, name]
-                      }
-                    />
-                    <Legend />
-                    <Area
-                      type="monotone"
-                      dataKey="portfolio_value"
-                      stroke="rgb(59,130,246)"
-                      strokeWidth={2}
-                      fill="url(#memberPortfolioGradient)"
-                      name="Portfolio value"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {chartTimeline.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted">
+                    No valuation history yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartTimeline}>
+                      <defs>
+                        <linearGradient id="memberPortfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="rgb(59,130,246)" stopOpacity={0.7} />
+                          <stop offset="95%" stopColor="rgb(59,130,246)" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip
+                        formatter={(value, name) =>
+                          name === 'portfolio_value'
+                            ? [formatCurrencyShort(value), 'Portfolio value']
+                            : [value, name]
+                        }
+                      />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="portfolio_value"
+                        stroke="rgb(59,130,246)"
+                        strokeWidth={2}
+                        fill="url(#memberPortfolioGradient)"
+                        name="Portfolio value"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
@@ -273,98 +287,52 @@ const MemberDashboardNew = () => {
                 </div>
               </div>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartTimeline}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === 'total_units') {
-                          return [Number(value).toFixed(3), 'Total units']
-                        }
-                        if (name === 'growth_amount') {
-                          return [formatCurrencyShort(value), 'Growth amount']
-                        }
-                        return [value, name]
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="total_units"
-                      stroke="rgb(16,185,129)"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Total units"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="growth_amount"
-                      stroke="rgb(234,179,8)"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Growth amount"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {chartTimeline.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-sm text-muted">
+                    No growth data yet.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartTimeline}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip
+                        formatter={(value, name) => {
+                          if (name === 'total_units') {
+                            return [Number(value).toFixed(3), 'Total units']
+                          }
+                          if (name === 'growth_amount') {
+                            return [formatCurrencyShort(value), 'Growth amount']
+                          }
+                          return [value, name]
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="total_units"
+                        stroke="rgb(16,185,129)"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Total units"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="growth_amount"
+                        stroke="rgb(234,179,8)"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Growth amount"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
           </section>
 
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="card rounded-xl border border-border bg-surface p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-sm font-medium text-default">
-                    Dues & Contributions By Meeting
-                  </div>
-                  <div className="text-xs text-muted">
-                    What you paid, owed, and added at each meeting
-                  </div>
-                </div>
-              </div>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={meetingSeries}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
-                      formatter={(value, name) => {
-                        if (name === 'total_contribution') {
-                          return [formatCurrencyShort(value), 'Total contribution']
-                        }
-                        if (name === 'dues_paid_buyout') {
-                          return [formatCurrencyShort(value), 'Dues paid']
-                        }
-                        if (name === 'dues_owed') {
-                          return [formatCurrencyShort(value), 'Dues owed']
-                        }
-                        return [value, name]
-                      }}
-                    />
-                    <Legend />
-                    <Bar
-                      dataKey="total_contribution"
-                      fill="rgb(59,130,246)"
-                      name="Contribution"
-                    />
-                    <Bar
-                      dataKey="dues_paid_buyout"
-                      fill="rgb(16,185,129)"
-                      name="Dues paid"
-                    />
-                    <Bar
-                      dataKey="dues_owed"
-                      fill="rgb(239,68,68)"
-                      name="Dues owed"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
+          <section>
             <div className="card rounded-xl border border-border bg-surface p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
