@@ -24,6 +24,11 @@ const AdminPositions = () => {
   const latestDate =
     positions.length > 0 ? positions[0].snapshot_date : null
 
+  const totalMarketValue = positions.reduce((sum, p) => {
+    const mv = Number(p.market_value || 0)
+    return Number.isFinite(mv) ? sum + mv : sum
+  }, 0)
+
   const handleExportCsv = () => {
     if (!positions || positions.length === 0) return
 
@@ -72,6 +77,23 @@ const AdminPositions = () => {
       subtitle="Latest holdings across all Schwab accounts."
     >
       <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="card p-4">
+            <div className="text-xs text-muted">Total Market Value</div>
+            <div className="text-2xl font-semibold text-default">
+              $
+              {Number(totalMarketValue).toLocaleString(undefined, {
+                maximumFractionDigits: 2,
+              })}
+            </div>
+            {latestDate && (
+              <div className="text-xs text-muted mt-1">
+                As of {new Date(latestDate).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+
         {latestDate && (
           <div className="text-xs text-muted">
             As of {new Date(latestDate).toLocaleDateString()}
@@ -119,6 +141,9 @@ const AdminPositions = () => {
                     <th className="px-4 py-2 text-right font-semibold text-muted">
                       Market Value
                     </th>
+                    <th className="px-4 py-2 text-right font-semibold text-muted">
+                      % of Total
+                    </th>
                     <th className="px-4 py-2 text-left font-semibold text-muted">
                       Asset Type
                     </th>
@@ -143,6 +168,11 @@ const AdminPositions = () => {
                           maximumFractionDigits: 2,
                         })}
                       </td>
+                      <td className="px-4 py-2 text-right text-default">
+                        {totalMarketValue > 0
+                          ? `${((Number(p.market_value || 0) / totalMarketValue) * 100).toFixed(2)}%`
+                          : '—'}
+                      </td>
                       <td className="px-4 py-2 text-default">
                         <span className="badge text-xs">{p.asset_type}</span>
                       </td>
@@ -151,6 +181,23 @@ const AdminPositions = () => {
                       </td>
                     </tr>
                   ))}
+                  {positions.length > 0 && (
+                    <tr className="bg-primary-soft/40 border-t border-border">
+                      <td className="px-4 py-2 font-semibold text-default" colSpan={3}>
+                        Total
+                      </td>
+                      <td className="px-4 py-2 text-right font-semibold text-default">
+                        $
+                        {Number(totalMarketValue).toLocaleString(undefined, {
+                          maximumFractionDigits: 2,
+                        })}
+                      </td>
+                      <td className="px-4 py-2 text-right font-semibold text-default">
+                        100%
+                      </td>
+                      <td className="px-4 py-2" colSpan={2}></td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
