@@ -39,6 +39,10 @@ function formatPercent(n) {
   return `${(v * 100).toFixed(1)}%`
 }
 
+function isPresentNumber(value) {
+  return value !== null && value !== undefined && !Number.isNaN(Number(value))
+}
+
 function formatDateLabel(d) {
   try {
     return new Date(d).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
@@ -160,9 +164,9 @@ const MemberDashboardNew = () => {
     },
     {
       label: 'Ownership in Club',
-      value: account && account.ownership_percentage
+      value: account && isPresentNumber(account.ownership_percentage)
         ? formatPercent(account.ownership_percentage)
-        : latestMeeting && latestMeeting.ownership_pct_of_club
+        : latestMeeting && isPresentNumber(latestMeeting.ownership_pct_of_club)
         ? formatPercent(latestMeeting.ownership_pct_of_club)
         : '—',
       helper: latestMeeting
