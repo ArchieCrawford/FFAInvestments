@@ -217,7 +217,7 @@ function App() {
           <Route path="/member/dashboard" element={
             <ProtectedRoute>
               <Layout currentPageName="MemberDashboard">
-                <MemberDashboard />
+                <MemberDashboardNew />
               </Layout>
             </ProtectedRoute>
           } />

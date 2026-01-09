@@ -2,16 +2,31 @@ import React, { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
-import { syncSchwabPositionsForToday } from '@/services/schwabPositions'
 
 const fetchLatestPositions = async () => {
+  // Determine most recent as_of_date in schwab_positions
+  const { data: latestRow, error: latestError } = await supabase
+    .from('schwab_positions')
+    .select('as_of_date')
+    .order('as_of_date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (latestError) throw latestError
+  const latestDate = latestRow?.as_of_date
+  if (!latestDate) return []
+
   const { data, error } = await supabase
-    .from('latest_schwab_positions')
-    .select('*')
+    .from('schwab_positions')
+    .select('id, account_number, as_of_date, symbol, description, asset_type, quantity, market_value')
+    .eq('as_of_date', latestDate)
     .order('market_value', { ascending: false })
 
   if (error) throw error
-  return data || []
+  return (data || []).map((row) => ({
+    ...row,
+    snapshot_date: row.as_of_date,
+  }))
 }
 
 const AdminPositions = () => {
@@ -31,8 +46,12 @@ const AdminPositions = () => {
 
     const run = async () => {
       try {
-        // Best-effort refresh: relies on existing Schwab auth in this browser.
-        await syncSchwabPositionsForToday()
+        // Server-side refresh: uses stored Schwab tokens + service role.
+        await fetch('/api/schwab/sync-positions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: new Date().toISOString().slice(0, 10) }),
+        })
         if (!active) return
         queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] })
       } catch {
