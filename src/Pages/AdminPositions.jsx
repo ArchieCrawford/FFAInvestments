@@ -1,7 +1,8 @@
-import React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { useEffect } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
+import { syncSchwabPositionsForToday } from '@/services/schwabPositions'
 
 const fetchLatestPositions = async () => {
   const { data, error } = await supabase
@@ -14,12 +15,37 @@ const fetchLatestPositions = async () => {
 }
 
 const AdminPositions = () => {
+  const queryClient = useQueryClient()
+
   const {
     data: positions = [],
     isLoading,
     isError,
     error,
-  } = useQuery(['latest_schwab_positions'], fetchLatestPositions)
+  } = useQuery(['latest_schwab_positions'], fetchLatestPositions, {
+    refetchOnMount: 'always',
+  })
+
+  useEffect(() => {
+    let active = true
+
+    const run = async () => {
+      try {
+        // Best-effort refresh: relies on existing Schwab auth in this browser.
+        await syncSchwabPositionsForToday()
+        if (!active) return
+        queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] })
+      } catch {
+        // Silent: page can still render last known DB snapshot.
+      }
+    }
+
+    run()
+
+    return () => {
+      active = false
+    }
+  }, [queryClient])
 
   const latestDate =
     positions.length > 0 ? positions[0].snapshot_date : null

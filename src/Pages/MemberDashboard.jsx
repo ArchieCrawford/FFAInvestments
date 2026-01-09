@@ -162,6 +162,12 @@ const MemberDashboard = () => {
   const totalUnits = latest?.total_units || 0
   const totalContribution = latest?.total_contribution || 0
   const ownershipPct = latest?.ownership_pct_of_club || 0
+  const ownershipPctDisplay = (() => {
+    const n = Number(ownershipPct)
+    if (!Number.isFinite(n)) return 0
+    // Some schemas store ownership as 0-1, others as 0-100
+    return n <= 1 ? n * 100 : n
+  })()
 
   return (
     <Page
@@ -202,7 +208,7 @@ const MemberDashboard = () => {
           <div className="card p-4 space-y-1">
             <div className="text-xs text-muted">Ownership of Club</div>
             <div className="text-xl font-semibold text-default">
-              {(ownershipPct * 100).toFixed(2)}%
+              {ownershipPctDisplay.toFixed(2)}%
             </div>
           </div>
         </div>
