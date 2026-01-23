@@ -12,8 +12,8 @@ console.log('VITE_SUPABASE_URL:', import.meta.env?.VITE_SUPABASE_URL || 'MISSING
 console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env?.VITE_SUPABASE_ANON_KEY ? 'SET (hidden for security)' : 'MISSING')
 console.log('VITE_APP_URL:', import.meta.env?.VITE_APP_URL || 'MISSING')
 
-// Import Supabase client
-import { createClient } from '@supabase/supabase-js'
+// Import shared Supabase client
+import { supabase } from '../lib/supabase'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -37,17 +37,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('❌ Invalid Supabase URL format:', SUPABASE_URL)
   }
   
-  // Create client
-  console.log('\n🚀 Creating Supabase client...')
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false
-    }
-  })
-  
-  console.log('✅ Supabase client created')
+  console.log('\n🚀 Using shared Supabase client from src/lib/supabase.js')
   
   // Test basic connection
   console.log('\n📡 Testing connection...')

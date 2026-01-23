@@ -12,6 +12,11 @@
 
 import axios from 'axios'
 const BACKEND_BASE = (import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.onrender.com').replace(/\/$/, '')
+const PROD_HOST = 'www.ffainvestments.com'
+const PROD_REDIRECTS = [
+  'https://www.ffainvestments.com/callback',
+  'https://www.ffainvestments.com/admin/schwab/callback'
+]
 
 function backend(path) {
   return BACKEND_BASE + path
@@ -38,22 +43,30 @@ class SchwabApiService {
     
     // Configuration from environment variables (updated for Vite)
     this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '')
-  // Client secret removed from frontend use; token exchange handled by backend
-  this.clientSecret = undefined
-  this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || 'https://www.ffainvestments.com/callback'
+    const envRedirectUri = (import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI || '').trim()
     // Use relative path for Vercel serverless functions (deployed together)
     this.backendBase = BACKEND_BASE
     console.log('🔧 SchwabApiService backend base URL:', this.backendBase)
     // Optional comma-separated list of allowed redirect URIs for validation
     this.allowedRedirectsRaw = (import.meta.env.VITE_SCHWAB_ALLOWED_REDIRECTS || '').trim()
-    this.allowedRedirects = this.allowedRedirectsRaw
+    const envAllowedRedirects = this.allowedRedirectsRaw
       ? this.allowedRedirectsRaw.split(',').map(u => u.trim()).filter(Boolean)
-      : [this.redirectUri]
+      : []
+    const isProdHost = this._isProdHost()
+    const fallbackRedirect = envRedirectUri || envAllowedRedirects[0] || (isProdHost ? PROD_REDIRECTS[0] : '')
+    this.allowedRedirects = isProdHost
+      ? PROD_REDIRECTS
+      : envAllowedRedirects.length
+        ? envAllowedRedirects
+        : (fallbackRedirect ? [fallbackRedirect] : [])
+    this.redirectUri = isProdHost
+      ? (PROD_REDIRECTS.includes(fallbackRedirect) ? fallbackRedirect : PROD_REDIRECTS[0])
+      : fallbackRedirect
     
     // Token storage keys
     this.tokenStorageKey = 'schwab_tokens'
-  this.stateStorageKey = 'schwab_oauth_state'
-  this.redirectStorageKey = 'schwab_oauth_redirect'
+    this.stateStorageKey = 'schwab_oauth_state'
+    this.redirectStorageKey = 'schwab_oauth_redirect'
     
     // Enhanced state management for security
     this.stateCache = new Map()
@@ -70,11 +83,9 @@ class SchwabApiService {
     if (!this.clientId) {
       console.warn('⚠️ Schwab clientId missing. OAuth will fail until VITE_SCHWAB_CLIENT_ID is set.')
     }
-    // Warn if legacy secret vars still present (should be removed from build)
-    if (import.meta.env.VITE_SCHWAB_CLIENT_SECRET || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET) {
-      console.warn('🔐 Detected Schwab client secret in frontend env. Remove it; backend now performs exchange.')
+    if (this.redirectUri) {
+      this._validateRedirectUri()
     }
-    this._validateRedirectUri()
   }
 
   /**
@@ -84,16 +95,33 @@ class SchwabApiService {
     // Generate Schwab OAuth authorization URL (frontend-only step; no secret needed)
     // Adds: cryptographically secure state, scope parameter, smart redirect selection, detailed logging.
     try {
-      // Choose appropriate redirect URI based on current origin if multiple allowed were provided
+      if (typeof window === 'undefined') {
+        throw new SchwabAPIError('Schwab OAuth requires a browser context', 400)
+      }
+
+      const origin = window.location.origin.toLowerCase()
+      const matchingRedirects = this.allowedRedirects.filter(r => {
+        try {
+          return new URL(r).origin.toLowerCase() === origin
+        } catch {
+          return false
+        }
+      })
+
+      if (!matchingRedirects.length) {
+        throw new SchwabAPIError(`Schwab OAuth is only enabled on ${PROD_HOST}.`, 400)
+      }
+
       let chosenRedirect = this.redirectUri
-      if (Array.isArray(this.allowedRedirects) && this.allowedRedirects.length > 1 && typeof window !== 'undefined') {
-        const origin = window.location.origin.toLowerCase()
-        // Prefer an allowed redirect whose origin matches current origin
-        const match = this.allowedRedirects.find(r => {
-          try { return new URL(r).origin.toLowerCase() === origin } catch { return false }
-        })
-        if (match) {
-          chosenRedirect = match
+      if (!matchingRedirects.includes(chosenRedirect)) {
+        const adminRedirect = matchingRedirects.find(r => r.includes('/admin/schwab/callback'))
+        const defaultRedirect = matchingRedirects.find(
+          r => r.endsWith('/callback') && !r.includes('/admin/')
+        )
+        if (window.location.pathname.startsWith('/admin') && adminRedirect) {
+          chosenRedirect = adminRedirect
+        } else {
+          chosenRedirect = defaultRedirect || matchingRedirects[0]
         }
       }
 
@@ -107,8 +135,8 @@ class SchwabApiService {
         // Fallback if crypto not available
         state = this._generateState()
       }
-  localStorage.setItem(this.stateStorageKey, state)
-  localStorage.setItem(this.redirectStorageKey, chosenRedirect)
+      localStorage.setItem(this.stateStorageKey, state)
+      localStorage.setItem(this.redirectStorageKey, chosenRedirect)
 
       // Scope: allow override via env (VITE_SCHWAB_SCOPE); default to readonly like reference implementation
       const scope = (import.meta.env.VITE_SCHWAB_SCOPE || 'readonly').trim()
@@ -418,7 +446,15 @@ class SchwabApiService {
     }
     if (!code) throw new SchwabAPIError('Authorization code is required', 400)
     try {
-      const redirectUri = this.redirectUri
+      const storedRedirect = localStorage.getItem(this.redirectStorageKey)
+      const redirectUri = storedRedirect && this.allowedRedirects.includes(storedRedirect)
+        ? storedRedirect
+        : this.redirectUri
+
+      if (!redirectUri) {
+        throw new SchwabAPIError('Missing redirect URI for token exchange', 400)
+      }
+
       const resp = await fetch(`${this.backendBase}/api/schwab/exchange`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -443,7 +479,7 @@ class SchwabApiService {
         throw new SchwabAPIError('Token exchange response was empty or invalid', resp.status, data)
       }
       localStorage.removeItem(this.stateStorageKey)
-  localStorage.removeItem(this.redirectStorageKey)
+      localStorage.removeItem(this.redirectStorageKey)
       this._storeTokens(data)
       const persisted = this._getStoredTokens()
       console.log('🔍 Token persistence check (backend):', {
@@ -485,6 +521,11 @@ class SchwabApiService {
   
   _generateState() {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
+
+  _isProdHost() {
+    if (typeof window === 'undefined') return false
+    return window.location.host === PROD_HOST
   }
 
   async _exchangeCodeForTokens() {
@@ -656,10 +697,17 @@ class SchwabApiService {
    * Validate redirect URI against allowed list & HTTPS requirements.
    */
   _validateRedirectUri() {
+    if (!this.redirectUri) {
+      console.warn('⚠️ redirectUri not configured; Schwab OAuth disabled for this host.')
+      return
+    }
+
     try {
       const uri = new URL(this.redirectUri)
       const isHttps = uri.protocol === 'https:'
-      const inAllowedList = this.allowedRedirects.includes(this.redirectUri)
+      const inAllowedList = this.allowedRedirects.length
+        ? this.allowedRedirects.includes(this.redirectUri)
+        : false
       if (!isHttps) {
         console.warn('⚠️ Redirect URI is not HTTPS. Schwab requires HTTPS callback URLs.')
       }

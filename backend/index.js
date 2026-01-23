@@ -114,7 +114,10 @@ function resolveRedirectUri(preferred) {
   if (preferred && allowedRedirects.includes(preferred)) {
     return preferred
   }
-  return SCHWAB_REDIRECT_URI
+  if (allowedRedirects.includes(SCHWAB_REDIRECT_URI)) {
+    return SCHWAB_REDIRECT_URI
+  }
+  return allowedRedirects[0] || SCHWAB_REDIRECT_URI
 }
 
 function buildAuthHeader() {
@@ -207,41 +210,19 @@ app.get('/health', (req, res) => {
 
 app.get('/api/schwab/auth', (req, res) => {
   const state = req.query.state || crypto.randomUUID()
+  const preferredRedirect = req.query.redirect_uri
+  const redirectUri = resolveRedirectUri(preferredRedirect)
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: SCHWAB_CLIENT_ID,
-    redirect_uri: SCHWAB_REDIRECT_URI,
+    redirect_uri: redirectUri,
     scope: 'read',
     state
   })
 
-  logInfo('Redirecting user to Schwab OAuth', { state, redirect_uri: SCHWAB_REDIRECT_URI })
+  logInfo('Redirecting user to Schwab OAuth', { state, redirect_uri: redirectUri })
   res.redirect(`${SCHWAB_AUTH_URL}?${params.toString()}`)
 })
-
-app.post('/api/schwab/exchange', async (req, res) => {
-  const { code, state } = req.body || {}
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code is required' })
-  }
-
-  // Always use the canonical redirect URI that matches the Schwab app config
-  const redirectUri = SCHWAB_REDIRECT_URI
-
-  try {
-    const tokens = await requestToken({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: redirectUri
-    })
-
-    await persistTokens(tokens, state)
-    return res.json(normalizeTokens(tokens))
-  } catch (err) {
-    return handleTokenError(res, err)
-  }
-})
-
 
 app.post('/api/schwab/exchange', async (req, res) => {
   const { code, redirect_uri: preferredRedirect, state } = req.body || {}

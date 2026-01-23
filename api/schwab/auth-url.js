@@ -14,7 +14,7 @@ function parseAllowed(values) {
 function selectRedirect(preferred, allowed, fallback) {
   if (preferred && allowed.includes(preferred)) return preferred
   if (allowed.includes(fallback)) return fallback
-  return fallback
+  return allowed[0] || fallback
 }
 
 export default async function handler(req, res) {

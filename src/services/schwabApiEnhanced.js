@@ -13,6 +13,7 @@
  */
 
 import axios from 'axios';
+const BACKEND_BASE = (import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.onrender.com').replace(/\/$/, '')
 
 class SchwabAPIError extends Error {
   constructor(message, status = null, response = null) {
@@ -27,8 +28,8 @@ class EnhancedSchwabApiService {
   constructor() {
     // Configuration from environment variables (Vite-compatible)
     this.clientId = import.meta.env.VITE_SCHWAB_CLIENT_ID?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_ID?.replace(/['"]/g, '');
-    this.clientSecret = import.meta.env.VITE_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '') || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET?.replace(/['"]/g, '');
     this.redirectUri = import.meta.env.VITE_SCHWAB_REDIRECT_URI || import.meta.env.REACT_APP_SCHWAB_REDIRECT_URI;
+    this.backendBase = BACKEND_BASE;
     
     // API Endpoints
     this.authUrl = 'https://api.schwab.com/v1/oauth/authorize';
@@ -265,27 +266,25 @@ class EnhancedSchwabApiService {
     if (!code) {
       throw new SchwabAPIError('Authorization code is required', 400);
     }
-
-    const credentials = btoa(`${this.clientId}:${this.clientSecret}`);
-    
-    const data = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: this.redirectUri
-    });
+    if (!this.redirectUri) {
+      throw new SchwabAPIError('Missing redirect URI for token exchange', 400);
+    }
 
     try {
-      console.log('Exchanging authorization code for tokens...');
-      
-      const response = await axios.post(this.tokenUrl, data, {
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 15000
+      console.log('Exchanging authorization code for tokens via backend...');
+      const response = await fetch(`${this.backendBase}/api/schwab/exchange`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, state, redirect_uri: this.redirectUri })
       });
 
-      const tokens = response.data;
+      const tokens = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new SchwabAPIError('Backend token exchange failed', response.status, tokens);
+      }
+      if (!tokens || !tokens.access_token) {
+        throw new SchwabAPIError('Token exchange response missing tokens', response.status, tokens);
+      }
       this.storeTokens(tokens);
       
       console.log('✅ Successfully obtained and stored tokens:', {
@@ -297,13 +296,11 @@ class EnhancedSchwabApiService {
       return tokens;
       
     } catch (error) {
-      console.error('❌ Token exchange failed:', error.response?.data || error.message);
-      
-      if (error.response?.status === 400) {
-        throw new SchwabAPIError('Invalid authorization code or expired session', 400, error.response?.data);
+      if (error instanceof SchwabAPIError) {
+        throw error;
       }
-      
-      throw new SchwabAPIError('Failed to exchange authorization code for tokens', error.response?.status, error.response?.data);
+      console.error('❌ Token exchange failed:', error?.message || error);
+      throw new SchwabAPIError('Failed to exchange authorization code for tokens', error?.status, error);
     }
   }
 
@@ -391,24 +388,20 @@ class EnhancedSchwabApiService {
     this.isRefreshing = true;
 
     try {
-      console.log('Refreshing access token...');
-      
-      const credentials = btoa(`${this.clientId}:${this.clientSecret}`);
-      
-      const data = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken
+      console.log('Refreshing access token via backend...');
+      const response = await fetch(`${this.backendBase}/api/schwab/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken })
       });
 
-      const response = await axios.post(this.tokenUrl, data, {
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        timeout: 15000
-      });
-
-      const tokens = response.data;
+      const tokens = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new SchwabAPIError('Backend refresh failed', response.status, tokens);
+      }
+      if (!tokens || !tokens.access_token) {
+        throw new SchwabAPIError('Refresh response missing tokens', response.status, tokens);
+      }
       this.storeTokens(tokens);
       
       const newAccessToken = tokens.access_token;
@@ -425,21 +418,21 @@ class EnhancedSchwabApiService {
       return newAccessToken;
       
     } catch (error) {
-      console.error('❌ Token refresh failed:', error.response?.data || error.message);
-      
+      const status = error?.status || null;
+      console.error('❌ Token refresh failed:', error?.message || error);
+
       // Notify subscribers of failure
       this.refreshSubscribers.forEach(callback => callback(null));
       this.refreshSubscribers = [];
-      
+
       // Clear invalid tokens
       this.clearAllTokens();
-      
-      if (error.response?.status === 400) {
+
+      if (status === 400) {
         throw new SchwabAPIError('Refresh token expired - please login again', 401);
       }
-      
-      throw new SchwabAPIError('Failed to refresh access token', error.response?.status);
-      
+
+      throw new SchwabAPIError('Failed to refresh access token', status);
     } finally {
       this.isRefreshing = false;
     }

@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   const allowedRedirects = parseAllowed(process.env.SCHWAB_REDIRECT_URI_ALLOWED, defaultRedirect)
   const redirectUri = requestedRedirect && allowedRedirects.includes(requestedRedirect)
     ? requestedRedirect
-    : defaultRedirect
+    : (allowedRedirects.includes(defaultRedirect) ? defaultRedirect : (allowedRedirects[0] || defaultRedirect))
 
   const params = new URLSearchParams()
   params.set('grant_type', 'authorization_code')

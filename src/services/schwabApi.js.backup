@@ -63,10 +63,6 @@ class SchwabApiService {
     if (!this.clientId) {
       console.warn('⚠️ Schwab clientId missing. OAuth will fail until VITE_SCHWAB_CLIENT_ID is set.')
     }
-    // Warn if legacy secret vars still present (should be removed from build)
-    if (import.meta.env.VITE_SCHWAB_CLIENT_SECRET || import.meta.env.REACT_APP_SCHWAB_CLIENT_SECRET) {
-      console.warn('🔐 Detected Schwab client secret in frontend env. Remove it; backend now performs exchange.')
-    }
     this._validateRedirectUri()
   }
 

@@ -1,13 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
 import { Page } from '../components/Page';
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 export default function EducationCatalog() {
   const { data: lessons = [], isLoading } = useQuery({
