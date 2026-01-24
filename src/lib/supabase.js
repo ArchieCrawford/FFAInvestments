@@ -32,7 +32,11 @@ try {
   throw new Error('Invalid VITE_SUPABASE_URL format. Expected format: https://your-project.supabase.co')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+const supabaseKey = '__ffa_supabase__'
+const globalScope = typeof globalThis !== 'undefined' ? globalThis : window
+const existingClient = globalScope[supabaseKey]
+
+export const supabase = existingClient || createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -45,6 +49,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     }
   }
 })
+
+if (!existingClient) {
+  globalScope[supabaseKey] = supabase
+}
 
 console.log('✅ Supabase client initialized successfully')
 

@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import schwabApi, { SchwabAPIError } from '../services/schwabApi';
 import { supabase } from '../lib/supabase';
 import { captureSchwabSnapshot, getLatestSnapshots } from '../services/schwabSnapshots';
-import { syncSchwabPositionsForToday, getPositionsForAccountDate } from '../services/schwabPositions';
+import { syncSchwabPositionsForToday, getLatestPositionsForAccount } from '../services/schwabPositions';
 
 const SchwabInsights = () => {
+  const queryClient = useQueryClient();
   const [historicalSnapshots, setHistoricalSnapshots] = useState([]);
   const [latest, setLatest] = useState(null);
   const [positions, setPositions] = useState([]);
   const [positionsJson, setPositionsJson] = useState(null); // Store full raw JSON
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [syncError, setSyncError] = useState('');
+  const [syncSummary, setSyncSummary] = useState(null);
+  const [lastSyncAt, setLastSyncAt] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -22,6 +27,35 @@ const SchwabInsights = () => {
   const [lastSnapshotDate, setLastSnapshotDate] = useState(null);
   const [snapshotError, setSnapshotError] = useState('');
   const navigate = useNavigate();
+  const oauthAllowed = schwabApi.isOAuthAllowed?.() ?? true;
+
+  const invalidateSchwabQueries = async () => {
+    queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] });
+    queryClient.invalidateQueries({ queryKey: ['schwab_positions'] });
+    queryClient.invalidateQueries({ queryKey: ['schwab_positions_totals'] });
+    queryClient.invalidateQueries({ queryKey: ['schwab_snapshot_latest'] });
+    queryClient.invalidateQueries({ queryKey: ['org_balance_history'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['member_dashboard_self'] });
+    queryClient.invalidateQueries({ queryKey: ['member_account_dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['admin_members'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['member_accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['members_with_accounts'] });
+    await queryClient.refetchQueries({ queryKey: ['latest_schwab_positions'], type: 'active' });
+  };
+
+  const refreshDbPositions = async (accountNumber) => {
+    if (!accountNumber) return;
+    const rows = await getLatestPositionsForAccount(accountNumber);
+    setPositions(rows);
+    const latest = rows.reduce((max, row) => {
+      const ts = row.snapshot_date ? new Date(row.snapshot_date).getTime() : null;
+      if (!Number.isFinite(ts)) return max;
+      return !max || ts > max ? ts : max;
+    }, null);
+    setLastSyncAt(latest ? new Date(latest).toISOString() : null);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -139,15 +173,20 @@ const SchwabInsights = () => {
       try {
         if (!acctNum) return;
         setSyncingPositions(true);
+        setSyncError('');
         console.log('🔁 Syncing Schwab positions for', acctNum);
         const res = await syncSchwabPositionsForToday();
         console.log('✅ Positions sync result:', res);
-        const today = new Date().toISOString().slice(0, 10);
-        const rows = await getPositionsForAccountDate(acctNum, today);
         if (!isMounted) return;
-        setPositions(rows);
+        setSyncSummary(res);
+        setLastSyncAt(res?.last_sync_at || null);
+        await refreshDbPositions(acctNum);
+        await invalidateSchwabQueries();
       } catch (err) {
         console.error('❌ Failed to sync positions:', err);
+        if (isMounted) {
+          setSyncError(err.message || 'Failed to sync positions');
+        }
         // Keep existing positions if live data already populated
       } finally {
         if (isMounted) setSyncingPositions(false);
@@ -220,14 +259,18 @@ const SchwabInsights = () => {
     const run = async () => {
       try {
         setSyncingPositions(true);
-        const today = new Date().toISOString().slice(0, 10);
-        await syncSchwabPositionsForToday();
+        setSyncError('');
+        const res = await syncSchwabPositionsForToday();
         if (!isMounted) return;
-        const rows = await getPositionsForAccountDate(selectedAccountNumber, today);
-        if (!isMounted) return;
-        setPositions(rows);
+        setSyncSummary(res);
+        setLastSyncAt(res?.last_sync_at || null);
+        await refreshDbPositions(selectedAccountNumber);
+        await invalidateSchwabQueries();
       } catch (err) {
         console.error('Failed to sync positions in effect:', err);
+        if (isMounted) {
+          setSyncError(err.message || 'Failed to sync positions');
+        }
       } finally {
         if (isMounted) setSyncingPositions(false);
       }
@@ -242,6 +285,10 @@ const SchwabInsights = () => {
 
   const handleConnect = async () => {
     try {
+      if (!oauthAllowed) {
+        setError('Schwab OAuth is only enabled on www.ffainvestments.com.');
+        return;
+      }
       setError('');
       setIsConnecting(true);
       const authUrl = await schwabApi.getAuthorizationUrl();
@@ -250,6 +297,24 @@ const SchwabInsights = () => {
       setError('Failed to initiate Schwab connection.');
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleManualPositionsSync = async () => {
+    if (!selectedAccountNumber) return;
+    try {
+      setSyncingPositions(true);
+      setSyncError('');
+      const res = await syncSchwabPositionsForToday();
+      setSyncSummary(res);
+      setLastSyncAt(res?.last_sync_at || null);
+      await refreshDbPositions(selectedAccountNumber);
+      await invalidateSchwabQueries();
+    } catch (err) {
+      console.error('❌ Manual positions sync failed:', err);
+      setSyncError(err.message || 'Failed to sync positions');
+    } finally {
+      setSyncingPositions(false);
     }
   };
 
@@ -277,9 +342,11 @@ const SchwabInsights = () => {
       setLastSnapshotDate(today);
       
       // Also sync positions after snapshot
-      await syncSchwabPositionsForToday();
-      const rows = await getPositionsForAccountDate(selectedAccountNumber, today);
-      setPositions(rows);
+      const res = await syncSchwabPositionsForToday();
+      setSyncSummary(res);
+      setLastSyncAt(res?.last_sync_at || null);
+      await refreshDbPositions(selectedAccountNumber);
+      await invalidateSchwabQueries();
     } catch (err) {
       console.error('❌ [SchwabInsights] Manual snapshot failed:', err);
       setSnapshotError(err.message || 'Failed to capture snapshot');
@@ -317,11 +384,16 @@ const SchwabInsights = () => {
               <p className="text-muted mb-3">
                 You must authorize your Schwab account before we can pull account insights or historical snapshots.
               </p>
+              {!oauthAllowed && (
+                <p className="text-muted mb-3">
+                  Schwab OAuth is disabled on this host. Use www.ffainvestments.com or add this domain to the allowlist.
+                </p>
+              )}
               <div className="flex flex-wrap gap-3">
                 <button
                   className="btn-primary"
                   onClick={handleConnect}
-                  disabled={isConnecting}
+                  disabled={isConnecting || !oauthAllowed}
                 >
                   {isConnecting ? 'Redirecting…' : 'Connect to Charles Schwab'}
                 </button>
@@ -337,12 +409,32 @@ const SchwabInsights = () => {
         )}
         {loading && <div>Loading Schwab Insights…</div>}
         {error && <div className="error-alert">{error}</div>}
+        {syncError && <div className="error-alert">{syncError}</div>}
         {latest && (
           <div>
             <div className="insights-hero mb-4">
               <h2>Latest Pull</h2>
-              <p>Captured {new Date(latest.timestamp).toLocaleString()}</p>
+              <p>
+                {lastSyncAt
+                  ? `DB sync ${new Date(lastSyncAt).toLocaleString()}`
+                  : latest?.timestamp
+                  ? `Live fetch ${new Date(latest.timestamp).toLocaleString()}`
+                  : 'No sync yet'}
+              </p>
               <div className="metric-value mb-3">${latest.liquidationValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}</div>
+              {syncSummary && (
+                <div className="text-muted text-sm">
+                  <div>Accounts synced: {syncSummary.accounts_synced ?? 0} / {syncSummary.accounts_count ?? 0}</div>
+                  <div>Positions written: {syncSummary.positions_written ?? 0}</div>
+                  {syncSummary.errors && syncSummary.errors.length > 0 && (
+                    <div className="text-red-500">
+                      {syncSummary.errors.map((e, idx) => (
+                        <div key={idx}>{e.accountNumber || 'unknown'}: {e.error}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {capturingSnapshot && (
                 <p className="text-muted">
                   <i className="fas fa-spinner fa-spin" style={{ marginRight: '0.5rem' }}></i>
@@ -393,10 +485,7 @@ const SchwabInsights = () => {
                 </button>
                 <button
                   className="btn-primary-soft border border-border"
-                  onClick={() => selectedAccountNumber && syncSchwabPositionsForToday().then(() => {
-                    const today = new Date().toISOString().slice(0, 10);
-                    getPositionsForAccountDate(selectedAccountNumber, today).then(setPositions);
-                  })}
+                  onClick={handleManualPositionsSync}
                   disabled={syncingPositions || !selectedAccountNumber}
                 >
                   {syncingPositions ? 'Syncing positions…' : 'Refresh positions'}

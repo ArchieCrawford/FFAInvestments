@@ -95,7 +95,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Charles Schwab API Configuration
 VITE_SCHWAB_CLIENT_ID=your-schwab-client-id
-VITE_SCHWAB_CLIENT_SECRET=your-schwab-client-secret
+SCHWAB_CLIENT_SECRET=your-schwab-client-secret
 VITE_SCHWAB_REDIRECT_URI=https://localhost:3003/admin/schwab
 
 # Application Configuration

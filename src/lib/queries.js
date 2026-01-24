@@ -9,6 +9,7 @@ import {
   getCompleteMemberProfiles,
   getLatestSchwabSnapshot,
   getSchwabPositionsForDate,
+  getLatestSchwabPositions,
   getMemberFeed,
   getMemberAccounts,
   getMembers,
@@ -75,9 +76,16 @@ export function useLatestSchwabSnapshot() {
 
 export function useSchwabPositionsForDate(dateStr) {
   return useQuery({
-    queryKey: ['schwab_positions', dateStr],
+    queryKey: ['latest_schwab_positions'],
     queryFn: () => getSchwabPositionsForDate(dateStr),
     enabled: !!dateStr,
+  })
+}
+
+export function useLatestSchwabPositions() {
+  return useQuery({
+    queryKey: ['latest_schwab_positions'],
+    queryFn: getLatestSchwabPositions,
   })
 }
 

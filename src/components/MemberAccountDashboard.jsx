@@ -39,7 +39,8 @@ function formatPercent(n) {
   if (n === null || n === undefined) return '—'
   const v = Number(n)
   if (Number.isNaN(v)) return '—'
-  return `${(v * 100).toFixed(1)}%`
+  const pct = Math.abs(v) <= 1 ? v * 100 : v
+  return `${pct.toFixed(1)}%`
 }
 
 function isPresentNumber(value) {

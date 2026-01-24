@@ -18,7 +18,7 @@ import AdminEducation from './Pages/AdminEducation.jsx'
 import AdminSettings from './Pages/AdminSettings.jsx'
 import AdminMembers from './Pages/AdminMembers.jsx'
 import AdminUserManagement from './Pages/AdminUserManagement.jsx'
-import MemberDashboard from './Pages/MemberDashboardNew.jsx'
+import MemberDashboardNew from './Pages/MemberDashboardNew.jsx'
 import MemberDashboard_Debug from './Pages/MemberDashboard_Debug.jsx'
 import MemberHome from './Pages/MemberHome.jsx'
 import MemberContribute from './Pages/MemberContribute.jsx'
@@ -217,7 +217,7 @@ function App() {
           <Route path="/member/dashboard" element={
             <ProtectedRoute>
               <Layout currentPageName="MemberDashboard">
-                <MemberDashboard />
+                <MemberDashboardNew />
               </Layout>
             </ProtectedRoute>
           } />

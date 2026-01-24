@@ -32,6 +32,7 @@ export default function AdminSchwab() {
   const [authError, setAuthError] = useState('');
   const [accountStatus, setAccountStatus] = useState({ checked: false, count: 0, details: [] });
   const [checkingLive, setCheckingLive] = useState(false);
+  const oauthAllowed = schwabApi.isOAuthAllowed?.() ?? true;
 
   useEffect(() => {
     let active = true;
@@ -57,6 +58,10 @@ export default function AdminSchwab() {
 
   const handleConnect = async () => {
     try {
+      if (!oauthAllowed) {
+        setAuthError('Schwab OAuth is only enabled on www.ffainvestments.com.');
+        return;
+      }
       setAuthError('');
       setIsConnecting(true);
       const authUrl = await schwabApi.getAuthorizationUrl();
@@ -102,9 +107,14 @@ export default function AdminSchwab() {
           <div className="p-6 rounded-xl border border-border bg-surface shadow-sm">
             <h1 className="text-2xl font-bold mb-2 text-default">Connect to Charles Schwab</h1>
             <p className="text-muted mb-4">Authorize access so we can pull account snapshots, positions and balances securely. You will be redirected to Schwab and return here afterwards.</p>
+            {!oauthAllowed && (
+              <div className="text-sm text-muted mb-3">
+                Schwab OAuth is disabled on this host. Use www.ffainvestments.com or add this domain to the Schwab allowlist.
+              </div>
+            )}
             {authError && <div className="text-sm text-red-500 mb-3">{authError}</div>}
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleConnect} disabled={isConnecting} className="gap-2 bg-primary hover:bg-primary">
+              <Button onClick={handleConnect} disabled={isConnecting || !oauthAllowed} className="gap-2 bg-primary hover:bg-primary">
                 {isConnecting ? 'Redirecting…' : 'Connect to Charles Schwab'}
               </Button>
               <Link to="/admin/schwab/insights">
@@ -165,7 +175,7 @@ export default function AdminSchwab() {
                 <Button variant="outline" onClick={checkLiveAccounts} disabled={checkingLive} className="gap-2">
                   {checkingLive ? 'Checking…' : 'Check Live Status'}
                 </Button>
-                <Button onClick={handleConnect} variant="outline" className="gap-2">
+                <Button onClick={handleConnect} variant="outline" className="gap-2" disabled={!oauthAllowed}>
                   Reconnect
                 </Button>
               </div>

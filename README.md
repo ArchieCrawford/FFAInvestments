@@ -677,7 +677,7 @@ npm run build        # Build for productionVITE_SCHWAB_CLIENT_ID=your-schwab-cli
 
 npm run preview      # Preview production build
 
-## 📚 **Documentation**VITE_SCHWAB_CLIENT_SECRET=your-schwab-client-secret
+## 📚 **Documentation**SCHWAB_CLIENT_SECRET=your-schwab-client-secret
 
 # Deployment
 

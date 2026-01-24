@@ -53,62 +53,69 @@ function normalizeAccountNumber(account) {
   )
 }
 
-function mapPositionsRows({ accountNumber, asOfDate, positions }) {
+function resolveSymbol(pos, fallbackIndex) {
+  const instrument = pos?.instrument || {}
+  const raw =
+    instrument.symbol ||
+    instrument.cusip ||
+    instrument.description ||
+    pos?.symbol ||
+    null
+  if (!raw) return null
+  const cleaned = String(raw).trim()
+  return cleaned.length > 0 ? cleaned : `UNKNOWN_${fallbackIndex}`
+}
+
+function mapPositionsRows({ accountNumber, asOfDate, snapshotDate, positions }) {
   const rows = []
-  for (const pos of positions || []) {
+  const skipped = []
+  const list = positions || []
+
+  list.forEach((pos, idx) => {
     const instrument = pos.instrument || {}
+    const symbol = resolveSymbol(pos, idx)
+    if (!symbol) {
+      skipped.push({ index: idx, reason: 'missing_symbol' })
+      return
+    }
+
     const longQty = pos.longQuantity ?? null
     const shortQty = pos.shortQuantity ?? null
+    const quantity =
+      pos.quantity ??
+      (Number.isFinite(Number(longQty)) || Number.isFinite(Number(shortQty))
+        ? Number(longQty || 0) - Number(shortQty || 0)
+        : null)
+    const avgPrice = pos.averagePrice ?? null
+    const marketValue = pos.marketValue ?? null
+    const dayPl = pos.currentDayProfitLoss ?? null
+    const dayPlPct = pos.currentDayProfitLossPercentage ?? null
+    const costBasis = pos.costBasis ?? pos.averagePrice ?? null
 
-    if (longQty !== null && Number(longQty) !== 0) {
-      rows.push({
-        account_number: accountNumber,
-        as_of_date: asOfDate,
-        symbol: instrument.symbol || null,
-        description: instrument.description || null,
-        asset_type: instrument.assetType || instrument.type || null,
-        quantity: longQty,
-        price: pos.averagePrice ?? null,
-        market_value: pos.marketValue ?? null,
-        cost_basis: pos.averagePrice ?? null,
-        side: 'LONG',
-        raw_json: pos,
-      })
-    }
+    rows.push({
+      account_number: accountNumber,
+      as_of_date: asOfDate,
+      snapshot_date: snapshotDate,
+      balance_date: asOfDate,
+      symbol,
+      cusip: instrument.cusip || null,
+      description: instrument.description || null,
+      asset_type: instrument.assetType || instrument.type || null,
+      quantity,
+      long_quantity: longQty,
+      short_quantity: shortQty,
+      market_value: marketValue,
+      average_price: avgPrice,
+      current_day_profit_loss: dayPl,
+      current_day_profit_loss_pct: dayPlPct,
+      current_day_pl: dayPl,
+      current_day_pl_pct: dayPlPct,
+      cost_basis: costBasis,
+      raw_json: pos,
+    })
+  })
 
-    if (shortQty !== null && Number(shortQty) !== 0) {
-      rows.push({
-        account_number: accountNumber,
-        as_of_date: asOfDate,
-        symbol: instrument.symbol || null,
-        description: instrument.description || null,
-        asset_type: instrument.assetType || instrument.type || null,
-        quantity: shortQty,
-        price: pos.averagePrice ?? null,
-        market_value: pos.marketValue ?? null,
-        cost_basis: pos.averagePrice ?? null,
-        side: 'SHORT',
-        raw_json: pos,
-      })
-    }
-
-    if ((longQty === null || Number(longQty) === 0) && (shortQty === null || Number(shortQty) === 0)) {
-      rows.push({
-        account_number: accountNumber,
-        as_of_date: asOfDate,
-        symbol: instrument.symbol || null,
-        description: instrument.description || null,
-        asset_type: instrument.assetType || instrument.type || null,
-        quantity: pos.quantity ?? null,
-        price: pos.averagePrice ?? null,
-        market_value: pos.marketValue ?? null,
-        cost_basis: pos.averagePrice ?? null,
-        side: null,
-        raw_json: pos,
-      })
-    }
-  }
-  return rows
+  return { rows, skipped }
 }
 
 export default async function handler(req, res) {
@@ -147,6 +154,7 @@ export default async function handler(req, res) {
   }
 
   const asOfDate = (body?.date || new Date().toISOString().slice(0, 10))
+  const syncStartedAt = new Date().toISOString()
 
   // 1) Load latest stored Schwab tokens
   const { data: tokenRow, error: tokenError } = await supabase
@@ -229,42 +237,109 @@ export default async function handler(req, res) {
 
   // 4) Write positions into Supabase (new schema)
   const perAccount = []
+  const errors = []
   let totalInserted = 0
+  let accountsSynced = 0
 
   for (const acct of accounts) {
     const accountNumber = normalizeAccountNumber(acct)
-    if (!accountNumber) continue
-
-    const positions = acct?.securitiesAccount?.positions || []
-    const rows = mapPositionsRows({ accountNumber, asOfDate, positions })
-
-    const { error: deleteError } = await supabase
-      .from('schwab_positions')
-      .delete()
-      .eq('account_number', accountNumber)
-      .eq('as_of_date', asOfDate)
-
-    if (deleteError) {
-      return res.status(500).json({ error: 'Failed deleting existing positions', details: deleteError.message })
+    if (!accountNumber) {
+      errors.push({ accountNumber: null, error: 'Missing accountNumber in Schwab payload' })
+      perAccount.push({
+        accountNumber: null,
+        positions_count: 0,
+        status: 'error',
+        error: 'Missing accountNumber in Schwab payload',
+      })
+      continue
     }
 
-    if (rows.length > 0) {
-      const { error: insertError } = await supabase.from('schwab_positions').insert(rows)
-      if (insertError) {
-        return res.status(500).json({ error: 'Failed inserting positions', details: insertError.message })
+    try {
+      const positions = acct?.securitiesAccount?.positions || []
+      const { rows, skipped } = mapPositionsRows({
+        accountNumber,
+        asOfDate,
+        snapshotDate: syncStartedAt,
+        positions,
+      })
+
+      const { data: existingRows, error: existingError } = await supabase
+        .from('schwab_positions')
+        .select('*')
+        .eq('account_number', accountNumber)
+        .eq('as_of_date', asOfDate)
+
+      if (existingError) {
+        errors.push({ accountNumber, error: `Failed to read existing rows: ${existingError.message}` })
       }
-      totalInserted += rows.length
-    }
 
-    perAccount.push({ accountNumber, positions_count: rows.length })
+      const { error: deleteError } = await supabase
+        .from('schwab_positions')
+        .delete()
+        .eq('account_number', accountNumber)
+        .eq('as_of_date', asOfDate)
+
+      if (deleteError) {
+        errors.push({ accountNumber, error: `Failed deleting existing positions: ${deleteError.message}` })
+        perAccount.push({
+          accountNumber,
+          positions_count: 0,
+          status: 'error',
+          error: deleteError.message,
+        })
+        continue
+      }
+
+      if (rows.length > 0) {
+        const { error: insertError } = await supabase.from('schwab_positions').insert(rows)
+        if (insertError) {
+          const restoreRows = (existingRows || []).map((row) => {
+            const { id, created_at, ...rest } = row
+            return rest
+          })
+          if (restoreRows.length > 0) {
+            await supabase.from('schwab_positions').insert(restoreRows)
+          }
+          errors.push({ accountNumber, error: `Failed inserting positions: ${insertError.message}` })
+          perAccount.push({
+            accountNumber,
+            positions_count: 0,
+            status: 'error',
+            error: insertError.message,
+          })
+          continue
+        }
+
+        totalInserted += rows.length
+      }
+
+      accountsSynced += 1
+      perAccount.push({
+        accountNumber,
+        positions_count: rows.length,
+        positions_received: positions.length,
+        skipped_positions: skipped.length,
+        status: 'ok',
+      })
+    } catch (error) {
+      errors.push({ accountNumber, error: error.message || String(error) })
+      perAccount.push({
+        accountNumber,
+        positions_count: 0,
+        status: 'error',
+        error: error.message || String(error),
+      })
+    }
   }
 
   return res.status(200).json({
-    ok: true,
+    ok: errors.length === 0,
     as_of_date: asOfDate,
+    last_sync_at: syncStartedAt,
     accounts_count: accounts.length,
-    accounts_synced: perAccount.length,
-    total_positions_rows: totalInserted,
+    accounts_synced: accountsSynced,
+    positions_written: totalInserted,
     per_account: perAccount,
+    errors,
   })
 }

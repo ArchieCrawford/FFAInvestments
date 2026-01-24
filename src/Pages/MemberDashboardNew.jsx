@@ -36,7 +36,8 @@ function formatPercent(n) {
   if (n === null || n === undefined) return '—'
   const v = Number(n)
   if (Number.isNaN(v)) return '—'
-  return `${(v * 100).toFixed(1)}%`
+  const pct = Math.abs(v) <= 1 ? v * 100 : v
+  return `${pct.toFixed(1)}%`
 }
 
 function isPresentNumber(value) {
@@ -82,6 +83,43 @@ async function fetchSelfMemberData() {
   }
 }
 
+async function fetchSchwabTotals() {
+  const { data: accounts, error: accountsError } = await supabase
+    .from('member_accounts')
+    .select('current_units')
+    .eq('is_active', true)
+  if (accountsError) throw accountsError
+
+  const totalUnits = (accounts || []).reduce((sum, row) => {
+    const v = Number(row.current_units || 0)
+    return Number.isFinite(v) ? sum + v : sum
+  }, 0)
+
+  const { data: positions, error: positionsError } = await supabase
+    .from('latest_schwab_positions')
+    .select('market_value, snapshot_date')
+  if (positionsError) throw positionsError
+
+  let totalMarketValue = 0
+  let latestSnapshot = null
+  for (const row of positions || []) {
+    const mv = Number(row.market_value || 0)
+    if (Number.isFinite(mv)) totalMarketValue += mv
+    if (row.snapshot_date) {
+      const ts = new Date(row.snapshot_date).getTime()
+      if (Number.isFinite(ts) && (!latestSnapshot || ts > latestSnapshot)) {
+        latestSnapshot = ts
+      }
+    }
+  }
+
+  return {
+    totalUnits,
+    totalMarketValue,
+    lastSyncAt: latestSnapshot ? new Date(latestSnapshot).toISOString() : null,
+  }
+}
+
 const MemberDashboardNew = () => {
   const { profile } = useAuth()
 
@@ -95,11 +133,29 @@ const MemberDashboardNew = () => {
     enabled: !!profile,
   })
 
+  const { data: schwabTotals, error: totalsError } = useQuery({
+    queryKey: ['schwab_positions_totals'],
+    queryFn: fetchSchwabTotals,
+    enabled: !!profile,
+  })
+
   const account = data?.account || null
   const timeline = data?.timeline || []
   const meetingRows = data?.meetingRows || []
+  const combinedError = error || totalsError
 
   const latestTimeline = timeline.length > 0 ? timeline[timeline.length - 1] : null
+  const memberUnits = numberOrNull(account?.current_units)
+  const totalUnits = numberOrNull(schwabTotals?.totalUnits)
+  const totalMarketValue = numberOrNull(schwabTotals?.totalMarketValue)
+  const ownershipFraction =
+    isPresentNumber(memberUnits) && isPresentNumber(totalUnits) && totalUnits > 0
+      ? Number(memberUnits) / Number(totalUnits)
+      : null
+  const computedPortfolioValue =
+    isPresentNumber(ownershipFraction) && isPresentNumber(totalMarketValue)
+      ? Number(ownershipFraction) * Number(totalMarketValue)
+      : null
 
   const chartTimeline = useMemo(
     () =>
@@ -140,12 +196,16 @@ const MemberDashboardNew = () => {
   const overviewCards = [
     {
       label: 'Current Portfolio Value',
-      value: account
+      value: isPresentNumber(computedPortfolioValue)
+        ? formatCurrencyShort(computedPortfolioValue)
+        : account
         ? formatCurrencyShort(account.current_value)
         : latestTimeline
         ? formatCurrencyShort(latestTimeline.portfolio_value)
         : '—',
-      helper: latestTimeline
+      helper: schwabTotals?.lastSyncAt
+        ? `Schwab sync ${formatDateLabel(schwabTotals.lastSyncAt)}`
+        : latestTimeline
         ? formatDateLabel(latestTimeline.report_date)
         : account?.updated_at
         ? formatDateLabel(account.updated_at)
@@ -164,7 +224,9 @@ const MemberDashboardNew = () => {
     },
     {
       label: 'Ownership in Club',
-      value: account && isPresentNumber(account.ownership_percentage)
+      value: isPresentNumber(ownershipFraction)
+        ? formatPercent(ownershipFraction)
+        : account && isPresentNumber(account.ownership_percentage)
         ? formatPercent(account.ownership_percentage)
         : latestMeeting && isPresentNumber(latestMeeting.ownership_pct_of_club)
         ? formatPercent(latestMeeting.ownership_pct_of_club)
@@ -197,9 +259,9 @@ const MemberDashboardNew = () => {
           : 'See how your ownership in the club has grown over time.'
       }
     >
-      {error && (
+      {combinedError && (
         <div className="card mb-4 bg-primary-soft border border-border text-default p-3 rounded-xl">
-          {error.message || String(error)}
+          {combinedError.message || String(combinedError)}
         </div>
       )}
 
@@ -404,4 +466,5 @@ const MemberDashboardNew = () => {
   )
 }
 
+export { MemberDashboardNew }
 export default MemberDashboardNew

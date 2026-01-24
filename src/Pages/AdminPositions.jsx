@@ -1,36 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 
 const fetchLatestPositions = async () => {
-  // Determine most recent as_of_date in schwab_positions
-  const { data: latestRow, error: latestError } = await supabase
-    .from('schwab_positions')
-    .select('as_of_date')
-    .order('as_of_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (latestError) throw latestError
-  const latestDate = latestRow?.as_of_date
-  if (!latestDate) return []
-
   const { data, error } = await supabase
-    .from('schwab_positions')
-    .select('id, account_number, as_of_date, symbol, description, asset_type, quantity, market_value')
-    .eq('as_of_date', latestDate)
+    .from('latest_schwab_positions')
+    .select('id, account_number, snapshot_date, as_of_date, symbol, description, asset_type, quantity, market_value')
     .order('market_value', { ascending: false })
 
   if (error) throw error
-  return (data || []).map((row) => ({
-    ...row,
-    snapshot_date: row.as_of_date,
-  }))
+  return data || []
 }
 
 const AdminPositions = () => {
   const queryClient = useQueryClient()
+  const [syncStatus, setSyncStatus] = useState(null)
+  const [syncError, setSyncError] = useState('')
+  const [syncing, setSyncing] = useState(false)
 
   const {
     data: positions = [],
@@ -41,22 +28,57 @@ const AdminPositions = () => {
     refetchOnMount: 'always',
   })
 
+  const latestDate = useMemo(() => {
+    let latest = null
+    for (const row of positions) {
+      const candidate = row.snapshot_date || row.as_of_date
+      if (!candidate) continue
+      const ts = new Date(candidate).getTime()
+      if (!Number.isFinite(ts)) continue
+      if (!latest || ts > latest) {
+        latest = ts
+      }
+    }
+    return latest ? new Date(latest).toISOString() : null
+  }, [positions])
+
   useEffect(() => {
     let active = true
 
     const run = async () => {
       try {
+        setSyncing(true)
+        setSyncError('')
         // Server-side refresh: uses stored Schwab tokens + service role.
-        await fetch('/api/schwab/sync-positions', {
+        const response = await fetch('/api/schwab/sync-positions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ date: new Date().toISOString().slice(0, 10) }),
         })
+        const payload = await response.json().catch(() => null)
+        if (!response.ok) {
+          throw new Error(payload?.error || payload?.message || 'Failed to sync Schwab positions')
+        }
         if (!active) return
+        setSyncStatus(payload)
         queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] })
-      } catch {
-        // Silent: page can still render last known DB snapshot.
+        queryClient.invalidateQueries({ queryKey: ['schwab_positions'] })
+        queryClient.invalidateQueries({ queryKey: ['schwab_positions_totals'] })
+        queryClient.invalidateQueries({ queryKey: ['schwab_snapshot_latest'] })
+        queryClient.invalidateQueries({ queryKey: ['org_balance_history'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+        queryClient.invalidateQueries({ queryKey: ['member_dashboard_self'] })
+        queryClient.invalidateQueries({ queryKey: ['member_account_dashboard'] })
+        queryClient.invalidateQueries({ queryKey: ['admin_members'] })
+        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+        queryClient.invalidateQueries({ queryKey: ['member_accounts'] })
+        queryClient.invalidateQueries({ queryKey: ['members_with_accounts'] })
+        await queryClient.refetchQueries({ queryKey: ['latest_schwab_positions'], type: 'active' })
+      } catch (err) {
+        if (!active) return
+        setSyncError(err.message || 'Schwab sync failed')
       }
+      if (active) setSyncing(false)
     }
 
     run()
@@ -65,9 +87,6 @@ const AdminPositions = () => {
       active = false
     }
   }, [queryClient])
-
-  const latestDate =
-    positions.length > 0 ? positions[0].snapshot_date : null
 
   const totalMarketValue = positions.reduce((sum, p) => {
     const mv = Number(p.market_value || 0)
@@ -122,6 +141,38 @@ const AdminPositions = () => {
       subtitle="Latest holdings across all Schwab accounts."
     >
       <div className="space-y-4">
+        {syncError && (
+          <div className="card p-4 text-sm text-red-500">
+            Schwab sync failed: {syncError}
+          </div>
+        )}
+
+        {syncStatus && (
+          <div className="card p-4 text-sm text-default border border-border bg-primary-soft">
+            <div className="flex flex-col gap-1">
+              <div>
+                Last sync:{' '}
+                {syncStatus.last_sync_at
+                  ? new Date(syncStatus.last_sync_at).toLocaleString()
+                  : '—'}
+              </div>
+              <div>
+                Accounts synced: {syncStatus.accounts_synced ?? 0} / {syncStatus.accounts_count ?? 0}
+              </div>
+              <div>Positions written: {syncStatus.positions_written ?? 0}</div>
+              {syncStatus.errors && syncStatus.errors.length > 0 && (
+                <div className="text-xs text-red-600">
+                  {syncStatus.errors.map((e, idx) => (
+                    <div key={idx}>
+                      {e.accountNumber || 'unknown'}: {e.error}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="card p-4">
             <div className="text-xs text-muted">Total Market Value</div>
@@ -134,6 +185,17 @@ const AdminPositions = () => {
             {latestDate && (
               <div className="text-xs text-muted mt-1">
                 As of {new Date(latestDate).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+          <div className="card p-4">
+            <div className="text-xs text-muted">Sync Status</div>
+            <div className="text-2xl font-semibold text-default">
+              {syncing ? 'Syncing…' : 'Ready'}
+            </div>
+            {latestDate && (
+              <div className="text-xs text-muted mt-1">
+                Latest snapshot {new Date(latestDate).toLocaleDateString()}
               </div>
             )}
           </div>

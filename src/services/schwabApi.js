@@ -14,7 +14,6 @@ import axios from 'axios'
 const BACKEND_BASE = (import.meta.env.VITE_BACKEND_URL || 'https://ffainvestments.onrender.com').replace(/\/$/, '')
 const PROD_HOST = 'www.ffainvestments.com'
 const PROD_REDIRECTS = [
-  'https://www.ffainvestments.com/callback',
   'https://www.ffainvestments.com/admin/schwab/callback'
 ]
 
@@ -528,6 +527,22 @@ class SchwabApiService {
     return window.location.host === PROD_HOST
   }
 
+  _isAllowedHost() {
+    if (typeof window === 'undefined') return false
+    const origin = window.location.origin.toLowerCase()
+    return this.allowedRedirects.some((redirect) => {
+      try {
+        return new URL(redirect).origin.toLowerCase() === origin
+      } catch {
+        return false
+      }
+    })
+  }
+
+  isOAuthAllowed() {
+    return this._isAllowedHost()
+  }
+
   async _exchangeCodeForTokens() {
     throw new SchwabAPIError('Direct code exchange disabled; use backend /api/schwab/exchange')
   }
@@ -703,6 +718,10 @@ class SchwabApiService {
     }
 
     try {
+      if (!this._isAllowedHost()) {
+        console.warn('⚠️ Schwab OAuth disabled for this host; add it to the allowlist to enable.')
+        return
+      }
       const uri = new URL(this.redirectUri)
       const isHttps = uri.protocol === 'https:'
       const inAllowedList = this.allowedRedirects.length

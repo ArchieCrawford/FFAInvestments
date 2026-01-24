@@ -297,10 +297,15 @@ export async function getLatestSchwabSnapshot() {
 }
 
 export async function getSchwabPositionsForDate(dateStr: string) {
+  console.warn('getSchwabPositionsForDate is deprecated; using latest_schwab_positions view')
+  return getLatestSchwabPositions()
+}
+
+export async function getLatestSchwabPositions() {
   const { data, error } = await supabase
-    .from('schwab_positions')
+    .from('latest_schwab_positions')
     .select('*')
-    .eq('as_of_date', dateStr)
+    .order('market_value', { ascending: false })
   if (error) throw error
   return data || []
 }
