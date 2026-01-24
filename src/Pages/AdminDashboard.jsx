@@ -27,6 +27,30 @@ import {
   CartesianGrid,
 } from "recharts";
 
+function buildSchwabSummary(rows) {
+  let totalValue = 0;
+  let latestSnapshotTs = null;
+
+  for (const row of rows || []) {
+    const mv = Number(row.market_value || 0);
+    if (Number.isFinite(mv)) totalValue += mv;
+    if (row.snapshot_date) {
+      const ts = new Date(row.snapshot_date).getTime();
+      if (Number.isFinite(ts) && (!latestSnapshotTs || ts > latestSnapshotTs)) {
+        latestSnapshotTs = ts;
+      }
+    }
+  }
+
+  return {
+    totalValue,
+    latestSnapshotTs,
+    dateLabel: latestSnapshotTs
+      ? format(new Date(latestSnapshotTs), "MMM dd, yyyy h:mm a")
+      : "Data unavailable",
+  };
+}
+
 export default function AdminDashboard() {
   const [orgHistory, setOrgHistory] = useState([]);
   const [orgHistoryLoading, setOrgHistoryLoading] = useState(true);
@@ -121,28 +145,10 @@ export default function AdminDashboard() {
     },
   });
 
-  const schwabSummary = useMemo(() => {
-    let total = 0;
-    let latestSnapshot = null;
-
-    for (const row of schwabPositions) {
-      const mv = Number(row.market_value || 0);
-      if (Number.isFinite(mv)) total += mv;
-      if (row.snapshot_date) {
-        const ts = new Date(row.snapshot_date).getTime();
-        if (Number.isFinite(ts) && (!latestSnapshot || ts > latestSnapshot)) {
-          latestSnapshot = ts;
-        }
-      }
-    }
-
-    return {
-      totalValue: total,
-      dateLabel: latestSnapshot
-        ? format(new Date(latestSnapshot), "MMM dd, yyyy")
-        : "—",
-    };
-  }, [schwabPositions]);
+  const schwabSummary = useMemo(
+    () => buildSchwabSummary(schwabPositions),
+    [schwabPositions]
+  );
 
   // derive AUM from view if needed
   const viewAumFallback = useMemo(() => {
