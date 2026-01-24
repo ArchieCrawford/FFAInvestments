@@ -47,6 +47,19 @@ function formatMonthLabel(d) {
   }
 }
 
+function formatDateTimeLabel(d) {
+  if (!d) return 'Data unavailable'
+  const parsed = new Date(d)
+  if (Number.isNaN(parsed.getTime())) return 'Data unavailable'
+  return parsed.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 async function fetchMeetingReports() {
   const { data, error } = await supabase
     .from('meeting_reports')
@@ -81,6 +94,46 @@ async function fetchLatestMeetingMembers() {
   }
 }
 
+async function fetchSchwabTotals() {
+  const { data: accounts, error: accountsError } = await supabase
+    .from('member_accounts')
+    .select('current_units')
+    .eq('is_active', true)
+  if (accountsError) throw accountsError
+
+  const totalUnits = (accounts || []).reduce((sum, row) => {
+    const v = Number(row.current_units || 0)
+    return Number.isFinite(v) ? sum + v : sum
+  }, 0)
+
+  const { data: positions, error: positionsError } = await supabase
+    .from('latest_schwab_positions')
+    .select('market_value, snapshot_date')
+  if (positionsError) throw positionsError
+
+  const rows = positions || []
+  const positionsCount = rows.length
+  let totalMarketValue = 0
+  let latestSnapshot = null
+  for (const row of rows) {
+    const mv = Number(row.market_value || 0)
+    if (Number.isFinite(mv)) totalMarketValue += mv
+    if (row.snapshot_date) {
+      const ts = new Date(row.snapshot_date).getTime()
+      if (Number.isFinite(ts) && (!latestSnapshot || ts > latestSnapshot)) {
+        latestSnapshot = ts
+      }
+    }
+  }
+
+  return {
+    positionsCount,
+    totalUnits,
+    totalMarketValue,
+    lastSyncAt: latestSnapshot ? new Date(latestSnapshot).toISOString() : null,
+  }
+}
+
 const AdminDashboard_Hero = () => {
   const {
     data: reports,
@@ -100,8 +153,21 @@ const AdminDashboard_Hero = () => {
     queryFn: fetchLatestMeetingMembers,
   })
 
+  const {
+    data: schwabTotals,
+    error: schwabTotalsError,
+  } = useQuery({
+    queryKey: ['schwab_positions_totals'],
+    queryFn: fetchSchwabTotals,
+  })
+
   const latestMeeting = memberData?.latestMeeting || null
   const latestMembers = memberData?.members || []
+  const totalUnits = numberOrNull(schwabTotals?.totalUnits)
+  const totalMarketValue = numberOrNull(schwabTotals?.totalMarketValue)
+  const lastSyncAt = schwabTotals?.lastSyncAt || null
+  const positionsCount = Number(schwabTotals?.positionsCount || 0)
+  const hasSchwabData = positionsCount > 0
 
   const series = useMemo(() => {
     const rows = reports || []
@@ -130,16 +196,29 @@ const AdminDashboard_Hero = () => {
     return reports[reports.length - 1]
   }, [reports])
 
+  const unitValue = hasSchwabData && totalUnits && totalUnits > 0 && totalMarketValue !== null
+    ? totalMarketValue / totalUnits
+    : null
+  const fallbackPortfolioValue = numberOrNull(latestReport?.portfolio_total_value)
+  const fallbackUnitValue = numberOrNull(latestReport?.unit_value)
+  const fallbackUnits = numberOrNull(latestReport?.total_units_outstanding)
+  const portfolioValue = hasSchwabData ? totalMarketValue : fallbackPortfolioValue
+  const unitValueDisplay = unitValue !== null ? unitValue : fallbackUnitValue
+
   const overviewCards = [
     {
       label: 'Latest Portfolio Value',
-      value: latestReport ? formatCurrencyShort(latestReport.portfolio_total_value) : '—',
-      helper: latestReport ? formatMonthLabel(latestReport.report_month) : '',
+      value: portfolioValue !== null ? formatCurrencyShort(portfolioValue) : '—',
+      helper: hasSchwabData
+        ? (lastSyncAt ? `As of ${formatDateTimeLabel(lastSyncAt)}` : 'Data unavailable')
+        : (fallbackPortfolioValue !== null ? 'Meeting history' : 'Data unavailable'),
     },
     {
       label: 'Current Unit Value',
-      value: latestReport ? `$${Number(latestReport.unit_value || 0).toFixed(4)}` : '—',
-      helper: latestReport ? `${Number(latestReport.total_units_outstanding || 0).toFixed(2)} units` : '',
+      value: unitValueDisplay !== null ? `$${Number(unitValueDisplay).toFixed(4)}` : '—',
+      helper: hasSchwabData && totalUnits !== null
+        ? `${Number(totalUnits).toFixed(2)} units`
+        : (fallbackUnits !== null ? `${Number(fallbackUnits).toFixed(2)} units (meeting)` : 'Data unavailable'),
     },
     {
       label: 'Latest Stock vs Cash',
@@ -167,7 +246,7 @@ const AdminDashboard_Hero = () => {
   ]
 
   const loading = reportsLoading || membersLoading
-  const error = reportsError || membersError
+  const error = reportsError || membersError || schwabTotalsError
 
   return (
     <Page
@@ -207,7 +286,7 @@ const AdminDashboard_Hero = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-medium text-default">Unit Value Over Time</div>
-                  <div className="text-xs text-muted">Per-meeting NAV per unit</div>
+                  <div className="text-xs text-muted">Meeting history (per-meeting NAV per unit)</div>
                 </div>
               </div>
               <div className="h-64">
@@ -241,7 +320,7 @@ const AdminDashboard_Hero = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-medium text-default">Portfolio Value Over Time</div>
-                  <div className="text-xs text-muted">Total club portfolio at each meeting</div>
+                  <div className="text-xs text-muted">Meeting history (total club portfolio at each meeting)</div>
                 </div>
               </div>
               <div className="h-64">
@@ -283,7 +362,7 @@ const AdminDashboard_Hero = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-medium text-default">Stock vs Cash Breakdown</div>
-                  <div className="text-xs text-muted">How the portfolio mix has evolved</div>
+                  <div className="text-xs text-muted">Meeting history of portfolio mix</div>
                 </div>
               </div>
               <div className="h-64">
@@ -325,7 +404,7 @@ const AdminDashboard_Hero = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <div className="text-sm font-medium text-default">Dues & Contributions</div>
-                  <div className="text-xs text-muted">How much members are putting into the club</div>
+                  <div className="text-xs text-muted">Meeting history of member contributions</div>
                 </div>
               </div>
               <div className="h-64">

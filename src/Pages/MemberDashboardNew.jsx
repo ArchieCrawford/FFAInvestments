@@ -100,9 +100,11 @@ async function fetchSchwabTotals() {
     .select('market_value, snapshot_date')
   if (positionsError) throw positionsError
 
+  const rows = positions || []
+  const positionsCount = rows.length
   let totalMarketValue = 0
   let latestSnapshot = null
-  for (const row of positions || []) {
+  for (const row of rows) {
     const mv = Number(row.market_value || 0)
     if (Number.isFinite(mv)) totalMarketValue += mv
     if (row.snapshot_date) {
@@ -114,6 +116,7 @@ async function fetchSchwabTotals() {
   }
 
   return {
+    positionsCount,
     totalUnits,
     totalMarketValue,
     lastSyncAt: latestSnapshot ? new Date(latestSnapshot).toISOString() : null,
