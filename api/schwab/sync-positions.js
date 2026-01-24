@@ -154,7 +154,7 @@ export default async function handler(req, res) {
   }
 
   const syncStartedAt = new Date().toISOString()
-  const asOfDate = syncStartedAt.slice(0, 10)
+  const asOfDate = body?.date || syncStartedAt.slice(0, 10)
 
   // 1) Load latest stored Schwab tokens
   const { data: tokenRow, error: tokenError } = await supabase
