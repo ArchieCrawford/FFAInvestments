@@ -76,7 +76,7 @@ export function useLatestSchwabSnapshot() {
 
 export function useSchwabPositionsForDate(dateStr) {
   return useQuery({
-    queryKey: ['latest_schwab_positions'],
+    queryKey: ['schwab_positions', dateStr],
     queryFn: () => getSchwabPositionsForDate(dateStr),
     enabled: !!dateStr,
   })

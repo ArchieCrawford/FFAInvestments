@@ -64,6 +64,7 @@ const AdminPositions = () => {
         queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] })
         queryClient.invalidateQueries({ queryKey: ['schwab_positions'] })
         queryClient.invalidateQueries({ queryKey: ['schwab_positions_totals'] })
+        queryClient.invalidateQueries({ queryKey: ['schwab_unit_value'] })
         queryClient.invalidateQueries({ queryKey: ['schwab_snapshot_latest'] })
         queryClient.invalidateQueries({ queryKey: ['org_balance_history'] })
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })

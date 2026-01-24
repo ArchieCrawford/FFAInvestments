@@ -148,13 +148,17 @@ const MemberDashboardNew = () => {
   const memberUnits = numberOrNull(account?.current_units)
   const totalUnits = numberOrNull(schwabTotals?.totalUnits)
   const totalMarketValue = numberOrNull(schwabTotals?.totalMarketValue)
+  const unitValue =
+    isPresentNumber(totalUnits) && totalUnits > 0 && isPresentNumber(totalMarketValue)
+      ? Number(totalMarketValue) / Number(totalUnits)
+      : null
   const ownershipFraction =
     isPresentNumber(memberUnits) && isPresentNumber(totalUnits) && totalUnits > 0
       ? Number(memberUnits) / Number(totalUnits)
       : null
   const computedPortfolioValue =
-    isPresentNumber(ownershipFraction) && isPresentNumber(totalMarketValue)
-      ? Number(ownershipFraction) * Number(totalMarketValue)
+    isPresentNumber(memberUnits) && isPresentNumber(unitValue)
+      ? Number(memberUnits) * Number(unitValue)
       : null
 
   const chartTimeline = useMemo(
@@ -195,7 +199,7 @@ const MemberDashboardNew = () => {
 
   const overviewCards = [
     {
-      label: 'Current Portfolio Value',
+      label: 'Member Portfolio Value',
       value: isPresentNumber(computedPortfolioValue)
         ? formatCurrencyShort(computedPortfolioValue)
         : account
@@ -210,6 +214,14 @@ const MemberDashboardNew = () => {
         : account?.updated_at
         ? formatDateLabel(account.updated_at)
         : '',
+    },
+    {
+      label: 'Unit Value',
+      value: isPresentNumber(unitValue) ? formatCurrencyShort(unitValue) : '—',
+      helper:
+        isPresentNumber(totalMarketValue) && isPresentNumber(totalUnits) && totalUnits > 0
+          ? `${formatCurrencyShort(totalMarketValue)} / ${Number(totalUnits).toFixed(3)} units`
+          : '',
     },
     {
       label: 'Units Owned',
@@ -233,19 +245,6 @@ const MemberDashboardNew = () => {
         : '—',
       helper: latestMeeting
         ? `As of ${latestMeeting.label || 'latest meeting'}`
-        : '',
-    },
-    {
-      label: 'Total Contributed',
-      value: account && account.total_contributions
-        ? formatCurrencyShort(account.total_contributions)
-        : latestTimeline && latestTimeline.total_contribution
-        ? formatCurrencyShort(latestTimeline.total_contribution)
-        : latestMeeting && latestMeeting.total_contribution
-        ? formatCurrencyShort(latestMeeting.total_contribution)
-        : '—',
-      helper: latestMeeting && latestMeeting.dues_owed
-        ? `${formatCurrencyShort(latestMeeting.dues_owed)} dues outstanding last meeting`
         : '',
     },
   ]

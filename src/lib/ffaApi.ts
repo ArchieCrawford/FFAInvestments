@@ -297,8 +297,25 @@ export async function getLatestSchwabSnapshot() {
 }
 
 export async function getSchwabPositionsForDate(dateStr: string) {
-  console.warn('getSchwabPositionsForDate is deprecated; using latest_schwab_positions view')
-  return getLatestSchwabPositions()
+  if (!dateStr) return []
+
+  const { data, error } = await supabase
+    .from('schwab_positions')
+    .select('*')
+    .eq('as_of_date', dateStr)
+    .order('market_value', { ascending: false })
+
+  if (error) throw error
+  if (data && data.length > 0) return data
+
+  const { data: fallback, error: fallbackError } = await supabase
+    .from('schwab_positions')
+    .select('*')
+    .eq('balance_date', dateStr)
+    .order('market_value', { ascending: false })
+
+  if (fallbackError) throw fallbackError
+  return fallback || []
 }
 
 export async function getLatestSchwabPositions() {
@@ -484,6 +501,7 @@ export default {
   getMemberFeed,
   getCompleteMemberProfiles,
   getLatestSchwabSnapshot,
+  getLatestSchwabPositions,
   getSchwabPositionsForDate,
   createMemberUnitTransaction,
   createMemberPost,

@@ -153,8 +153,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid JSON payload' })
   }
 
-  const asOfDate = (body?.date || new Date().toISOString().slice(0, 10))
   const syncStartedAt = new Date().toISOString()
+  const asOfDate = syncStartedAt.slice(0, 10)
 
   // 1) Load latest stored Schwab tokens
   const { data: tokenRow, error: tokenError } = await supabase

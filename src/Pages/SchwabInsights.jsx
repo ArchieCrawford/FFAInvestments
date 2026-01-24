@@ -33,6 +33,7 @@ const SchwabInsights = () => {
     queryClient.invalidateQueries({ queryKey: ['latest_schwab_positions'] });
     queryClient.invalidateQueries({ queryKey: ['schwab_positions'] });
     queryClient.invalidateQueries({ queryKey: ['schwab_positions_totals'] });
+    queryClient.invalidateQueries({ queryKey: ['schwab_unit_value'] });
     queryClient.invalidateQueries({ queryKey: ['schwab_snapshot_latest'] });
     queryClient.invalidateQueries({ queryKey: ['org_balance_history'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -98,13 +99,9 @@ const SchwabInsights = () => {
 
         if (!isMounted) return;
 
-        // Extract positions
-        const positions = accountData.securitiesAccount?.positions || [];
-        console.log('✅ [SchwabInsights/loadLiveData] Loaded', positions.length, 'positions');
-        setPositions(positions);
-        
         // Store full raw JSON for debugging/export/database
         setPositionsJson(accountData);
+        await refreshDbPositions(accountNumber);
         
         // Extract balances
         const balances = accountData.securitiesAccount?.currentBalances || {};
