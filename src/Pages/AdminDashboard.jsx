@@ -109,6 +109,41 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: schwabPositions = [] } = useQuery({
+    queryKey: ["latest_schwab_positions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("latest_schwab_positions")
+        .select("market_value,snapshot_date");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const schwabSummary = useMemo(() => {
+    let total = 0;
+    let latestSnapshot = null;
+
+    for (const row of schwabPositions) {
+      const mv = Number(row.market_value || 0);
+      if (Number.isFinite(mv)) total += mv;
+      if (row.snapshot_date) {
+        const ts = new Date(row.snapshot_date).getTime();
+        if (Number.isFinite(ts) && (!latestSnapshot || ts > latestSnapshot)) {
+          latestSnapshot = ts;
+        }
+      }
+    }
+
+    return {
+      totalValue: total,
+      dateLabel: latestSnapshot
+        ? format(new Date(latestSnapshot), "MMM dd, yyyy")
+        : "—",
+    };
+  }, [schwabPositions]);
+
   // derive AUM from view if needed
   const viewAumFallback = useMemo(() => {
     if (!latestPositions || latestPositions.length === 0) return null;
@@ -300,7 +335,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Schwab Summary – driven by org_balance_history snapshot */}
+        {/* Schwab Summary – driven by latest_schwab_positions snapshot_date */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           <Card className="border-none shadow-lg xl:col-span-1">
             <CardHeader className="pb-3">
@@ -314,15 +349,13 @@ export default function AdminDashboard() {
             <CardContent className="space-y-2">
               <div className="text-3xl font-bold text-default">
                 $
-                {latestOrgSnapshot
-                  ? latestOrgSnapshot.totalValue.toLocaleString("en-US", {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })
-                  : "0"}
+                {schwabSummary.totalValue.toLocaleString("en-US", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}
               </div>
               <p className="text-sm text-muted">
-                As of {latestOrgSnapshot?.dateLabel || "—"}
+                As of {schwabSummary.dateLabel}
               </p>
               <Link to="/admin/schwab">
                 <Button className="mt-2 w-full gap-2">
