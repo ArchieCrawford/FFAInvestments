@@ -99,7 +99,7 @@ class SchwabApiService {
       }
 
       const origin = window.location.origin.toLowerCase()
-      const matchingRedirects = this.allowedRedirects.filter(r => {
+      let matchingRedirects = this.allowedRedirects.filter(r => {
         try {
           return new URL(r).origin.toLowerCase() === origin
         } catch {
@@ -107,8 +107,18 @@ class SchwabApiService {
         }
       })
 
+      // On the canonical prod host, fall back to the hardcoded prod redirect
+      // so a missing/misconfigured env var can never disable login.
+      if (!matchingRedirects.length && this._isProdHost()) {
+        matchingRedirects = [...PROD_REDIRECTS]
+      }
+
       if (!matchingRedirects.length) {
         throw new SchwabAPIError(`Schwab OAuth is only enabled on ${PROD_HOST}.`, 400)
+      }
+
+      if (!this.clientId) {
+        throw new SchwabAPIError('Schwab client ID is not configured (set VITE_SCHWAB_CLIENT_ID).', 500)
       }
 
       let chosenRedirect = this.redirectUri
@@ -540,6 +550,8 @@ class SchwabApiService {
   }
 
   isOAuthAllowed() {
+    // On the production host the redirect is hardcoded and always valid.
+    if (this._isProdHost()) return true
     return this._isAllowedHost()
   }
 

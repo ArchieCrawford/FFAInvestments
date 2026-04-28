@@ -58,16 +58,14 @@ export default function AdminSchwab() {
 
   const handleConnect = async () => {
     try {
-      if (!oauthAllowed) {
-        setAuthError('Schwab OAuth is only enabled on www.ffainvestments.com.');
-        return;
-      }
       setAuthError('');
       setIsConnecting(true);
       const authUrl = await schwabApi.getAuthorizationUrl();
+      if (!authUrl) throw new Error('No Schwab authorization URL returned');
       window.location.href = authUrl;
     } catch (err) {
-      setAuthError('Failed to initiate Schwab connection.');
+      console.error('[Schwab] Connect failed:', err);
+      setAuthError(err?.message || 'Failed to initiate Schwab connection.');
     } finally {
       setIsConnecting(false);
     }
@@ -114,7 +112,7 @@ export default function AdminSchwab() {
             )}
             {authError && <div className="text-sm text-red-500 mb-3">{authError}</div>}
             <div className="flex flex-wrap gap-3">
-              <Button onClick={handleConnect} disabled={isConnecting || !oauthAllowed} className="gap-2 bg-primary hover:bg-primary">
+              <Button onClick={handleConnect} disabled={isConnecting} className="gap-2 bg-primary hover:bg-primary">
                 {isConnecting ? 'Redirecting…' : 'Connect to Charles Schwab'}
               </Button>
               <Link to="/admin/schwab/insights">
@@ -175,7 +173,7 @@ export default function AdminSchwab() {
                 <Button variant="outline" onClick={checkLiveAccounts} disabled={checkingLive} className="gap-2">
                   {checkingLive ? 'Checking…' : 'Check Live Status'}
                 </Button>
-                <Button onClick={handleConnect} variant="outline" className="gap-2" disabled={!oauthAllowed}>
+                <Button onClick={handleConnect} variant="outline" className="gap-2" disabled={isConnecting}>
                   Reconnect
                 </Button>
               </div>
