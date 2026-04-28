@@ -19,6 +19,8 @@ const adminNav = [
   { title: "Accounts / Positions", url: "/admin/accounts", icon: "fas fa-briefcase" },
   { title: 'Documents', url: '/admin/documents', icon: 'fa-regular fa-folder' },
   { title: "Dues", url: "/admin/dues", icon: "fas fa-money-check-alt" },
+  { title: "Deposits", url: "/admin/deposits", icon: "fas fa-piggy-bank" },
+  { title: "Monthly History", url: "/admin/history", icon: "fas fa-calendar-alt" },
   { title: "Ledger", url: createPageUrl("AdminLedger"), icon: "fas fa-book" },
   { title: "Unit Price", url: "/admin/unit-price", icon: "fas fa-chart-line" },
   { title: "Portfolio Builder", url: "/admin/portfolio-builder", icon: "fas fa-briefcase" },

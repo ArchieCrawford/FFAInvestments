@@ -48,6 +48,8 @@ import AdminLoginActivity from './Pages/AdminLoginActivity.jsx'
 
 // Admin Components  
 import AdminDues from './Pages/AdminDues.jsx'
+import AdminDeposits from './Pages/AdminDeposits.jsx'
+import AdminHistory from './Pages/AdminHistory.jsx'
 import AdminDebugAuth from './Pages/AdminDebugAuth.jsx'
 import AdminSeedUnitValuation from './Pages/AdminSeedUnitValuation.jsx'
 
@@ -275,6 +277,20 @@ function App() {
             <ProtectedRoute>
               <Layout currentPageName="AdminDues">
                 <AdminDues />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/deposits" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminDeposits">
+                <AdminDeposits />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/history" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Layout currentPageName="AdminHistory">
+                <AdminHistory />
               </Layout>
             </ProtectedRoute>
           } />
