@@ -1,0 +1,17 @@
+{
+  "name": "ffa-reports",
+  "version": "1.0.0",
+  "description": "Standalone CSV → HTML report + per-member email tool for FFA Investments",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build": "node index.js --no-send",
+    "send": "node index.js"
+  },
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.14"
+  }
+}

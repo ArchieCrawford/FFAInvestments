@@ -1,0 +1,227 @@
+[
+  {
+    "external_short_id": 14,
+    "report_date": "2023-11-30T05:00:00.000Z",
+    "portfolio_value": "8835.20",
+    "total_units": "261.28000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-01-31T05:00:00.000Z",
+    "portfolio_value": "9075.92",
+    "total_units": "261.28000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-02-29T05:00:00.000Z",
+    "portfolio_value": "9314.39",
+    "total_units": "261.28000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-03-31T04:00:00.000Z",
+    "portfolio_value": "10124.59",
+    "total_units": "275.30000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-04-30T04:00:00.000Z",
+    "portfolio_value": "9868.30",
+    "total_units": "275.30000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-05-31T04:00:00.000Z",
+    "portfolio_value": "10226.69",
+    "total_units": "275.30000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-06-30T04:00:00.000Z",
+    "portfolio_value": "10282.69",
+    "total_units": "275.30000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-07-01T04:00:00.000Z",
+    "portfolio_value": "11016.00",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-08-01T04:00:00.000Z",
+    "portfolio_value": "11403.09",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-09-01T04:00:00.000Z",
+    "portfolio_value": "11590.52",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2024-12-01T05:00:00.000Z",
+    "portfolio_value": "12015.02",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-01-01T05:00:00.000Z",
+    "portfolio_value": "13299.11",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-02-01T05:00:00.000Z",
+    "portfolio_value": "13359.03",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-03-01T05:00:00.000Z",
+    "portfolio_value": "12789.78",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-04-01T04:00:00.000Z",
+    "portfolio_value": "12896.04",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-05-01T04:00:00.000Z",
+    "portfolio_value": "13466.22",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-06-01T04:00:00.000Z",
+    "portfolio_value": "13841.50",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-07-01T04:00:00.000Z",
+    "portfolio_value": "14139.69",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 14,
+    "report_date": "2025-08-01T04:00:00.000Z",
+    "portfolio_value": "14087.17",
+    "total_units": "283.34000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 20,
+    "report_date": "2025-04-01T04:00:00.000Z",
+    "portfolio_value": "504.15",
+    "total_units": "11.08000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 20,
+    "report_date": "2025-05-01T04:00:00.000Z",
+    "portfolio_value": "526.44",
+    "total_units": "11.08000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 20,
+    "report_date": "2025-06-01T04:00:00.000Z",
+    "portfolio_value": "541.12",
+    "total_units": "11.08000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 1,
+    "report_date": "2023-11-30T05:00:00.000Z",
+    "portfolio_value": "61696.34",
+    "total_units": "1824.51000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 1,
+    "report_date": "2024-01-31T05:00:00.000Z",
+    "portfolio_value": "63377.31",
+    "total_units": "1824.51000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  },
+  {
+    "external_short_id": 1,
+    "report_date": "2024-02-29T05:00:00.000Z",
+    "portfolio_value": "65042.55",
+    "total_units": "1824.51000000",
+    "total_contribution": null,
+    "growth_amount": null,
+    "growth_pct": null
+  }
+]

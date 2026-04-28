@@ -1,0 +1,129 @@
+schema,table_name,policy,permissive,roles,cmd,qual,with_check
+public,club_settings,Admins can manage club settings,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text))))",
+public,club_settings,Members can read club settings,PERMISSIVE,{public},SELECT,true,
+public,club_settings,select_authenticated_all_public_club_settings,PERMISSIVE,{authenticated},SELECT,true,
+public,club_settings,select_public_all_public_club_settings,PERMISSIVE,{public},SELECT,true,
+public,deposits,deposits admin all,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM members m
+  WHERE ((m.auth_user_id = auth.uid()) AND (m.role = 'admin'::text))))","(EXISTS ( SELECT 1
+   FROM members m
+  WHERE ((m.auth_user_id = auth.uid()) AND (m.role = 'admin'::text))))"
+public,deposits,deposits member read own,PERMISSIVE,{public},SELECT,"(member_id IN ( SELECT members.id
+   FROM members
+  WHERE (members.auth_user_id = auth.uid())))",
+public,email_queue,select_authenticated_all_public_email_queue,PERMISSIVE,{authenticated},SELECT,true,
+public,email_queue,select_public_all_public_email_queue,PERMISSIVE,{public},SELECT,true,
+public,ffa_timeline,ffa_timeline_insert_any,PERMISSIVE,{authenticated},INSERT,,true
+public,ffa_timeline,ffa_timeline_select_all,PERMISSIVE,{authenticated},SELECT,true,
+public,ffa_timeline,select_authenticated_all_public_ffa_timeline,PERMISSIVE,{authenticated},SELECT,true,
+public,ffa_timeline,select_public_all_public_ffa_timeline,PERMISSIVE,{public},SELECT,true,
+public,groups,members can read groups,PERMISSIVE,{public},SELECT,"(EXISTS ( SELECT 1
+   FROM group_members gm
+  WHERE ((gm.group_id = groups.id) AND (gm.user_id = auth.uid()))))",
+public,member_accounts,member_accounts admin delete,PERMISSIVE,{public},DELETE,is_admin(),
+public,member_accounts,member_accounts admin full access,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = 'admin'::text))))",
+public,member_accounts,member_accounts admin insert,PERMISSIVE,{public},INSERT,,is_admin()
+public,member_accounts,member_accounts admin select,PERMISSIVE,{public},SELECT,is_admin(),
+public,member_accounts,member_accounts admin update,PERMISSIVE,{public},UPDATE,is_admin(),is_admin()
+public,member_accounts,member_accounts self read,PERMISSIVE,{public},SELECT,(member_id = auth.uid()),
+public,member_accounts,select_authenticated_all_public_member_accounts,PERMISSIVE,{authenticated},SELECT,true,
+public,member_accounts,select_public_all_public_member_accounts,PERMISSIVE,{public},SELECT,true,
+public,member_dues,dues_admin_all,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+public,member_dues,dues_self_select,PERMISSIVE,{authenticated},SELECT,"((auth.uid() IS NOT NULL) AND (member_id IN ( SELECT members.id
+   FROM members
+  WHERE (members.auth_user_id = auth.uid()))))",
+public,member_dues,select_authenticated_all_public_member_dues,PERMISSIVE,{authenticated},SELECT,true,
+public,member_dues,select_public_all_public_member_dues,PERMISSIVE,{public},SELECT,true,
+public,member_login_logs,admin_login_logs_read_all,PERMISSIVE,{authenticated},SELECT,true,
+public,member_login_logs,member_login_logs_insert_authenticated,PERMISSIVE,{authenticated},INSERT,,true
+public,member_login_logs,member_login_logs_select_authenticated,PERMISSIVE,{authenticated},SELECT,true,
+public,member_login_logs,member_login_logs_update_authenticated,PERMISSIVE,{authenticated},UPDATE,true,true
+public,member_personal_data,Admins can manage personal data,PERMISSIVE,{public},ALL,((auth.jwt() ->> 'role'::text) = 'admin'::text),
+public,member_personal_data,Users can view all personal data,PERMISSIVE,{public},SELECT,true,
+public,member_personal_data,select_authenticated_all_public_member_personal_data,PERMISSIVE,{authenticated},SELECT,true,
+public,member_portfolio_data,Admins can manage portfolio data,PERMISSIVE,{public},ALL,((auth.jwt() ->> 'role'::text) = 'admin'::text),
+public,member_portfolio_data,Users can view all portfolio data,PERMISSIVE,{public},SELECT,true,
+public,member_portfolio_data,select_authenticated_all_public_member_portfolio_data,PERMISSIVE,{authenticated},SELECT,true,
+public,member_portfolio_data,select_public_all_public_member_portfolio_data,PERMISSIVE,{public},SELECT,true,
+public,member_post_comments,member_post_comments_delete_own_or_admin,PERMISSIVE,{authenticated},DELETE,((author_id = auth.uid()) OR is_admin()),
+public,member_post_comments,member_post_comments_insert_own,PERMISSIVE,{authenticated},INSERT,,(author_id = auth.uid())
+public,member_post_comments,member_post_comments_select_all,PERMISSIVE,{authenticated},SELECT,true,
+public,member_post_comments,select_authenticated_all_public_member_post_comments,PERMISSIVE,{authenticated},SELECT,true,
+public,member_post_comments,select_public_all_public_member_post_comments,PERMISSIVE,{public},SELECT,true,
+public,member_post_likes,member_post_likes_delete_own_or_admin,PERMISSIVE,{authenticated},DELETE,((member_id = auth.uid()) OR is_admin()),
+public,member_post_likes,member_post_likes_insert_own,PERMISSIVE,{authenticated},INSERT,,(member_id = auth.uid())
+public,member_post_likes,member_post_likes_select_all,PERMISSIVE,{authenticated},SELECT,true,
+public,member_post_likes,select_authenticated_all_public_member_post_likes,PERMISSIVE,{authenticated},SELECT,true,
+public,member_post_likes,select_public_all_public_member_post_likes,PERMISSIVE,{public},SELECT,true,
+public,member_posts,Users can insert their own posts,PERMISSIVE,{public},INSERT,,(auth.uid() = author_id)
+public,member_posts,member_posts_delete_own_or_admin,PERMISSIVE,{authenticated},DELETE,((author_id = auth.uid()) OR is_admin()),
+public,member_posts,member_posts_insert_own,PERMISSIVE,{authenticated},INSERT,,(author_id = auth.uid())
+public,member_posts,member_posts_own_author_only,PERMISSIVE,{authenticated},INSERT,,(author_id = auth.uid())
+public,member_posts,member_posts_read_all,PERMISSIVE,{authenticated},SELECT,true,
+public,member_posts,member_posts_select_visible,PERMISSIVE,{authenticated},SELECT,"((visibility = ANY (ARRAY['public'::text, 'club'::text])) OR ((visibility = 'admin'::text) AND is_admin()))",
+public,member_posts,member_posts_update_own_or_admin,PERMISSIVE,{authenticated},UPDATE,((author_id = auth.uid()) OR is_admin()),((author_id = auth.uid()) OR is_admin())
+public,member_posts,select_authenticated_all_public_member_posts,PERMISSIVE,{authenticated},SELECT,true,
+public,member_posts,select_public_all_public_member_posts,PERMISSIVE,{public},SELECT,true,
+public,members,members_admin_all,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+public,members,members_read_self,PERMISSIVE,{authenticated},SELECT,(auth_user_id = auth.uid()),
+public,members,members_select_authenticated_all,PERMISSIVE,{authenticated},SELECT,true,
+public,members,members_select_public_all,PERMISSIVE,{public},SELECT,true,
+public,members,members_self_select,PERMISSIVE,{authenticated},SELECT,((auth.uid() IS NOT NULL) AND (auth.uid() = auth_user_id)),
+public,members,select_authenticated_all_public_members,PERMISSIVE,{authenticated},SELECT,true,
+public,members,select_public_all_public_members,PERMISSIVE,{public},SELECT,true,
+public,notes,members manage notes,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM group_members gm
+  WHERE ((gm.group_id = notes.group_id) AND (gm.user_id = auth.uid()))))","(EXISTS ( SELECT 1
+   FROM group_members gm
+  WHERE ((gm.group_id = notes.group_id) AND (gm.user_id = auth.uid()))))"
+public,org_balance_history,orgbal_admin_all,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+public,org_balance_history,select_authenticated_all_public_org_balance_history,PERMISSIVE,{authenticated},SELECT,true,
+public,org_balance_history,select_public_all_public_org_balance_history,PERMISSIVE,{public},SELECT,true,
+public,org_documents,Org docs insert (admins),PERMISSIVE,{authenticated},INSERT,,"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = 'admin'::text))))"
+public,org_documents,Org docs select (admins),PERMISSIVE,{authenticated},SELECT,"(EXISTS ( SELECT 1
+   FROM profiles p
+  WHERE ((p.id = auth.uid()) AND (p.role = 'admin'::text))))",
+public,payment_history,Admins can manage payment history,PERMISSIVE,{public},ALL,((auth.jwt() ->> 'role'::text) = 'admin'::text),
+public,payment_history,Users can view all payment history,PERMISSIVE,{public},SELECT,true,
+public,payment_history,select_authenticated_all_public_payment_history,PERMISSIVE,{authenticated},SELECT,true,
+public,profiles,profiles admin view all,PERMISSIVE,{public},SELECT,is_admin(),
+public,profiles,profiles self update,PERMISSIVE,{public},UPDATE,(auth.uid() = id),
+public,profiles,profiles self view,PERMISSIVE,{public},SELECT,(auth.uid() = id),
+public,profiles,select_authenticated_all_public_profiles,PERMISSIVE,{authenticated},SELECT,true,
+public,profiles,select_public_all_public_profiles,PERMISSIVE,{public},SELECT,true,
+public,schwab_account_snapshots,insert_schwab_snapshots_for_authenticated,PERMISSIVE,{authenticated},INSERT,,true
+public,schwab_account_snapshots,read_schwab_snapshots_for_authenticated,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_accounts,insert_schwab_accounts_for_authenticated,PERMISSIVE,{authenticated},INSERT,,true
+public,schwab_accounts,read_schwab_accounts_for_authenticated,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_positions,insert_schwab_positions_for_authenticated,PERMISSIVE,{authenticated},INSERT,,true
+public,schwab_positions,read_schwab_positions_for_authenticated,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_positions,schwab_positions_delete_admin_only,PERMISSIVE,{authenticated},DELETE,is_admin(),
+public,schwab_positions,schwab_positions_insert_admin_only,PERMISSIVE,{authenticated},INSERT,,is_admin()
+public,schwab_positions,schwab_positions_read_all,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_positions,schwab_positions_update_admin_only,PERMISSIVE,{authenticated},UPDATE,is_admin(),is_admin()
+public,schwab_positions,select_authenticated_all_public_schwab_positions,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_positions,select_public_all_public_schwab_positions,PERMISSIVE,{public},SELECT,true,
+public,schwab_positions_import,schwab_positions_import_read_admin_only,PERMISSIVE,{authenticated},SELECT,is_admin(),
+public,schwab_positions_import,schwab_positions_import_write_admin_only,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+public,schwab_positions_import,select_authenticated_all_public_schwab_positions_import,PERMISSIVE,{authenticated},SELECT,true,
+public,schwab_raw_account_responses,schwab_raw_account_responses_select_admin,PERMISSIVE,{authenticated},SELECT,is_admin(),
+public,schwab_raw_account_responses,schwab_raw_account_responses_write_admin,PERMISSIVE,{authenticated},ALL,is_admin(),is_admin()
+public,schwab_tokens,allow_service_role_only,PERMISSIVE,{public},ALL,(auth.role() = 'service_role'::text),(auth.role() = 'service_role'::text)
+public,watchlist_items,members manage watchlist items,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM (watchlists w
+     JOIN group_members gm ON ((gm.group_id = w.group_id)))
+  WHERE ((w.id = watchlist_items.watchlist_id) AND (gm.user_id = auth.uid()))))","(EXISTS ( SELECT 1
+   FROM (watchlists w
+     JOIN group_members gm ON ((gm.group_id = w.group_id)))
+  WHERE ((w.id = watchlist_items.watchlist_id) AND (gm.user_id = auth.uid()))))"
+public,watchlists,members manage watchlists,PERMISSIVE,{public},ALL,"(EXISTS ( SELECT 1
+   FROM group_members gm
+  WHERE ((gm.group_id = watchlists.group_id) AND (gm.user_id = auth.uid()))))","(EXISTS ( SELECT 1
+   FROM group_members gm
+  WHERE ((gm.group_id = watchlists.group_id) AND (gm.user_id = auth.uid()))))"

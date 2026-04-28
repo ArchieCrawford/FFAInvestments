@@ -1,0 +1,14 @@
+[
+  {
+    "address": "0x1bc0c42215582d5a085795f4badbac3ff36d1bcb",
+    "symbol": "CLANKER",
+    "decimals": 18,
+    "updated_at": "2026-02-02T18:18:24.778Z"
+  },
+  {
+    "address": "0x22af33fe49fd1fa80c7149773dde5890d3c76f3b",
+    "symbol": "BNKR",
+    "decimals": 18,
+    "updated_at": "2026-02-02T18:18:24.778Z"
+  }
+]

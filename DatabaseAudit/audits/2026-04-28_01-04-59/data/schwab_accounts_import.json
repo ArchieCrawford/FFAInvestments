@@ -1,0 +1,13 @@
+[
+  {
+    "balance_date": "2025-11-26T05:00:00.000Z",
+    "account_number": "53362839",
+    "account_type": "CASH",
+    "current_liquidation_value": "922334.81",
+    "liquidation_value": "922334.81",
+    "long_market_value": "872953.5",
+    "mutual_fund_value": "32489.35",
+    "cash_balance": "16891.96",
+    "total_cash": "16891.96"
+  }
+]

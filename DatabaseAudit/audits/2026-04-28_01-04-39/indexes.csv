@@ -1,0 +1,94 @@
+schema,table_name,index_name,indexdef
+public,club_settings,club_settings_pkey,CREATE UNIQUE INDEX club_settings_pkey ON public.club_settings USING btree (id)
+public,club_unit_valuations,club_unit_valuations_pkey,CREATE UNIQUE INDEX club_unit_valuations_pkey ON public.club_unit_valuations USING btree (id)
+public,club_unit_valuations,club_unit_valuations_valuation_date_key,CREATE UNIQUE INDEX club_unit_valuations_valuation_date_key ON public.club_unit_valuations USING btree (valuation_date)
+public,club_unit_valuations,idx_club_unit_valuations_valuation_date,CREATE INDEX idx_club_unit_valuations_valuation_date ON public.club_unit_valuations USING btree (valuation_date)
+public,deposits,deposits_confirmation_number_key,CREATE UNIQUE INDEX deposits_confirmation_number_key ON public.deposits USING btree (confirmation_number)
+public,deposits,deposits_deposit_date_idx,CREATE INDEX deposits_deposit_date_idx ON public.deposits USING btree (deposit_date DESC)
+public,deposits,deposits_member_id_idx,CREATE INDEX deposits_member_id_idx ON public.deposits USING btree (member_id)
+public,deposits,deposits_pkey,CREATE UNIQUE INDEX deposits_pkey ON public.deposits USING btree (id)
+public,deposits,deposits_sender_name_idx,CREATE INDEX deposits_sender_name_idx ON public.deposits USING btree (lower(sender_name))
+public,email_queue,email_queue_pkey,CREATE UNIQUE INDEX email_queue_pkey ON public.email_queue USING btree (id)
+public,ffa_timeline,ffa_timeline_pkey,CREATE UNIQUE INDEX ffa_timeline_pkey ON public.ffa_timeline USING btree (id)
+public,financials_annual,financials_annual_pkey,"CREATE UNIQUE INDEX financials_annual_pkey ON public.financials_annual USING btree (symbol, statement_type, fiscal_date_ending)"
+public,group_members,group_members_pkey,"CREATE UNIQUE INDEX group_members_pkey ON public.group_members USING btree (group_id, user_id)"
+public,groups,groups_pkey,CREATE UNIQUE INDEX groups_pkey ON public.groups USING btree (id)
+public,meeting_report_members,idx_meeting_report_members_meeting_report_id,CREATE INDEX idx_meeting_report_members_meeting_report_id ON public.meeting_report_members USING btree (meeting_report_id)
+public,meeting_report_members,idx_meeting_report_members_member_id,CREATE INDEX idx_meeting_report_members_member_id ON public.meeting_report_members USING btree (member_id)
+public,meeting_report_members,idx_meeting_report_members_member_name,CREATE INDEX idx_meeting_report_members_member_name ON public.meeting_report_members USING btree (member_name)
+public,meeting_report_members,meeting_report_members_meeting_report_id_member_name_key,"CREATE UNIQUE INDEX meeting_report_members_meeting_report_id_member_name_key ON public.meeting_report_members USING btree (meeting_report_id, member_name)"
+public,meeting_report_members,meeting_report_members_pkey,CREATE UNIQUE INDEX meeting_report_members_pkey ON public.meeting_report_members USING btree (id)
+public,meeting_reports,idx_meeting_reports_report_month,CREATE INDEX idx_meeting_reports_report_month ON public.meeting_reports USING btree (report_month)
+public,meeting_reports,meeting_reports_pkey,CREATE UNIQUE INDEX meeting_reports_pkey ON public.meeting_reports USING btree (id)
+public,meeting_reports,meeting_reports_report_month_key,CREATE UNIQUE INDEX meeting_reports_report_month_key ON public.meeting_reports USING btree (report_month)
+public,member_accounts,idx_member_accounts_member_id,CREATE INDEX idx_member_accounts_member_id ON public.member_accounts USING btree (member_id)
+public,member_accounts,member_accounts_member_id_key,CREATE UNIQUE INDEX member_accounts_member_id_key ON public.member_accounts USING btree (member_id)
+public,member_accounts,member_accounts_pkey,CREATE UNIQUE INDEX member_accounts_pkey ON public.member_accounts USING btree (id)
+public,member_dues,idx_member_dues_member_id,CREATE INDEX idx_member_dues_member_id ON public.member_dues USING btree (member_id)
+public,member_dues,member_dues_pkey,CREATE UNIQUE INDEX member_dues_pkey ON public.member_dues USING btree (id)
+public,member_invite_logs,idx_member_invite_logs_member_id,CREATE INDEX idx_member_invite_logs_member_id ON public.member_invite_logs USING btree (member_id)
+public,member_invite_logs,idx_member_invite_logs_sent_at,CREATE INDEX idx_member_invite_logs_sent_at ON public.member_invite_logs USING btree (sent_at DESC)
+public,member_invite_logs,member_invite_logs_pkey,CREATE UNIQUE INDEX member_invite_logs_pkey ON public.member_invite_logs USING btree (id)
+public,member_login_logs,member_login_logs_pkey,CREATE UNIQUE INDEX member_login_logs_pkey ON public.member_login_logs USING btree (id)
+public,member_name_aliases,member_name_aliases_alias_key,CREATE UNIQUE INDEX member_name_aliases_alias_key ON public.member_name_aliases USING btree (alias)
+public,member_name_aliases,member_name_aliases_pkey,CREATE UNIQUE INDEX member_name_aliases_pkey ON public.member_name_aliases USING btree (id)
+public,member_personal_data,member_personal_data_member_id_key,CREATE UNIQUE INDEX member_personal_data_member_id_key ON public.member_personal_data USING btree (member_id)
+public,member_personal_data,member_personal_data_pkey,CREATE UNIQUE INDEX member_personal_data_pkey ON public.member_personal_data USING btree (id)
+public,member_portfolio_data,idx_member_portfolio_member_id,CREATE INDEX idx_member_portfolio_member_id ON public.member_portfolio_data USING btree (member_id)
+public,member_portfolio_data,idx_member_portfolio_symbol,CREATE INDEX idx_member_portfolio_symbol ON public.member_portfolio_data USING btree (symbol)
+public,member_portfolio_data,member_portfolio_data_pkey,CREATE UNIQUE INDEX member_portfolio_data_pkey ON public.member_portfolio_data USING btree (id)
+public,member_post_comments,member_post_comments_pkey,CREATE UNIQUE INDEX member_post_comments_pkey ON public.member_post_comments USING btree (id)
+public,member_post_likes,member_post_likes_pkey,CREATE UNIQUE INDEX member_post_likes_pkey ON public.member_post_likes USING btree (id)
+public,member_post_likes,member_post_likes_uniq_like_per_user,"CREATE UNIQUE INDEX member_post_likes_uniq_like_per_user ON public.member_post_likes USING btree (post_id, member_id)"
+public,member_posts,member_posts_pkey,CREATE UNIQUE INDEX member_posts_pkey ON public.member_posts USING btree (id)
+public,member_to_auth,member_to_auth_member_id_key,CREATE UNIQUE INDEX member_to_auth_member_id_key ON public.member_to_auth USING btree (member_id)
+public,member_to_auth,member_to_auth_pkey,CREATE UNIQUE INDEX member_to_auth_pkey ON public.member_to_auth USING btree (id)
+public,member_unit_transactions,idx_member_unit_transactions_member_date,"CREATE INDEX idx_member_unit_transactions_member_date ON public.member_unit_transactions USING btree (member_id, tx_date)"
+public,member_unit_transactions,member_unit_transactions_pkey,CREATE UNIQUE INDEX member_unit_transactions_pkey ON public.member_unit_transactions USING btree (id)
+public,members,idx_members_email,CREATE INDEX idx_members_email ON public.members USING btree (email)
+public,members,idx_members_member_name,CREATE INDEX idx_members_member_name ON public.members USING btree (member_name)
+public,members,members_external_short_id_key,CREATE UNIQUE INDEX members_external_short_id_key ON public.members USING btree (external_short_id)
+public,members,members_pkey,CREATE UNIQUE INDEX members_pkey ON public.members USING btree (id)
+public,members,uq_members_auth_user_id,CREATE UNIQUE INDEX uq_members_auth_user_id ON public.members USING btree (auth_user_id)
+public,notes,notes_pkey,CREATE UNIQUE INDEX notes_pkey ON public.notes USING btree (id)
+public,org_balance_history,idx_org_balance_history_date,CREATE INDEX idx_org_balance_history_date ON public.org_balance_history USING btree (balance_date)
+public,org_balance_history,org_balance_history_balance_date_key,CREATE UNIQUE INDEX org_balance_history_balance_date_key ON public.org_balance_history USING btree (balance_date)
+public,org_balance_history,org_balance_history_pkey,CREATE UNIQUE INDEX org_balance_history_pkey ON public.org_balance_history USING btree (id)
+public,org_balance_history,uq_org_balance_history_date_source,"CREATE UNIQUE INDEX uq_org_balance_history_date_source ON public.org_balance_history USING btree (balance_date, source)"
+public,org_documents,org_documents_bucket_path_uidx,"CREATE UNIQUE INDEX org_documents_bucket_path_uidx ON public.org_documents USING btree (bucket, path)"
+public,org_documents,org_documents_org_id_created_at_idx,"CREATE INDEX org_documents_org_id_created_at_idx ON public.org_documents USING btree (org_id, created_at DESC)"
+public,org_documents,org_documents_pkey,CREATE UNIQUE INDEX org_documents_pkey ON public.org_documents USING btree (id)
+public,payment_history,idx_payment_history_date,CREATE INDEX idx_payment_history_date ON public.payment_history USING btree (payment_date)
+public,payment_history,idx_payment_history_member_id,CREATE INDEX idx_payment_history_member_id ON public.payment_history USING btree (member_id)
+public,payment_history,payment_history_pkey,CREATE UNIQUE INDEX payment_history_pkey ON public.payment_history USING btree (id)
+public,prices_daily,prices_daily_pkey,"CREATE UNIQUE INDEX prices_daily_pkey ON public.prices_daily USING btree (symbol, date)"
+public,profiles,profiles_pkey,CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)
+public,ratios_annual,ratios_annual_pkey,"CREATE UNIQUE INDEX ratios_annual_pkey ON public.ratios_annual USING btree (symbol, fiscal_date_ending)"
+public,schwab_account_snapshots,idx_schwab_account_snapshots_acct_date,"CREATE INDEX idx_schwab_account_snapshots_acct_date ON public.schwab_account_snapshots USING btree (account_number, snapshot_date)"
+public,schwab_account_snapshots,idx_schwab_account_snapshots_date,CREATE INDEX idx_schwab_account_snapshots_date ON public.schwab_account_snapshots USING btree (snapshot_date)
+public,schwab_account_snapshots,idx_schwab_account_snapshots_snapshot_date,CREATE INDEX idx_schwab_account_snapshots_snapshot_date ON public.schwab_account_snapshots USING btree (snapshot_date)
+public,schwab_account_snapshots,schwab_account_snapshots_pkey,CREATE UNIQUE INDEX schwab_account_snapshots_pkey ON public.schwab_account_snapshots USING btree (id)
+public,schwab_account_snapshots,uq_schwab_account_snapshots_account_date,"CREATE UNIQUE INDEX uq_schwab_account_snapshots_account_date ON public.schwab_account_snapshots USING btree (account_id, snapshot_date)"
+public,schwab_accounts,schwab_accounts_account_number_key,CREATE UNIQUE INDEX schwab_accounts_account_number_key ON public.schwab_accounts USING btree (account_number)
+public,schwab_accounts,schwab_accounts_pkey,CREATE UNIQUE INDEX schwab_accounts_pkey ON public.schwab_accounts USING btree (id)
+public,schwab_accounts,uq_schwab_accounts_account_number,CREATE UNIQUE INDEX uq_schwab_accounts_account_number ON public.schwab_accounts USING btree (account_number)
+public,schwab_positions,idx_schwab_positions_acct_date,"CREATE INDEX idx_schwab_positions_acct_date ON public.schwab_positions USING btree (account_number, as_of_date DESC)"
+public,schwab_positions,idx_schwab_positions_snapshot_date,CREATE INDEX idx_schwab_positions_snapshot_date ON public.schwab_positions USING btree (snapshot_date)
+public,schwab_positions,idx_schwab_positions_symbol_date,"CREATE INDEX idx_schwab_positions_symbol_date ON public.schwab_positions USING btree (symbol, snapshot_date)"
+public,schwab_positions,schwab_positions_account_symbol_idx,"CREATE INDEX schwab_positions_account_symbol_idx ON public.schwab_positions USING btree (account_number, symbol)"
+public,schwab_positions,schwab_positions_balance_date_idx,CREATE INDEX schwab_positions_balance_date_idx ON public.schwab_positions USING btree (balance_date)
+public,schwab_positions,schwab_positions_pkey,CREATE UNIQUE INDEX schwab_positions_pkey ON public.schwab_positions USING btree (id)
+public,schwab_raw_account_responses,schwab_raw_account_responses_pkey,CREATE UNIQUE INDEX schwab_raw_account_responses_pkey ON public.schwab_raw_account_responses USING btree (id)
+public,schwab_tokens,idx_schwab_tokens_received_at,CREATE INDEX idx_schwab_tokens_received_at ON public.schwab_tokens USING btree (received_at DESC)
+public,schwab_tokens,idx_schwab_tokens_state,CREATE INDEX idx_schwab_tokens_state ON public.schwab_tokens USING btree (state)
+public,schwab_tokens,schwab_tokens_pkey,CREATE UNIQUE INDEX schwab_tokens_pkey ON public.schwab_tokens USING btree (id)
+public,security_master,security_master_pkey,CREATE UNIQUE INDEX security_master_pkey ON public.security_master USING btree (symbol)
+public,staging_ffa_timeline,staging_ffa_timeline_pkey,CREATE UNIQUE INDEX staging_ffa_timeline_pkey ON public.staging_ffa_timeline USING btree (id)
+public,tickers,tickers_pkey,CREATE UNIQUE INDEX tickers_pkey ON public.tickers USING btree (symbol)
+public,token_meta,token_meta_pkey,CREATE UNIQUE INDEX token_meta_pkey ON public.token_meta USING btree (address)
+public,unit_prices,idx_unit_prices_date,CREATE INDEX idx_unit_prices_date ON public.unit_prices USING btree (price_date)
+public,unit_prices,unit_prices_pkey,CREATE UNIQUE INDEX unit_prices_pkey ON public.unit_prices USING btree (id)
+public,unit_prices,unit_prices_price_date_key,CREATE UNIQUE INDEX unit_prices_price_date_key ON public.unit_prices USING btree (price_date)
+public,user,user_pkey,"CREATE UNIQUE INDEX user_pkey ON public.""user"" USING btree (uid)"
+public,watchlist_items,watchlist_items_pkey,"CREATE UNIQUE INDEX watchlist_items_pkey ON public.watchlist_items USING btree (watchlist_id, symbol)"
+public,watchlists,watchlists_pkey,CREATE UNIQUE INDEX watchlists_pkey ON public.watchlists USING btree (id)

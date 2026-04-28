@@ -482,6 +482,28 @@ export const exportSnapshotXlsx = (snapshot, entries) => {
     ])
   }
 
+  // Totals footer row
+  const t = entries.reduce(
+    (a, e) => ({
+      dues_paid:    a.dues_paid    + Number(e.dues_paid_buyout   || 0),
+      dues_owed:    a.dues_owed    + Number(e.dues_owed           || 0),
+      contribution: a.contribution + Number(e.total_contribution  || 0),
+      prev_units:   a.prev_units   + Number(e.previous_val_units  || 0),
+      added_units:  a.added_units  + Number(e.val_units_added     || 0),
+      new_units:    a.new_units    + Number(e.new_val_unit_total  || 0),
+      portfolio:    a.portfolio    + Number(e.current_portfolio   || 0),
+      ownership:    a.ownership    + Number(e.ownership_pct       || 0),
+    }),
+    { dues_paid: 0, dues_owed: 0, contribution: 0, prev_units: 0,
+      added_units: 0, new_units: 0, portfolio: 0, ownership: 0 }
+  )
+  summary.push([
+    'Totals', '',
+    t.dues_paid, t.dues_owed, t.contribution,
+    t.prev_units, t.added_units, t.new_units,
+    t.portfolio, t.ownership,
+  ])
+
   const ws = XLSX.utils.aoa_to_sheet(summary)
   ws['!cols'] = [{ wch: 26 }, { wch: 4 }, { wch: 18 }, { wch: 14 }, { wch: 18 },
                  { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 8 }]
@@ -499,6 +521,21 @@ export const exportAllSnapshotsXlsx = async (snapshots) => {
       .eq('snapshot_id', s.id)
       .order('current_portfolio', { ascending: false })
     if (error) throw error
+    const data2 = data || []
+    const t = data2.reduce(
+      (a, e) => ({
+        dues_paid:    a.dues_paid    + Number(e.dues_paid_buyout   || 0),
+        dues_owed:    a.dues_owed    + Number(e.dues_owed           || 0),
+        contribution: a.contribution + Number(e.total_contribution  || 0),
+        prev_units:   a.prev_units   + Number(e.previous_val_units  || 0),
+        added_units:  a.added_units  + Number(e.val_units_added     || 0),
+        new_units:    a.new_units    + Number(e.new_val_unit_total  || 0),
+        portfolio:    a.portfolio    + Number(e.current_portfolio   || 0),
+        ownership:    a.ownership    + Number(e.ownership_pct       || 0),
+      }),
+      { dues_paid: 0, dues_owed: 0, contribution: 0, prev_units: 0,
+        added_units: 0, new_units: 0, portfolio: 0, ownership: 0 }
+    )
     const rows = [
       ['Stock Value:',          Number(s.stock_value)],
       ['Cash (Credit Union):',  Number(s.cash_credit_union)],
@@ -514,13 +551,18 @@ export const exportAllSnapshotsXlsx = async (snapshots) => {
       ['Member', '', 'Dues Paid + Buyout', 'Dues Owed', 'Total Contribution',
         'Previous Val. Units', 'Val. Units Added', 'New Val Unit Total',
         'Current Portfolio', '%'],
-      ...(data || []).map((e) => [
+      ...data2.map((e) => [
         e.member_name || e.member_name_raw, '',
         Number(e.dues_paid_buyout), Number(e.dues_owed),
         Number(e.total_contribution), Number(e.previous_val_units),
         Number(e.val_units_added), Number(e.new_val_unit_total),
         Number(e.current_portfolio), Number(e.ownership_pct),
       ]),
+      ['Totals', '',
+        t.dues_paid, t.dues_owed, t.contribution,
+        t.prev_units, t.added_units, t.new_units,
+        t.portfolio, t.ownership,
+      ],
     ]
     const ws = XLSX.utils.aoa_to_sheet(rows)
     ws['!cols'] = [{ wch: 26 }, { wch: 4 }, { wch: 18 }, { wch: 14 }, { wch: 18 },
