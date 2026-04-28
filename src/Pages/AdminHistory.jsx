@@ -1,7 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
+import MonthlySnapshotForm, {
+  exportSnapshotXlsx,
+  exportAllSnapshotsXlsx,
+} from './MonthlySnapshotForm.jsx'
 
 const fmtMoney = (n) =>
   `$${Number(n || 0).toLocaleString(undefined, {
@@ -50,13 +54,17 @@ const SummaryCard = ({ label, value, sub }) => (
 )
 
 export default function AdminHistory() {
+  const qc = useQueryClient()
   const {
     data: snapshots = [],
     isLoading: loadingSnaps,
     error: snapError,
   } = useQuery(['monthly_snapshots'], fetchSnapshots)
 
-  const [activeId, setActiveId] = useState(null)
+  const [activeId, setActiveId]   = useState(null)
+  const [formOpen, setFormOpen]   = useState(false)
+  const [editingSnap, setEditing] = useState(null)
+  const [busy, setBusy]           = useState(false)
 
   useEffect(() => {
     if (!activeId && snapshots.length > 0) setActiveId(snapshots[0].id)
@@ -92,8 +100,67 @@ export default function AdminHistory() {
   return (
     <Page
       title="Monthly History"
-      subtitle="Per-month snapshots imported from final-history.xlsx — calculations run in the database"
+      subtitle="Per-month snapshots — calculations run in the database"
+      actions={
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setEditing(null); setFormOpen(true) }}
+            className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm font-semibold"
+          >
+            <i className="fas fa-plus mr-1" /> New Snapshot
+          </button>
+          {active && (
+            <button
+              onClick={() => { setEditing(active); setFormOpen(true) }}
+              className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm"
+            >
+              <i className="fas fa-pen mr-1" /> Edit
+            </button>
+          )}
+          {active && (
+            <button
+              onClick={() => exportSnapshotXlsx(active, entries)}
+              className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm"
+              disabled={!entries.length}
+            >
+              <i className="fas fa-file-excel mr-1" /> Export tab
+            </button>
+          )}
+          <button
+            onClick={async () => {
+              setBusy(true)
+              try { await exportAllSnapshotsXlsx(snapshots) }
+              finally { setBusy(false) }
+            }}
+            disabled={busy || snapshots.length === 0}
+            className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm disabled:opacity-50"
+          >
+            <i className="fas fa-file-export mr-1" /> Export all
+          </button>
+          {active && (
+            <button
+              onClick={async () => {
+                if (!window.confirm(`Delete snapshot "${active.month_label}" and all its member entries?`)) return
+                const { error } = await supabase.from('monthly_snapshots').delete().eq('id', active.id)
+                if (error) { alert(error.message); return }
+                setActiveId(null)
+                qc.invalidateQueries({ queryKey: ['monthly_snapshots'] })
+              }}
+              className="px-3 py-1.5 rounded bg-red-500/20 text-red-500 text-sm"
+            >
+              <i className="fas fa-trash mr-1" /> Delete
+            </button>
+          )}
+        </div>
+      }
     >
+      {formOpen && (
+        <MonthlySnapshotForm
+          snapshot={editingSnap}
+          onClose={() => setFormOpen(false)}
+          onSaved={(id) => { setActiveId(id) }}
+        />
+      )}
       {snapError && (
         <div className="card p-4 mb-4 border border-red-500/30 bg-red-500/5">
           <div className="font-semibold text-red-500">Failed to load history</div>
