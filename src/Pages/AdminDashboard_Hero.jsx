@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { Page } from '../components/Page'
+import { ClubGrowthCharts } from '../components/MonthlyHistoryCharts.jsx'
 import {
   LineChart,
   Line,
@@ -258,6 +259,12 @@ const AdminDashboard_Hero = () => {
           {error.message || String(error)}
         </div>
       )}
+
+      {/* Monthly history growth (final-history.xlsx → monthly_snapshots) */}
+      <section className="mb-6">
+        <h2 className="text-lg font-semibold text-default mb-3">Club Growth (Monthly History)</h2>
+        <ClubGrowthCharts />
+      </section>
 
       {loading ? (
         <div className="py-16 text-center text-muted text-sm">Loading meeting history…</div>

@@ -2,6 +2,7 @@ import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
+import { ClubGrowthCharts } from '@/components/MonthlyHistoryCharts.jsx'
 
 function formatDateTimeLabel(d) {
   if (!d) return 'Data unavailable'
@@ -114,6 +115,9 @@ const AdminUnitPrice = () => {
       subtitle="Track the club unit price and total value over time."
     >
       <div className="space-y-4">
+        {/* Monthly history charts (DB-backed truth) */}
+        <ClubGrowthCharts />
+
         {isLoading && (
           <div className="card p-4 text-sm text-muted">
             Loading unit price…

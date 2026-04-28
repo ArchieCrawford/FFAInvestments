@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getMemberTimeline } from '../lib/ffaApi'
 import { Page } from '../components/Page'
+import { MemberGrowthCharts } from '../components/MonthlyHistoryCharts.jsx'
 import {
   AreaChart,
   Area,
@@ -275,6 +276,11 @@ const MemberDashboardNew = () => {
         </div>
       ) : (
         <div className="flex flex-col gap-6">
+          {/* Monthly history growth charts (truth from final-history) */}
+          <section>
+            <h2 className="text-lg font-semibold text-default mb-3">My Growth</h2>
+            <MemberGrowthCharts memberId={account.member_id} />
+          </section>
           <section>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               {overviewCards.map(card => (
