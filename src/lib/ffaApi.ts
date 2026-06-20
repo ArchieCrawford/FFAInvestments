@@ -244,15 +244,18 @@ export async function getLatestUnitValuation() {
     return Number.isFinite(amount) ? sum + amount : sum
   }, 0)
 
+  const baseUnitValue = Number(latest.unit_value || 0)
+  const depositUnits = baseUnitValue > 0 ? depositTotal / baseUnitValue : 0
   const totalValue = Number(latest.total_value || 0) + depositTotal
-  const totalUnits = Number(latest.total_units_outstanding || 0)
-  const unitValue = totalUnits > 0 ? totalValue / totalUnits : latest.unit_value || 0
+  const totalUnits = Number(latest.total_units_outstanding || 0) + depositUnits
+  const unitValue = totalUnits > 0 ? totalValue / totalUnits : baseUnitValue
 
   return {
     ...latest,
     total_value: totalValue,
     total_units_outstanding: totalUnits,
     unit_value: unitValue,
+    deposit_units: depositUnits,
     deposits_total: depositTotal,
   }
 }
