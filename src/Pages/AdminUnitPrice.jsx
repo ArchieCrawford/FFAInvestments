@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 import { ClubGrowthCharts } from '@/components/MonthlyHistoryCharts.jsx'
+import { getLatestUnitValuation } from '@/lib/ffaApi'
 
 function formatDateTimeLabel(d) {
   if (!d) return 'Data unavailable'
@@ -27,51 +28,6 @@ const fetchUnitPriceHistory = async () => {
   return data || []
 }
 
-const fetchSchwabUnitValue = async () => {
-  const { data: accounts, error: accountsError } = await supabase
-    .from('member_accounts')
-    .select('current_units')
-    .eq('is_active', true)
-  if (accountsError) throw accountsError
-
-  const totalUnits = (accounts || []).reduce((sum, row) => {
-    const v = Number(row.current_units || 0)
-    return Number.isFinite(v) ? sum + v : sum
-  }, 0)
-
-  const { data: positions, error: positionsError } = await supabase
-    .from('latest_schwab_positions')
-    .select('market_value, snapshot_date')
-  if (positionsError) throw positionsError
-
-  const rows = positions || []
-  const positionsCount = rows.length
-  let totalMarketValue = 0
-  let latestSnapshot = null
-
-  for (const row of rows) {
-    const mv = Number(row.market_value || 0)
-    if (Number.isFinite(mv)) totalMarketValue += mv
-    if (row.snapshot_date) {
-      const ts = new Date(row.snapshot_date).getTime()
-      if (Number.isFinite(ts) && (!latestSnapshot || ts > latestSnapshot)) {
-        latestSnapshot = ts
-      }
-    }
-  }
-
-  const unitValueLive =
-    totalUnits > 0 && positionsCount > 0 ? totalMarketValue / totalUnits : null
-
-  return {
-    totalUnits,
-    totalMarketValue,
-    unitValueLive,
-    lastSyncAt: latestSnapshot ? new Date(latestSnapshot).toISOString() : null,
-    positionsCount,
-  }
-}
-
 const AdminUnitPrice = () => {
   const {
     data: history = [],
@@ -82,12 +38,11 @@ const AdminUnitPrice = () => {
 
   const { data: liveSnapshot } = useQuery(
     ['schwab_unit_value'],
-    fetchSchwabUnitValue
+    getLatestUnitValuation
   )
 
   const latest = history.length > 0 ? history[history.length - 1] : null
-  const positionsCount = Number(liveSnapshot?.positionsCount || 0)
-  const hasLive = positionsCount > 0 && liveSnapshot?.unitValueLive !== null
+  const hasLive = Boolean(liveSnapshot)
   const showCards = hasLive || Boolean(latest)
   const latestHistoryLabel = latest
     ? new Date(latest.report_month).toLocaleDateString('en-US', {
@@ -97,16 +52,16 @@ const AdminUnitPrice = () => {
     : 'Data unavailable'
 
   const unitValueDisplay = hasLive
-    ? liveSnapshot.unitValueLive
+    ? liveSnapshot.unit_value
     : latest?.unit_value ?? null
   const portfolioValueDisplay = hasLive
-    ? liveSnapshot.totalMarketValue
+    ? liveSnapshot.total_value
     : latest?.portfolio_total_value ?? null
   const totalUnitsDisplay = hasLive
-    ? liveSnapshot.totalUnits
+    ? liveSnapshot.total_units_outstanding
     : latest?.total_units_outstanding ?? null
-  const liveAsOfLabel = liveSnapshot?.lastSyncAt
-    ? `As of ${formatDateTimeLabel(liveSnapshot.lastSyncAt)}`
+  const liveAsOfLabel = liveSnapshot?.valuation_date
+    ? `As of ${formatDateTimeLabel(liveSnapshot.valuation_date)}`
     : 'Data unavailable'
 
   return (
@@ -143,7 +98,7 @@ const AdminUnitPrice = () => {
                 </div>
                 <div className="text-xs text-muted">
                   {hasLive
-                    ? liveAsOfLabel
+                    ? `${liveAsOfLabel} • deposit-adjusted`
                     : `Meeting history • ${latestHistoryLabel}`}
                 </div>
               </div>
@@ -157,7 +112,7 @@ const AdminUnitPrice = () => {
                   })}
                 </div>
                 <div className="text-xs text-muted">
-                  {hasLive ? 'Schwab positions value' : 'Meeting history'}
+                  {hasLive ? 'Club valuation plus deposits' : 'Meeting history'}
                 </div>
               </div>
 
@@ -169,7 +124,7 @@ const AdminUnitPrice = () => {
                   })}
                 </div>
                 <div className="text-xs text-muted">
-                  {hasLive ? 'Active member units' : 'Meeting history'}
+                  {hasLive ? 'Outstanding club units' : 'Meeting history'}
                 </div>
               </div>
             </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { DollarSign, TrendingUp, TrendingDown, Calendar, Plus, Edit2, Trash2, X } from 'lucide-react'
-import { getUnitPriceHistory } from '../lib/ffaApi'
+import { getUnitPriceHistory, getLatestUnitValuation } from '../lib/ffaApi'
 import { useAuth } from '../contexts/AuthContext'
 import { Page } from './Page'
 
@@ -21,6 +21,7 @@ const formatDate = (date) =>
 const AdminUnitPriceNew = () => {
   const { profile } = useAuth()
   const [unitPrices, setUnitPrices] = useState([])
+  const [livePrice, setLivePrice] = useState(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -34,7 +35,17 @@ const AdminUnitPriceNew = () => {
 
   useEffect(() => {
     fetchUnitPrices()
+    fetchLivePrice()
   }, [])
+
+  const fetchLivePrice = async () => {
+    try {
+      const data = await getLatestUnitValuation()
+      setLivePrice(data || null)
+    } catch {
+      setLivePrice(null)
+    }
+  }
 
   const fetchUnitPrices = async () => {
     setLoading(true)
@@ -49,7 +60,7 @@ const AdminUnitPriceNew = () => {
     setLoading(false)
   }
 
-  const currentPrice = unitPrices[0]
+  const currentPrice = livePrice || unitPrices[0]
   const previousPrice = unitPrices[1]
 
   const change = useMemo(() => {
@@ -130,7 +141,13 @@ const AdminUnitPriceNew = () => {
             <div className="card p-6">
               <p className="text-sm text-muted mb-1">Current Unit Price</p>
               <p className="text-3xl font-bold text-default mb-2">{currentPrice ? formatCurrency(currentPrice.unit_price) : '$0.0000'}</p>
-              <p className="text-sm text-muted">{currentPrice ? `Updated ${formatDate(currentPrice.price_date)}` : 'No data yet'}</p>
+              <p className="text-sm text-muted">
+                {currentPrice
+                  ? livePrice
+                    ? `Live deposit-adjusted value • ${formatDate(livePrice.valuation_date)}`
+                    : `Updated ${formatDate(currentPrice.price_date)}`
+                  : 'No data yet'}
+              </p>
             </div>
             <div className="card p-6">
               <p className="text-sm text-muted mb-1">Change vs Previous</p>

@@ -220,14 +220,41 @@ export async function getUnitPriceHistory() {
 }
 
 export async function getLatestUnitValuation() {
-  const { data, error } = await supabase
+  const { data: latestRows, error } = await supabase
     .from('club_unit_valuations')
     .select('valuation_date, unit_value, total_units_outstanding, total_value')
     .order('valuation_date', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (error && (error as any).code !== 'PGRST116') throw error
-  return data || null
+
+  const latest = latestRows || null
+  if (!latest) return null
+
+  const valuationDate = latest.valuation_date
+  const { data: deposits, error: depositsError } = await supabase
+    .from('deposits')
+    .select('amount, created_at')
+    .gt('created_at', `${valuationDate}T00:00:00Z`)
+
+  if (depositsError) throw depositsError
+
+  const depositTotal = (deposits || []).reduce((sum: number, row: any) => {
+    const amount = Number(row.amount || 0)
+    return Number.isFinite(amount) ? sum + amount : sum
+  }, 0)
+
+  const totalValue = Number(latest.total_value || 0) + depositTotal
+  const totalUnits = Number(latest.total_units_outstanding || 0)
+  const unitValue = totalUnits > 0 ? totalValue / totalUnits : latest.unit_value || 0
+
+  return {
+    ...latest,
+    total_value: totalValue,
+    total_units_outstanding: totalUnits,
+    unit_value: unitValue,
+    deposits_total: depositTotal,
+  }
 }
 
 export async function getLatestUnitPrice() {
