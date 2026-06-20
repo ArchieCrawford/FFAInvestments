@@ -4,14 +4,65 @@ import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
 import { useAuth } from '@/contexts/AuthContext'
 
+const normalizeName = (v) =>
+  String(v || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ')
+
 const fetchAdminMembers = async () => {
-  const { data, error } = await supabase
-    .from('admin_members_overview')
-    .select('*')
-    .order('member_name', { ascending: true })
+  const [overviewResult, duesResult, depositsResult] = await Promise.all([
+    supabase
+      .from('admin_members_overview')
+      .select('*')
+      .order('member_name', { ascending: true }),
+    supabase.from('member_latest_dues').select('*'),
+    supabase.from('deposits').select('member_id, sender_name, amount'),
+  ])
+
+  const { data, error } = overviewResult
+  const { data: dues, error: duesError } = duesResult
+  const { data: deposits, error: depositsError } = depositsResult
 
   if (error) throw error
-  return data || []
+  if (duesError) throw duesError
+  if (depositsError) throw depositsError
+
+  const duesByMemberId = new Map()
+  ;(dues || []).forEach((d) => {
+    if (d.member_id) duesByMemberId.set(d.member_id, d)
+  })
+
+  const depositsByMemberId = new Map()
+  const depositsByName = new Map()
+  ;(deposits || []).forEach((dep) => {
+    const amount = Number(dep.amount || 0)
+    if (dep.member_id) {
+      depositsByMemberId.set(dep.member_id, (depositsByMemberId.get(dep.member_id) || 0) + amount)
+    }
+    const senderKey = normalizeName(dep.sender_name)
+    if (senderKey) {
+      depositsByName.set(senderKey, (depositsByName.get(senderKey) || 0) + amount)
+    }
+  })
+
+  return (data || []).map((row) => {
+    const liveDues = duesByMemberId.get(row.id)
+    const baseContribution = Number(liveDues?.total_contribution ?? row.total_contribution ?? 0)
+    const depositTotal =
+      depositsByMemberId.get(row.id) ||
+      depositsByName.get(normalizeName(row.member_name)) ||
+      0
+
+    return {
+      ...row,
+      live_total_contribution: baseContribution + depositTotal,
+      live_deposits_total: depositTotal,
+    }
+  })
 }
 
 const AdminMembers = () => {
@@ -40,10 +91,11 @@ const AdminMembers = () => {
       (acc, m) => {
         acc.value += Number(m.portfolio_value || 0)
         acc.units += Number(m.total_units || 0)
+        acc.contribution += Number(m.live_total_contribution ?? m.total_contribution ?? 0)
         acc.ownership += Number(m.ownership_pct_of_club || 0)
         return acc
       },
-      { value: 0, units: 0, ownership: 0 }
+      { value: 0, units: 0, contribution: 0, ownership: 0 }
     )
   }, [members])
 
@@ -173,6 +225,9 @@ const AdminMembers = () => {
                       Units
                     </th>
                     <th className="px-4 py-2 text-right text-xs font-semibold text-muted">
+                      Contribution
+                    </th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-muted">
                       Ownership
                     </th>
                     <th className="px-4 py-2 text-right text-xs font-semibold text-muted">
@@ -241,6 +296,14 @@ const AdminMembers = () => {
                           ) : (
                             <span className="text-muted text-xs">No data</span>
                           )}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <span className="text-default text-sm">
+                            ${Number(m.live_total_contribution ?? m.total_contribution ?? 0).toLocaleString(
+                              undefined,
+                              { maximumFractionDigits: 2 }
+                            )}
+                          </span>
                         </td>
                         <td className="px-4 py-2 text-right">
                           {ownershipPct != null ? (
@@ -324,6 +387,11 @@ const AdminMembers = () => {
                     <td className="px-4 py-2 text-right">
                       {totals.units.toLocaleString(undefined, {
                         maximumFractionDigits: 4,
+                      })}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      ${totals.contribution.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
                       })}
                     </td>
                     <td className="px-4 py-2 text-right">
