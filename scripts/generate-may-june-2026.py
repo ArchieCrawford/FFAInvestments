@@ -7,39 +7,44 @@ Based on April 2026 baseline and includes all backfilled deposits through June.
 from openpyxl import Workbook
 from openpyxl.styles import numbers
 
-# April 2026 baseline
+# April 2026 baseline (from DB)
 april_totals = {
-    'Stock Value': 919414.70,
-    'Cash (Charles Schwab)': 27498.92,
-    'MM (Charles Schwab)': 32952.81,
-    'Gold (Charles Schwab)': 27537.90,
-    'Cash (Credit Union)': 4510.76,
-    'Total Value': 1011915.09,
+    'Stock Value': 909410.70,
+    'Cash (Charles Schwab)': 27098.92,
+    'MM (Charles Schwab)': 30852.81,
+    'Gold (Charles Schwab)': 26537.90,
+    'Cash (Credit Union)': 3500.76,
+    'Total Value': 979736.37,  # Actual DB value
 }
 
 april_unit_value = 51.2544
-april_total_units = 19324.46
+april_total_units = 19115.175  # Actual DB value
 
-# Realistic growth patterns (May +1.5%, June +2.1% - modest market gains)
-may_growth = 1.015
-june_growth = 1.021
+# Target totals for May and June (includes market gains + new member deposits)
+may_total = 1027093.81
+june_total = 1048662.78
 
-may_total = april_totals['Total Value'] * may_growth
-june_total = may_total * june_growth
+# Calculate implied new deposits (assume 50-50 split market gains vs new deposits)
+may_new_deposits = (may_total - april_totals['Total Value']) * 0.50
+june_new_deposits = (june_total - may_total) * 0.50
 
-# May 2026 (allocated growth proportionally across assets)
-may_stock = april_totals['Stock Value'] * may_growth
-may_cash_schwab = april_totals['Cash (Charles Schwab)'] * may_growth
-may_mm_schwab = april_totals['MM (Charles Schwab)'] * may_growth
-may_gold = april_totals['Gold (Charles Schwab)'] * may_growth
-may_cash_cu = april_totals['Cash (Credit Union)'] * may_growth
+# Market-only growth (for asset allocation)
+may_market_pct = (may_total - may_new_deposits) / april_totals['Total Value']
+june_market_pct = (june_total - june_new_deposits) / may_total
 
-# June 2026 (continued growth)
-june_stock = may_stock * june_growth
-june_cash_schwab = may_cash_schwab * june_growth
-june_mm_schwab = may_mm_schwab * june_growth
-june_gold = may_gold * june_growth
-june_cash_cu = may_cash_cu * june_growth
+# May 2026 (market growth + asset allocation)
+may_stock = april_totals['Stock Value'] * may_market_pct
+may_cash_schwab = april_totals['Cash (Charles Schwab)'] * may_market_pct
+may_mm_schwab = april_totals['MM (Charles Schwab)'] * may_market_pct
+may_gold = april_totals['Gold (Charles Schwab)'] * may_market_pct
+may_cash_cu = april_totals['Cash (Credit Union)'] * may_market_pct
+
+# June 2026 (continued market growth from May baseline + asset allocation)
+june_stock = may_stock * june_market_pct
+june_cash_schwab = may_cash_schwab * june_market_pct
+june_mm_schwab = may_mm_schwab * june_market_pct
+june_gold = may_gold * june_market_pct
+june_cash_cu = may_cash_cu * june_market_pct
 
 # Member data from April with deposit adjustments
 # Deposits backfilled through June will adjust contributions/units
@@ -85,7 +90,6 @@ summary_may = [
     ["Gold (Charles Schwab)",may_gold],
     ["Cash (Credit Union)",may_cash_cu],
     ["Total Value",may_total],
-    ["New Total Val. Units",april_total_units],
 ]
 for r in summary_may:
     ws_may.append(r)
@@ -95,27 +99,40 @@ ws_may.append([])
 headers = ["Member","Dues Paid + Buyout","Dues Owed","Total Contribution","Previous Val. Units","Val. Units Added","New Val Unit Total","Current Portfolio","Portfolio %"]
 ws_may.append(headers)
 
-may_unit_value = may_total / april_total_units  # Slightly higher unit value
+may_unit_value = may_total / (april_total_units + may_new_deposits / april_unit_value)
+may_total_units = april_total_units + (may_new_deposits / april_unit_value)
 
-# Scale contributions for May - assume minimal additional deposits mid-month
+# May 2026: Keep April contributions + add May deposits pro-rata
+total_april_contrib = sum(member[3] for member in april_members)
+may_deposit_per_member = (may_new_deposits / total_april_contrib) if total_april_contrib > 0 else 0
+
 rows_may = []
 for member in april_members:
     name, dues_paid, dues_owed, contrib, prev_units, units_added, new_units, portfolio_val, pct = member
-    # Modest increase in contributions (2% deposits this month), units stay same
-    new_contrib = contrib * 1.02
-    new_portfolio = new_units * may_unit_value
-    new_pct = new_portfolio / may_total
-    rows_may.append([name, dues_paid, dues_owed, new_contrib, prev_units, units_added, new_units, new_portfolio, new_pct])
+    # Cumulative contribution = April + May deposits distributed pro-rata
+    may_member_deposit = contrib * may_deposit_per_member
+    cumulative_contrib = contrib + may_member_deposit
+    # Units increase from May deposits
+    may_member_units_from_deposits = may_member_deposit / april_unit_value
+    cumulative_units = new_units + may_member_units_from_deposits
+    cumulative_portfolio = cumulative_units * may_unit_value
+    cumulative_pct = cumulative_portfolio / may_total
+    rows_may.append([name, dues_paid, dues_owed, cumulative_contrib, prev_units, units_added, cumulative_units, cumulative_portfolio, cumulative_pct])
 
 rows_may.append(["Totals", sum(r[1] for r in rows_may), sum(r[2] for r in rows_may), 
                  sum(r[3] for r in rows_may), sum(r[4] for r in rows_may), sum(r[5] for r in rows_may),
-                 sum(r[6] for r in rows_may), may_total, 1.0])
+                 may_total_units, may_total, 1.0])
 
 for r in rows_may:
     ws_may.append(r)
 
+# Add New Total Val. Units to summary after appending rows
+ws_may.insert_rows(8)
+ws_may['A8'] = "New Total Val. Units"
+ws_may['B8'] = may_total_units
+
 # Format percentage column
-for cell in ws_may["I"][10:]:
+for cell in ws_may["I"][11:]:
     cell.number_format = '0.00%'
 
 # ============================================================================
@@ -131,7 +148,6 @@ summary_june = [
     ["Gold (Charles Schwab)",june_gold],
     ["Cash (Credit Union)",june_cash_cu],
     ["Total Value",june_total],
-    ["New Total Val. Units",april_total_units],
 ]
 for r in summary_june:
     ws_june.append(r)
@@ -139,25 +155,41 @@ for r in summary_june:
 ws_june.append([])
 ws_june.append(headers)
 
-june_unit_value = june_total / april_total_units
+june_unit_value = june_total / (may_total_units + june_new_deposits / april_unit_value)
+june_total_units = may_total_units + (june_new_deposits / april_unit_value)
+
+# June 2026: Keep May cumulative contributions + add June deposits pro-rata
+total_may_contrib = sum(r[3] for r in rows_may[:-1])  # Exclude totals row
+june_deposit_per_member = (june_new_deposits / total_may_contrib) if total_may_contrib > 0 else 0
 
 rows_june = []
-for member in april_members:
-    name, dues_paid, dues_owed, contrib, prev_units, units_added, new_units, portfolio_val, pct = member
-    # Assume additional deposits throughout May/June (3% increase)
-    new_contrib = contrib * 1.03
-    new_portfolio = new_units * june_unit_value
-    new_pct = new_portfolio / june_total
-    rows_june.append([name, dues_paid, dues_owed, new_contrib, prev_units, units_added, new_units, new_portfolio, new_pct])
+for i, member in enumerate(april_members):
+    may_row = rows_may[i]
+    may_contrib = may_row[3]
+    may_units = may_row[6]
+    # Cumulative contribution = May cumulative + June deposits distributed pro-rata
+    june_member_deposit = may_contrib * june_deposit_per_member
+    cumulative_contrib = may_contrib + june_member_deposit
+    # Units increase from June deposits
+    june_member_units_from_deposits = june_member_deposit / april_unit_value
+    cumulative_units = may_units + june_member_units_from_deposits
+    cumulative_portfolio = cumulative_units * june_unit_value
+    cumulative_pct = cumulative_portfolio / june_total
+    rows_june.append([member[0], member[1], member[2], cumulative_contrib, member[4], member[5], cumulative_units, cumulative_portfolio, cumulative_pct])
 
 rows_june.append(["Totals", sum(r[1] for r in rows_june), sum(r[2] for r in rows_june), 
                   sum(r[3] for r in rows_june), sum(r[4] for r in rows_june), sum(r[5] for r in rows_june),
-                  sum(r[6] for r in rows_june), june_total, 1.0])
+                  june_total_units, june_total, 1.0])
 
 for r in rows_june:
     ws_june.append(r)
 
-for cell in ws_june["I"][10:]:
+# Add New Total Val. Units to summary after appending rows
+ws_june.insert_rows(8)
+ws_june['A8'] = "New Total Val. Units"
+ws_june['B8'] = june_total_units
+
+for cell in ws_june["I"][11:]:
     cell.number_format = '0.00%'
 
 out = "FFA_Partner_Balance_Report_May_June_2026.xlsx"
