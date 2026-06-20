@@ -85,6 +85,7 @@ summary_may = [
     ["Gold (Charles Schwab)",may_gold],
     ["Cash (Credit Union)",may_cash_cu],
     ["Total Value",may_total],
+    ["New Total Val. Units",april_total_units],
 ]
 for r in summary_may:
     ws_may.append(r)
@@ -130,6 +131,7 @@ summary_june = [
     ["Gold (Charles Schwab)",june_gold],
     ["Cash (Credit Union)",june_cash_cu],
     ["Total Value",june_total],
+    ["New Total Val. Units",april_total_units],
 ]
 for r in summary_june:
     ws_june.append(r)
