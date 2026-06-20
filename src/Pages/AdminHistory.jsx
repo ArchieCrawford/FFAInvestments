@@ -25,6 +25,12 @@ const fmtPct = (n) =>
     maximumFractionDigits: 2,
   })}%`
 
+const fmtDate = (d) => {
+  if (!d) return '—'
+  try { return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }
+  catch { return d }
+}
+
 const fetchSnapshots = async () => {
   const { data, error } = await supabase
     .from('monthly_snapshots')
@@ -41,6 +47,22 @@ const fetchEntries = async (snapshotId) => {
     .select('*')
     .eq('snapshot_id', snapshotId)
     .order('current_portfolio', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+const fetchMonthDeposits = async (snapshotDate) => {
+  if (!snapshotDate) return []
+  const d = new Date(snapshotDate + 'T00:00:00')
+  const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  const next = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+  const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+  const { data, error } = await supabase
+    .from('deposits')
+    .select('id, sender_name, amount, deposit_date, source, member_id, members:member_id ( member_name )')
+    .gte('deposit_date', start)
+    .lt('deposit_date', end)
+    .order('deposit_date', { ascending: true })
   if (error) throw error
   return data || []
 }
@@ -81,6 +103,17 @@ export default function AdminHistory() {
   } = useQuery(['monthly_entries', activeId], () => fetchEntries(activeId), {
     enabled: !!activeId,
   })
+
+  const { data: monthDeposits = [] } = useQuery(
+    ['month_deposits', active?.snapshot_date],
+    () => fetchMonthDeposits(active?.snapshot_date),
+    { enabled: !!active?.snapshot_date }
+  )
+
+  const depositTotal = useMemo(
+    () => monthDeposits.reduce((s, dep) => s + Number(dep.amount || 0), 0),
+    [monthDeposits]
+  )
 
   const totals = useMemo(() => {
     const t = {
@@ -302,6 +335,48 @@ export default function AdminHistory() {
                     </tfoot>
                   </table>
                 </div>
+              </div>
+
+              {/* Deposits for this month */}
+              <div className="card p-0 overflow-hidden mt-4">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                  <div className="font-semibold text-default">Deposits — {active.month_label}</div>
+                  <div className="text-sm text-muted">
+                    {monthDeposits.length} deposit{monthDeposits.length !== 1 ? 's' : ''} · {fmtMoney(depositTotal)} total
+                  </div>
+                </div>
+                {monthDeposits.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-muted">No deposits recorded for this month.</div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-primary-soft/50 text-muted">
+                        <tr>
+                          <th className="text-left px-4 py-2">Date</th>
+                          <th className="text-left px-4 py-2">Member</th>
+                          <th className="text-left px-4 py-2">Source</th>
+                          <th className="text-right px-4 py-2">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {monthDeposits.map((dep) => (
+                          <tr key={dep.id} className="border-t border-border">
+                            <td className="px-4 py-2 text-muted">{fmtDate(dep.deposit_date)}</td>
+                            <td className="px-4 py-2">{dep.members?.member_name || dep.sender_name}</td>
+                            <td className="px-4 py-2 text-muted capitalize">{dep.source || '—'}</td>
+                            <td className="px-4 py-2 text-right font-medium">{fmtMoney(dep.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-primary-soft/30 font-semibold text-default">
+                        <tr className="border-t border-border">
+                          <td colSpan={3} className="px-4 py-2">Total</td>
+                          <td className="px-4 py-2 text-right">{fmtMoney(depositTotal)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
             </>
           )}

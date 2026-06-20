@@ -92,6 +92,33 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
     { enabled: !isEdit }
   )
 
+  // Deposits for this snapshot's month — used to auto-fill total_contribution
+  const { data: monthDeposits = [] } = useQuery(
+    ['deposits_for_snap_month', snap.snapshot_date],
+    async () => {
+      const d = new Date(snap.snapshot_date + 'T00:00:00')
+      const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+      const next = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+      const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-01`
+      const { data, error } = await supabase
+        .from('deposits')
+        .select('member_id, amount')
+        .gte('deposit_date', start)
+        .lt('deposit_date', end)
+      if (error) throw error
+      return data || []
+    },
+    { enabled: !isEdit && !!snap.snapshot_date }
+  )
+
+  const depositsByMemberId = useMemo(() => {
+    const m = new Map()
+    for (const dep of monthDeposits) {
+      if (dep.member_id) m.set(dep.member_id, (m.get(dep.member_id) || 0) + Number(dep.amount || 0))
+    }
+    return m
+  }, [monthDeposits])
+
   // Build editable rows: one per active member; pre-fill if editing or
   // pulling forward from previous month
   const [rows, setRows] = useState([])
@@ -365,6 +392,25 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
             >
               {previousMode === 'auto' ? 'Clear and enter manually' : 'Pull from previous month'}
             </button>
+            {depositsByMemberId.size > 0 && (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  className="underline text-primary"
+                  onClick={() =>
+                    setRows((prev) =>
+                      prev.map((r) => {
+                        const amt = r.member_id ? depositsByMemberId.get(r.member_id) : undefined
+                        return amt != null ? { ...r, total_contribution: amt } : r
+                      })
+                    )
+                  }
+                >
+                  Auto-fill contributions from deposits ({depositsByMemberId.size} member{depositsByMemberId.size !== 1 ? 's' : ''})
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -403,6 +449,11 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
                           value={r[f] ?? ''}
                           onChange={(e) => updateRow(i, f, e.target.value)}
                         />
+                        {f === 'total_contribution' && !isEdit && r.member_id && depositsByMemberId.has(r.member_id) && (
+                          <div className="text-xs text-muted text-right mt-0.5">
+                            dep: ${Number(depositsByMemberId.get(r.member_id)).toFixed(2)}
+                          </div>
+                        )}
                       </td>
                     ))}
                     <td className="px-2 py-1 text-right">{r._new_units.toFixed(4)}</td>
