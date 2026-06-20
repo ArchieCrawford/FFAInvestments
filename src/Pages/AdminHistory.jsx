@@ -115,20 +115,28 @@ export default function AdminHistory() {
     [monthDeposits]
   )
 
+  const depositsByMemberId = useMemo(() => {
+    const m = new Map()
+    for (const dep of monthDeposits) {
+      if (dep.member_id) m.set(dep.member_id, (m.get(dep.member_id) || 0) + Number(dep.amount || 0))
+    }
+    return m
+  }, [monthDeposits])
+
   const totals = useMemo(() => {
     const t = {
       contribution: 0, dues_paid: 0, dues_owed: 0,
       units: 0, portfolio: 0,
     }
     for (const e of entries) {
-      t.contribution += Number(e.total_contribution || 0)
+      t.contribution += Number(e.total_contribution || 0) + (depositsByMemberId.get(e.member_id) || 0)
       t.dues_paid    += Number(e.dues_paid_buyout || 0)
       t.dues_owed    += Number(e.dues_owed || 0)
       t.units        += Number(e.new_val_unit_total || 0)
       t.portfolio    += Number(e.current_portfolio || 0)
     }
     return t
-  }, [entries])
+  }, [entries, depositsByMemberId])
 
   return (
     <Page
@@ -309,10 +317,17 @@ export default function AdminHistory() {
                             )}
                           </td>
                           <td className="px-4 py-2 text-right">{fmtMoney(e.dues_paid_buyout)}</td>
-                          <td className={`px-4 py-2 text-right ${Number(e.dues_owed) < 0 ? 'text-red-500' : ''}`}>
+                          <td className={`px-4 py-2 text-right ${Number(e.dues_owed) < 0 ? 'text-green-500' : Number(e.dues_owed) > 0 ? 'text-red-500' : ''}`}>
                             {fmtMoney(e.dues_owed)}
                           </td>
-                          <td className="px-4 py-2 text-right">{fmtMoney(e.total_contribution)}</td>
+                          <td className="px-4 py-2 text-right">
+                            {fmtMoney(Number(e.total_contribution || 0) + (depositsByMemberId.get(e.member_id) || 0))}
+                            {depositsByMemberId.has(e.member_id) && (
+                              <div className="text-xs text-muted">
+                                snap: {fmtMoney(e.total_contribution)} + dep: {fmtMoney(depositsByMemberId.get(e.member_id))}
+                              </div>
+                            )}
+                          </td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.previous_val_units)}</td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.val_units_added)}</td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.new_val_unit_total)}</td>
