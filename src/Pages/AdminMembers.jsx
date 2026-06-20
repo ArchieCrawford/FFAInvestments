@@ -35,6 +35,18 @@ const AdminMembers = () => {
     }, 0)
   }, [members])
 
+  const totals = useMemo(() => {
+    return members.reduce(
+      (acc, m) => {
+        acc.value += Number(m.portfolio_value || 0)
+        acc.units += Number(m.total_units || 0)
+        acc.ownership += Number(m.ownership_pct_of_club || 0)
+        return acc
+      },
+      { value: 0, units: 0, ownership: 0 }
+    )
+  }, [members])
+
   const updateMemberMutation = useMutation(
     async ({ id, member_name, email }) => {
       const { error: updateError } = await supabase
@@ -299,6 +311,27 @@ const AdminMembers = () => {
                     )
                   })}
                 </tbody>
+                <tfoot>
+                  <tr className="border-t border-border bg-primary-soft/30 font-semibold text-default">
+                    <td className="px-4 py-2" colSpan={2}>
+                      Totals
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      ${totals.value.toLocaleString(undefined, {
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {totals.units.toLocaleString(undefined, {
+                        maximumFractionDigits: 4,
+                      })}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {(totals.ownership * 100).toFixed(2)}%
+                    </td>
+                    <td className="px-4 py-2 text-right"></td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           </div>
