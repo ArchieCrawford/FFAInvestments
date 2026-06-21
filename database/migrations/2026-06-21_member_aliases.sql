@@ -14,14 +14,21 @@
 --   if (res.data) memberId = res.data.member_id
 -- =============================================================================
 
-CREATE TABLE IF NOT EXISTS public.member_aliases (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  alias_name  text NOT NULL,
-  member_id   uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
+-- Drop and recreate cleanly (table has no production data yet)
+DROP TABLE IF EXISTS public.member_aliases CASCADE;
+
+CREATE TABLE public.member_aliases (
+  id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  alias_name  text        NOT NULL,
+  member_id   uuid        NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
   note        text,
   created_at  timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT member_aliases_alias_name_key UNIQUE (alias_name)
+  CONSTRAINT  member_aliases_alias_name_key UNIQUE (alias_name)
 );
+
+-- Index for fast case-insensitive lookup from scripts
+CREATE INDEX member_aliases_alias_lower_idx
+  ON public.member_aliases (lower(alias_name));
 
 ALTER TABLE public.member_aliases ENABLE ROW LEVEL SECURITY;
 
@@ -35,10 +42,6 @@ CREATE POLICY "admins_manage_aliases"
       WHERE auth_user_id = auth.uid() AND role = 'admin'
     )
   );
-
--- Index for fast case-insensitive lookup from scripts
-CREATE INDEX IF NOT EXISTS member_aliases_alias_lower_idx
-  ON public.member_aliases (lower(alias_name));
 
 -- =============================================================================
 -- Seed known aliases
