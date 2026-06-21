@@ -54,7 +54,7 @@ function normName(s) {
 
 const SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv'])
 
-function nameTokens(s) {
+function nameTokens(s, { keepSuffixes = false } = {}) {
   // Handle "Last, First" → "first last"
   let t = normName(s)
   if (t.includes(',')) {
@@ -65,7 +65,7 @@ function nameTokens(s) {
     .replace(/[,]/g, ' ')
     .split(' ')
     .map((x) => x.trim())
-    .filter((x) => x && x.length > 1 && !SUFFIXES.has(x))
+    .filter((x) => x && x.length > 1 && (keepSuffixes || !SUFFIXES.has(x)))
 }
 
 async function loadMembers() {
@@ -102,17 +102,21 @@ function matchMember(senderName, lookup, members, aliasMap) {
 
   if (lookup.has(norm)) return lookup.get(norm)
 
-  const senderTokens = new Set(nameTokens(senderName))
+  // Include suffixes (sr/jr) so "JEAN JOEL SR" scores higher against "Jean, Joel Sr." than "Jean, Joel"
+  const senderTokens = new Set(nameTokens(senderName, { keepSuffixes: true }))
   if (senderTokens.size === 0) return null
 
-  // Score each member by token overlap; require first + last to overlap.
+  // Score each member by token overlap; require first + last core tokens to overlap.
   let best = null
   let bestScore = 0
   for (const m of members) {
-    const mt = nameTokens(m.member_name)
+    const mt = nameTokens(m.member_name, { keepSuffixes: true })
     if (mt.length < 2) continue
-    const first = mt[0]
-    const last = mt[mt.length - 1]
+    // Require the non-suffix tokens to overlap on first+last
+    const coreTokens = mt.filter((t) => !SUFFIXES.has(t))
+    const first = coreTokens[0]
+    const last = coreTokens[coreTokens.length - 1]
+    if (!first || !last) continue
     if (!senderTokens.has(first) || !senderTokens.has(last)) continue
     const overlap = mt.filter((t) => senderTokens.has(t)).length
     if (overlap > bestScore) {

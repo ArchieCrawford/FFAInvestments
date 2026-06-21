@@ -79,6 +79,20 @@ WHERE m.member_name ILIKE '%ROBINSON%LUTHER%'
 LIMIT 1
 ON CONFLICT (alias_name) DO NOTHING;
 
+-- =============================================================================
+-- Joel Jean / Joel Jean Sr. disambiguation
+-- Two real members: Jean, Joel (07d5ed31) and Jean, Joel Sr. (e2bb568f)
+-- Add aliases for the Zelle sender name patterns each uses.
+-- Update these if their actual Zelle names differ.
+-- =============================================================================
+INSERT INTO public.member_aliases (alias_name, member_id, note)
+VALUES
+  ('JOEL JEAN SR',  'e2bb568f-7e0f-4314-a660-bb9edf1f04be', 'Jean, Joel Sr. — Zelle sender without period'),
+  ('JEAN JOEL SR',  'e2bb568f-7e0f-4314-a660-bb9edf1f04be', 'Jean, Joel Sr. — last-first format'),
+  ('JOEL JEAN JR',  '07d5ed31-43f1-416a-b1c3-ca78f7653a59', 'Jean, Joel — if he sends with Jr suffix'),
+  ('JOEL JEAN',     '07d5ed31-43f1-416a-b1c3-ca78f7653a59', 'Jean, Joel — no suffix')
+ON CONFLICT (alias_name) DO UPDATE SET member_id = EXCLUDED.member_id, note = EXCLUDED.note;
+
 -- Verify inserts — run after applying:
 -- SELECT a.alias_name, m.member_name, a.note
 -- FROM member_aliases a JOIN members m ON m.id = a.member_id
