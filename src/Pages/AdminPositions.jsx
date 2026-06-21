@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Page } from '@/components/Page'
+import { exportPositionsPdf } from '@/lib/exportPdf'
 
 const fetchLatestPositions = async () => {
   const { data, error } = await supabase
     .from('latest_schwab_positions')
-    .select('id, account_number, snapshot_date, as_of_date, symbol, description, asset_type, quantity, market_value')
+    .select('id, account_number, snapshot_date, as_of_date, symbol, description, asset_type, quantity, long_quantity, price, average_price, market_value, cost_basis')
     .order('market_value', { ascending: false })
 
   if (error) throw error
@@ -208,7 +209,7 @@ const AdminPositions = () => {
           </div>
         )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 className="btn-primary-soft text-xs px-3 py-2"
@@ -216,6 +217,14 @@ const AdminPositions = () => {
                 disabled={!positions || positions.length === 0}
               >
                 Export CSV
+              </button>
+              <button
+                type="button"
+                className="btn-primary-soft text-xs px-3 py-2"
+                onClick={() => exportPositionsPdf(positions, totalMarketValue, latestDate)}
+                disabled={!positions || positions.length === 0}
+              >
+                <i className="fas fa-file-pdf mr-1" /> Export PDF
               </button>
             </div>
 
@@ -250,6 +259,9 @@ const AdminPositions = () => {
                       Market Value
                     </th>
                     <th className="px-4 py-2 text-right font-semibold text-muted">
+                      Gain / Loss
+                    </th>
+                    <th className="px-4 py-2 text-right font-semibold text-muted">
                       % of Total
                     </th>
                     <th className="px-4 py-2 text-left font-semibold text-muted">
@@ -276,6 +288,20 @@ const AdminPositions = () => {
                           maximumFractionDigits: 2,
                         })}
                       </td>
+                      {(() => {
+                        const mv  = Number(p.market_value || 0)
+                        const cb  = Number(p.cost_basis   || 0)
+                        const gl  = cb > 0 ? mv - cb : null
+                        const glP = cb > 0 ? (gl / cb) * 100 : null
+                        if (gl === null) return <td className="px-4 py-2 text-right text-muted">—</td>
+                        const up  = gl >= 0
+                        return (
+                          <td className={`px-4 py-2 text-right font-medium ${up ? 'text-green-500' : 'text-red-500'}`}>
+                            {up ? '▲' : '▼'} ${Math.abs(gl).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            <span className="text-xs ml-1">({Math.abs(glP).toFixed(2)}%)</span>
+                          </td>
+                        )
+                      })()}
                       <td className="px-4 py-2 text-right text-default">
                         {totalMarketValue > 0
                           ? `${((Number(p.market_value || 0) / totalMarketValue) * 100).toFixed(2)}%`
@@ -300,6 +326,7 @@ const AdminPositions = () => {
                           maximumFractionDigits: 2,
                         })}
                       </td>
+                      <td className="px-4 py-2" />
                       <td className="px-4 py-2 text-right font-semibold text-default">
                         100%
                       </td>

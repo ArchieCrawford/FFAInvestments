@@ -6,6 +6,7 @@ import MonthlySnapshotForm, {
   exportSnapshotXlsx,
   exportAllSnapshotsXlsx,
 } from './MonthlySnapshotForm.jsx'
+import { exportHistoryPdf } from '@/lib/exportPdf'
 
 const fmtMoney = (n) =>
   `$${Number(n || 0).toLocaleString(undefined, {
@@ -171,6 +172,15 @@ export default function AdminHistory() {
               disabled={!entries.length}
             >
               <i className="fas fa-file-excel mr-1" /> Export tab
+            </button>
+          )}
+          {active && (
+            <button
+              onClick={() => exportHistoryPdf(active, entries)}
+              className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm"
+              disabled={!entries.length}
+            >
+              <i className="fas fa-file-pdf mr-1" /> Export PDF
             </button>
           )}
           <button
