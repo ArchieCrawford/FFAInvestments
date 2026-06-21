@@ -79,7 +79,14 @@ LEFT JOIN public.member_latest_dues mld ON mld.member_id = m.id
 LEFT JOIN apr_entries ae ON ae.member_id = m.id
 LEFT JOIN may_cumulative_deps cd ON cd.member_id = m.id
 LEFT JOIN may_only_deps od ON od.member_id = m.id
-WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now());
+WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now())
+ON CONFLICT (snapshot_id, member_name_raw) DO UPDATE SET
+  dues_paid_buyout   = EXCLUDED.dues_paid_buyout,
+  dues_owed          = EXCLUDED.dues_owed,
+  total_contribution = EXCLUDED.total_contribution,
+  previous_val_units = EXCLUDED.previous_val_units,
+  val_units_added    = EXCLUDED.val_units_added,
+  updated_at         = now();
 
 -- =============================================================================
 -- JUNE 2026 member entries
@@ -139,7 +146,14 @@ LEFT JOIN public.member_latest_dues mld ON mld.member_id = m.id
 LEFT JOIN may_entries me ON me.member_id = m.id
 LEFT JOIN june_cumulative_deps cd ON cd.member_id = m.id
 LEFT JOIN june_only_deps od ON od.member_id = m.id
-WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now());
+WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now())
+ON CONFLICT (snapshot_id, member_name_raw) DO UPDATE SET
+  dues_paid_buyout   = EXCLUDED.dues_paid_buyout,
+  dues_owed          = EXCLUDED.dues_owed,
+  total_contribution = EXCLUDED.total_contribution,
+  previous_val_units = EXCLUDED.previous_val_units,
+  val_units_added    = EXCLUDED.val_units_added,
+  updated_at         = now();
 
 COMMIT;
 
