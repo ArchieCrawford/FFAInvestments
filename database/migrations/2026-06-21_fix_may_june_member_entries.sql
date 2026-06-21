@@ -60,19 +60,14 @@ INSERT INTO public.member_monthly_entries (
   dues_paid_buyout, dues_owed, total_contribution,
   previous_val_units, val_units_added
 )
-SELECT
+SELECT DISTINCT ON (m.member_name)
   (SELECT id FROM may_snap),
   m.id,
   m.member_name,
-  -- dues_paid = base from dues table + all deposits through May
   COALESCE(mld.dues_paid_buyout, 0) + COALESCE(cd.dep_total, 0),
-  -- dues_owed = base owed - all deposits through May (can go negative = credit)
   COALESCE(mld.dues_owed_oct_25, 0) - COALESCE(cd.dep_total, 0),
-  -- total contribution = base + all deposits through May
   COALESCE(mld.total_contribution, 0) + COALESCE(cd.dep_total, 0),
-  -- previous units = what they had at end of April
   COALESCE(ae.april_units, 0),
-  -- units added in May = May deposits / April unit price
   COALESCE(od.dep_total, 0) / NULLIF((SELECT unit_value FROM apr_snap), 0)
 FROM public.members m
 LEFT JOIN public.member_latest_dues mld ON mld.member_id = m.id
@@ -80,13 +75,7 @@ LEFT JOIN apr_entries ae ON ae.member_id = m.id
 LEFT JOIN may_cumulative_deps cd ON cd.member_id = m.id
 LEFT JOIN may_only_deps od ON od.member_id = m.id
 WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now())
-ON CONFLICT (snapshot_id, member_name_raw) DO UPDATE SET
-  dues_paid_buyout   = EXCLUDED.dues_paid_buyout,
-  dues_owed          = EXCLUDED.dues_owed,
-  total_contribution = EXCLUDED.total_contribution,
-  previous_val_units = EXCLUDED.previous_val_units,
-  val_units_added    = EXCLUDED.val_units_added,
-  updated_at         = now();
+ORDER BY m.member_name, m.created_at;
 
 -- =============================================================================
 -- JUNE 2026 member entries
@@ -132,7 +121,7 @@ INSERT INTO public.member_monthly_entries (
   dues_paid_buyout, dues_owed, total_contribution,
   previous_val_units, val_units_added
 )
-SELECT
+SELECT DISTINCT ON (m.member_name)
   (SELECT id FROM june_snap),
   m.id,
   m.member_name,
@@ -147,13 +136,7 @@ LEFT JOIN may_entries me ON me.member_id = m.id
 LEFT JOIN june_cumulative_deps cd ON cd.member_id = m.id
 LEFT JOIN june_only_deps od ON od.member_id = m.id
 WHERE m.is_active = true AND (m.deleted_at IS NULL OR m.deleted_at > now())
-ON CONFLICT (snapshot_id, member_name_raw) DO UPDATE SET
-  dues_paid_buyout   = EXCLUDED.dues_paid_buyout,
-  dues_owed          = EXCLUDED.dues_owed,
-  total_contribution = EXCLUDED.total_contribution,
-  previous_val_units = EXCLUDED.previous_val_units,
-  val_units_added    = EXCLUDED.val_units_added,
-  updated_at         = now();
+ORDER BY m.member_name, m.created_at;
 
 COMMIT;
 
