@@ -32,8 +32,9 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
   const isEdit = !!snapshot
   const qc = useQueryClient()
 
-  const [saving, setSaving]   = useState(false)
-  const [error, setError]     = useState(null)
+  const [saving, setSaving]         = useState(false)
+  const [recalculating, setRecalc]  = useState(false)
+  const [error, setError]           = useState(null)
   const [previousMode, setPreviousMode] = useState(isEdit ? 'manual' : 'auto')
 
   const [snap, setSnap] = useState(() => ({
@@ -208,6 +209,96 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
     return { totalAssets, unitValue, memberRows, sumUnits, sumPortfolio }
   }, [snap, rows])
 
+  // Recalculate member entries from member_latest_dues + deposits,
+  // mirroring the SQL migration logic exactly.
+  const recalcFromDues = async () => {
+    setRecalc(true)
+    setError(null)
+    try {
+      const snapDate  = snap.snapshot_date          // e.g. "2026-06-01"
+      const monthStart = snapDate.slice(0, 7) + '-01'
+
+      // member_latest_dues baseline
+      const { data: dues, error: dErr } = await supabase
+        .from('member_latest_dues')
+        .select('member_id, dues_paid_buyout, dues_owed_oct_25, total_contribution')
+      if (dErr) throw dErr
+      const duesById = new Map((dues || []).map((d) => [d.member_id, d]))
+
+      // Cumulative deposits through snapshot_date
+      const { data: cumDeps, error: cErr } = await supabase
+        .from('deposits')
+        .select('member_id, amount')
+        .lte('deposit_date', snapDate)
+      if (cErr) throw cErr
+      const cumByMember = new Map()
+      for (const d of cumDeps || []) {
+        if (d.member_id)
+          cumByMember.set(d.member_id, (cumByMember.get(d.member_id) || 0) + Number(d.amount))
+      }
+
+      // Month-only deposits (for val_units_added)
+      const { data: monthDeps, error: mErr } = await supabase
+        .from('deposits')
+        .select('member_id, amount')
+        .gte('deposit_date', monthStart)
+        .lte('deposit_date', snapDate)
+      if (mErr) throw mErr
+      const monthByMember = new Map()
+      for (const d of monthDeps || []) {
+        if (d.member_id)
+          monthByMember.set(d.member_id, (monthByMember.get(d.member_id) || 0) + Number(d.amount))
+      }
+
+      // Prior month snapshot (for unit_value and previous_val_units)
+      const { data: priorSnaps, error: psErr } = await supabase
+        .from('monthly_snapshots')
+        .select('id, unit_value, snapshot_date')
+        .lt('snapshot_date', monthStart)
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+      if (psErr) throw psErr
+      const prior = priorSnaps?.[0]
+      const priorUnitValue = Number(prior?.unit_value || 0)
+
+      // Prior month entries for previous_val_units
+      const priorUnitsById = new Map()
+      if (prior?.id) {
+        const { data: priorEnts, error: peErr } = await supabase
+          .from('member_monthly_entries')
+          .select('member_id, new_val_unit_total')
+          .eq('snapshot_id', prior.id)
+        if (peErr) throw peErr
+        for (const e of priorEnts || []) {
+          if (e.member_id) priorUnitsById.set(e.member_id, Number(e.new_val_unit_total || 0))
+        }
+      }
+
+      setRows((prev) =>
+        prev.map((r) => {
+          if (!r.member_id) return r  // leave orphan rows untouched
+          const d       = duesById.get(r.member_id)
+          const cumDep  = cumByMember.get(r.member_id) || 0
+          const monthDep = monthByMember.get(r.member_id) || 0
+          const prevUnits = priorUnitsById.get(r.member_id) ?? num(r.previous_val_units)
+          const unitsAdded = priorUnitValue > 0 ? monthDep / priorUnitValue : 0
+          return {
+            ...r,
+            dues_paid_buyout:   d ? (Number(d.dues_paid_buyout)    + cumDep).toFixed(2) : r.dues_paid_buyout,
+            dues_owed:          d ? (Number(d.dues_owed_oct_25)     - cumDep).toFixed(2) : r.dues_owed,
+            total_contribution: d ? (Number(d.total_contribution)   + cumDep).toFixed(2) : r.total_contribution,
+            previous_val_units: prevUnits.toFixed(6),
+            val_units_added:    unitsAdded.toFixed(6),
+          }
+        })
+      )
+    } catch (err) {
+      setError(err.message || String(err))
+    } finally {
+      setRecalc(false)
+    }
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     setSaving(true); setError(null)
@@ -248,18 +339,23 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
         .eq('snapshot_id', snapshotId)
       if (delErr) throw delErr
 
-      const entryRows = rows
-        .map((r) => ({
-          snapshot_id: snapshotId,
-          member_id: r.member_id,
-          member_name_raw: r.member_name_raw,
-          dues_paid_buyout:   num(r.dues_paid_buyout),
-          dues_owed:          num(r.dues_owed),
-          total_contribution: num(r.total_contribution),
-          previous_val_units: num(r.previous_val_units),
-          val_units_added:    num(r.val_units_added),
-        }))
-        .filter((r) => r.member_name_raw && r.member_name_raw.trim())
+      // Deduplicate by member_name_raw — member_id match wins over orphan row
+      const seen = new Map()
+      for (const r of rows) {
+        const key = (r.member_name_raw || '').trim()
+        if (!key) continue
+        if (!seen.has(key) || r.member_id) seen.set(key, r)
+      }
+      const entryRows = [...seen.values()].map((r) => ({
+        snapshot_id: snapshotId,
+        member_id: r.member_id,
+        member_name_raw: r.member_name_raw,
+        dues_paid_buyout:   num(r.dues_paid_buyout),
+        dues_owed:          num(r.dues_owed),
+        total_contribution: num(r.total_contribution),
+        previous_val_units: num(r.previous_val_units),
+        val_units_added:    num(r.val_units_added),
+      }))
 
       if (entryRows.length > 0) {
         const { error: insErr } = await supabase
@@ -381,6 +477,22 @@ export default function MonthlySnapshotForm({ snapshot, onClose, onSaved }) {
             <div className="text-lg font-semibold">{fmt$(previews.sumPortfolio)}</div>
           </div>
         </div>
+
+        {isEdit && (
+          <div className="mb-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={recalcFromDues}
+              disabled={recalculating}
+              className="px-3 py-1.5 rounded bg-primary-soft text-default text-sm font-semibold disabled:opacity-50"
+            >
+              {recalculating ? 'Recalculating…' : '⟳ Recalculate from dues & deposits'}
+            </button>
+            <span className="text-xs text-muted">
+              Recomputes all member rows using member_latest_dues + deposits through {snap.snapshot_date}
+            </span>
+          </div>
+        )}
 
         {!isEdit && (
           <div className="mb-3 text-sm text-muted">
