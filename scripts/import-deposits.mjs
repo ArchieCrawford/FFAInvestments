@@ -90,9 +90,16 @@ function buildMemberLookup(members) {
   return map
 }
 
-function matchMember(senderName, lookup, members) {
+function matchMember(senderName, lookup, members, aliasMap) {
   const norm = normName(senderName)
   if (!norm) return null
+
+  // Alias table takes highest priority (exact, case-insensitive)
+  if (aliasMap) {
+    const aliasMatch = aliasMap.get(norm)
+    if (aliasMatch) return aliasMatch
+  }
+
   if (lookup.has(norm)) return lookup.get(norm)
 
   const senderTokens = new Set(nameTokens(senderName))
@@ -116,6 +123,24 @@ function matchMember(senderName, lookup, members) {
   return best
 }
 
+async function loadAliases(members) {
+  const { data, error } = await supabase
+    .from('member_aliases')
+    .select('alias_name, member_id')
+  if (error) {
+    console.warn('Could not load member_aliases (table may not exist yet):', error.message)
+    return new Map()
+  }
+  const memberById = new Map(members.map((m) => [m.id, m]))
+  const map = new Map()
+  for (const row of data || []) {
+    const m = memberById.get(row.member_id)
+    if (m) map.set(normName(row.alias_name), m)
+  }
+  console.log(`Loaded ${map.size} member aliases`)
+  return map
+}
+
 async function main() {
   console.log(`Reading: ${CSV_PATH}`)
   const csv = readFileSync(CSV_PATH, 'utf-8')
@@ -132,6 +157,7 @@ async function main() {
   const members = await loadMembers()
   console.log(`Loaded ${members.length} members from DB`)
   const lookup = buildMemberLookup(members)
+  const aliasMap = await loadAliases(members)
 
   const records = []
   const unmatched = []
@@ -147,7 +173,7 @@ async function main() {
       continue
     }
 
-    const member = matchMember(sender, lookup, members)
+    const member = matchMember(sender, lookup, members, aliasMap)
     if (!member) unmatched.push(sender)
 
     records.push({
