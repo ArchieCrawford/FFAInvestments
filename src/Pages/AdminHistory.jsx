@@ -26,14 +26,6 @@ const fmtPct = (n) =>
     maximumFractionDigits: 2,
   })}%`
 
-const normalizeName = (v) =>
-  String(v || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .sort()
-    .join(' ')
 
 const fetchSnapshots = async () => {
   const { data, error } = await supabase
@@ -51,14 +43,6 @@ const fetchEntries = async (snapshotId) => {
     .select('*')
     .eq('snapshot_id', snapshotId)
     .order('current_portfolio', { ascending: false })
-  if (error) throw error
-  return data || []
-}
-
-const fetchAllDeposits = async () => {
-  const { data, error } = await supabase
-    .from('deposits')
-    .select('member_id, sender_name, amount, members:member_id ( member_name )')
   if (error) throw error
   return data || []
 }
@@ -100,50 +84,20 @@ export default function AdminHistory() {
     enabled: !!activeId,
   })
 
-  const { data: allDeposits = [] } = useQuery(['all_deposits_for_contributions'], fetchAllDeposits)
-
-  const depositsByMemberId = useMemo(() => {
-    const m = new Map()
-    for (const dep of allDeposits) {
-      if (dep.member_id) m.set(dep.member_id, (m.get(dep.member_id) || 0) + Number(dep.amount || 0))
-    }
-    return m
-  }, [allDeposits])
-
-  const depositsByName = useMemo(() => {
-    const m = new Map()
-    for (const dep of allDeposits) {
-      const keys = [normalizeName(dep.sender_name), normalizeName(dep.members?.member_name)]
-      for (const k of keys) {
-        if (!k) continue
-        m.set(k, (m.get(k) || 0) + Number(dep.amount || 0))
-      }
-    }
-    return m
-  }, [allDeposits])
-
-  const contributionWithDeposits = (entry) => {
-    const base = Number(entry.total_contribution || 0)
-    const byId = entry.member_id ? (depositsByMemberId.get(entry.member_id) || 0) : 0
-    if (byId > 0) return base + byId
-    const nameKey = normalizeName(entry.member_name || entry.member_name_raw)
-    return base + (depositsByName.get(nameKey) || 0)
-  }
-
   const totals = useMemo(() => {
     const t = {
       contribution: 0, dues_paid: 0, dues_owed: 0,
       units: 0, portfolio: 0,
     }
     for (const e of entries) {
-      t.contribution += contributionWithDeposits(e)
+      t.contribution += Number(e.total_contribution || 0)
       t.dues_paid    += Number(e.dues_paid_buyout || 0)
       t.dues_owed    += Number(e.dues_owed || 0)
       t.units        += Number(e.new_val_unit_total || 0)
       t.portfolio    += Number(e.current_portfolio || 0)
     }
     return t
-  }, [entries, depositsByMemberId, depositsByName])
+  }, [entries])
 
   return (
     <Page
@@ -336,7 +290,7 @@ export default function AdminHistory() {
                           <td className={`px-4 py-2 text-right ${Number(e.dues_owed) < 0 ? 'text-green-500' : Number(e.dues_owed) > 0 ? 'text-red-500' : ''}`}>
                             {fmtMoney(e.dues_owed)}
                           </td>
-                          <td className="px-4 py-2 text-right">{fmtMoney(contributionWithDeposits(e))}</td>
+                          <td className="px-4 py-2 text-right">{fmtMoney(e.total_contribution)}</td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.previous_val_units)}</td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.val_units_added)}</td>
                           <td className="px-4 py-2 text-right">{fmtUnits(e.new_val_unit_total)}</td>
